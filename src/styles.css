@@ -211,52 +211,101 @@
   }
 }
 
+/*
+ * Glass surfaces. Every panel, bar, chip and bubble is one of these
+ * utilities so the whole UI shares one rule set.
+ */
+
 /* Primary surface: light glass sheet floating over the blurred backdrop. */
 @utility paper-sheet {
   background-color: var(--glass-strong);
   background-image: var(--gradient-sheen);
   border: 1px solid var(--glass-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--glass-radius);
   box-shadow: var(--glass-shadow);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: var(--glass-filter);
 }
 
+/* Secondary panel: same rules, one step lighter. */
 @utility glass-transcript {
   background-color: var(--glass);
   background-image: var(--gradient-sheen);
   border: 1px solid var(--glass-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--glass-radius);
   box-shadow: var(--glass-shadow);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: var(--glass-filter);
 }
 
-/* Lighter glass for chips, bubbles and toolbars. */
+/* Lighter glass for chips, meters and inline controls. */
 @utility glass-quiet {
   background-color: var(--glass-quiet);
   border: 1px solid var(--glass-border);
-  border-radius: var(--radius-md);
-  backdrop-filter: blur(14px) saturate(150%);
+  border-radius: var(--glass-radius-sm);
+  backdrop-filter: var(--glass-filter-md);
+}
+
+/* Fill only — for tracks/overlays that bring their own shape. */
+@utility glass-fill {
+  background-color: var(--glass-quiet);
+  backdrop-filter: var(--glass-filter-sm);
 }
 
 @utility glass-bar {
   background-color: var(--glass);
   border: 1px solid var(--glass-border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--glass-radius-lg);
   box-shadow: var(--glass-shadow);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: var(--glass-filter);
 }
 
 @utility gradient-primary {
   background-image: var(--gradient-primary);
 }
 
+/* Glow elevation scale for gradient elements. */
+@utility glow-sm {
+  box-shadow: var(--shadow-glow-sm);
+}
+
+@utility glow {
+  box-shadow: var(--shadow-glow);
+}
+
+@utility glow-lg {
+  box-shadow: var(--shadow-glow-lg);
+}
+
+/* Chat bubbles — self (gradient) / other (glass) / interim (dashed glass). */
+@utility bubble-self {
+  background-image: var(--gradient-primary);
+  color: var(--primary-foreground);
+  border: 1px solid var(--glass-border-vivid);
+  border-radius: var(--bubble-radius);
+  box-shadow: var(--shadow-glow-lg);
+}
+
+@utility bubble-other {
+  background-color: var(--glass-quiet);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--bubble-radius);
+  backdrop-filter: var(--glass-filter-md);
+}
+
+@utility bubble-interim {
+  background-color: var(--glass-quiet);
+  border: 1px dashed color-mix(in oklab, var(--primary) 60%, transparent);
+  border-radius: var(--bubble-radius);
+  backdrop-filter: var(--glass-filter-md);
+}
+
 @utility sticky-note {
   background-image: var(--gradient-primary), var(--gradient-sheen);
   color: var(--primary-foreground);
-  border: 1px solid oklch(100% 0 0 / 0.45);
-  border-radius: var(--radius-md);
-  box-shadow: 0 12px 28px -18px oklch(60% 0.15 85 / 0.95);
+  border: 1px solid var(--glass-border-vivid);
+  border-radius: var(--glass-radius-sm);
+  box-shadow: var(--shadow-glow-lg);
 }
+
 
 
 @keyframes kibo-bar {
