@@ -1,7 +1,6 @@
 import * as React from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { PillGroup } from "./pill-group";
 import { useKibo, langLabel, levelLabel } from "@/lib/kibo/store";
 import type { AudioSource, ConvLang, Level, Theme, UiLang } from "@/lib/kibo/types";

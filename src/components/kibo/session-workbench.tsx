@@ -71,8 +71,8 @@ export function SessionWorkbench() {
   const reqRef = React.useRef(0);
 
   const handleFinal = React.useCallback(
-    (text: string) => {
-      const turn = makeTurn("other", text);
+    (text: string, speaker: "user" | "other") => {
+      const turn = makeTurn(speaker, text);
       turnsRef.current = [...turnsRef.current, turn];
       setTurns(turnsRef.current);
 
@@ -125,7 +125,9 @@ export function SessionWorkbench() {
 
   const transcriber = useTranscriber({
     language: prefs.conversationLang,
-    onInterim: setInterim,
+    audioSource: prefs.audioSource,
+    micDeviceId: prefs.micDeviceId,
+    onInterim: handleInterim,
     onFinal: handleFinal,
     onError: handleError,
   });
@@ -221,7 +223,7 @@ export function SessionWorkbench() {
             <h1 className="text-base leading-tight font-bold tracking-tight">{t("appName")}</h1>
             <p className="text-xs text-muted-foreground">
               {langLabel(prefs.conversationLang, prefs.uiLang)} ·{" "}
-              {levelLabel(prefs.level, prefs.uiLang)} · {t(nodeKey(prefs.defaultNode))}
+              {levelLabel(prefs.level, prefs.uiLang)} · {t(sourceKey(prefs.audioSource))}
             </p>
           </div>
         </div>
@@ -376,6 +378,6 @@ export function SessionWorkbench() {
   );
 }
 
-function nodeKey(node: "local" | "japan" | "relay") {
-  return node === "local" ? "localNode" : node === "japan" ? "japanNode" : "relayNode";
+function sourceKey(source: "microphone" | "system" | "both") {
+  return source === "microphone" ? "microphone" : source === "system" ? "systemAudio" : "bothAudio";
 }
