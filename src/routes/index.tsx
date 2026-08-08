@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { KiboProvider, useKibo } from "@/lib/kibo/store";
 import { Onboarding } from "@/components/kibo/onboarding";
 import { SessionWorkbench } from "@/components/kibo/session-workbench";
+import { AppBackground } from "@/components/kibo/app-background";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -38,15 +39,29 @@ function App() {
   }, [hydrated, prefs.onboarded, screen]);
 
   if (!hydrated || !screen) {
-    return <div className="min-h-dvh bg-background" />;
+    return (
+      <>
+        <AppBackground />
+        <div className="min-h-dvh" />
+      </>
+    );
   }
 
-  if (screen === "session") return <SessionWorkbench />;
+  if (screen === "session")
+    return (
+      <>
+        <AppBackground />
+        <SessionWorkbench />
+      </>
+    );
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-background p-4">
-      <Onboarding onContinue={() => setScreen("session")} />
-    </main>
+    <>
+      <AppBackground />
+      <main className="flex min-h-dvh items-center justify-center p-4">
+        <Onboarding onContinue={() => setScreen("session")} />
+      </main>
+    </>
   );
 }
 

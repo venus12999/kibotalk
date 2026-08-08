@@ -234,9 +234,9 @@ export function SessionWorkbench() {
 
   return (
     <div className="mx-auto flex h-dvh max-w-6xl flex-col gap-4 p-4 sm:p-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
+      <header className="glass-bar flex flex-wrap items-center justify-between gap-3 px-4 py-3">
         <div className="flex items-center gap-3">
-          <span className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
+          <span className="gradient-primary flex size-9 items-center justify-center rounded-full text-primary-foreground shadow-[0_8px_20px_-10px_oklch(60%_0.15_85_/_0.9)]">
             <Mic className="size-4" />
           </span>
           <div>
