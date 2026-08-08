@@ -53,47 +53,69 @@ export function SessionWorkbench() {
   const [historyOpen, setHistoryOpen] = React.useState(false);
   const [confirmStop, setConfirmStop] = React.useState(false);
   const [startedAt, setStartedAt] = React.useState(0);
+  const [interim, setInterim] = React.useState("");
+  const [error, setError] = React.useState("");
 
   const stepRef = React.useRef(0);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const steps = script[prefs.conversationLang];
+  const stepsRef = React.useRef(steps);
+  stepsRef.current = steps;
+  const words = copy[prefs.uiLang] ?? copy.en;
 
-  React.useEffect(() => {
-    if (life !== "running") return;
-    const id = window.setTimeout(() => {
-      const step = steps[stepRef.current % steps.length];
-      if (!step) return;
-      stepRef.current += 1;
-      setTurns((prev) => [...prev, makeTurn(step.speaker, step.text)]);
-      if (step.candidates) {
-        setStreaming(true);
-        window.setTimeout(() => {
-          setStreaming(false);
-          setRounds((prev) => [
-            { id: uid(), prompt: step.text, candidates: step.candidates! },
-            ...prev,
-          ]);
-        }, 900);
-      }
-    }, 2600);
-    return () => window.clearTimeout(id);
-  }, [life, turns.length, steps]);
+  const handleFinal = React.useCallback((text: string) => {
+    setTurns((prev) => [...prev, makeTurn("other", text)]);
+    const withCandidates = stepsRef.current.filter((step) => step.candidates);
+    const step = withCandidates[stepRef.current % Math.max(1, withCandidates.length)];
+    stepRef.current += 1;
+    if (step?.candidates) {
+      setStreaming(true);
+      window.setTimeout(() => {
+        setStreaming(false);
+        setRounds((prev) => [{ id: uid(), prompt: text, candidates: step.candidates! }, ...prev]);
+      }, 700);
+    }
+  }, []);
+
+  const handleError = React.useCallback(
+    (message: string) => {
+      setError(message === "microphone" ? words.micDenied : `${words.failed}${message}`);
+    },
+    [words],
+  );
+
+  const transcriber = useTranscriber({
+    language: prefs.conversationLang,
+    onInterim: setInterim,
+    onFinal: handleFinal,
+    onError: handleError,
+  });
 
   React.useEffect(() => {
     const el = scrollRef.current?.querySelector("[data-radix-scroll-area-viewport]");
     if (el) el.scrollTop = el.scrollHeight;
-  }, [turns.length, life]);
+  }, [turns.length, life, interim]);
 
-  const startSession = () => {
+  const startSession = async () => {
     stepRef.current = 0;
     setTurns([]);
     setRounds([]);
+    setInterim("");
+    setError("");
     setStartedAt(Date.now());
     setLife("preparing");
-    window.setTimeout(() => setLife("running"), 1100);
+    const ok = await transcriber.start();
+    setLife(ok ? "running" : "idle");
+  };
+
+  const togglePause = () => {
+    const next = life === "paused" ? "running" : "paused";
+    transcriber.setPaused(next === "paused");
+    setLife(next);
   };
 
   const finishSession = () => {
+    transcriber.stop();
     if (turns.length > 0) {
       addSession({
         id: uid(),
@@ -107,8 +129,10 @@ export function SessionWorkbench() {
     }
     setLife("stopped");
     setStreaming(false);
+    setInterim("");
     setConfirmStop(false);
   };
+
 
   const active = life === "running" || life === "paused" || life === "preparing";
   const statusLabel =
