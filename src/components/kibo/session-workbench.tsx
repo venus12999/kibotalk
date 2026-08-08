@@ -315,7 +315,7 @@ export function SessionWorkbench() {
                       key={who}
                       className={cn("flex", who === "user" ? "justify-end" : "justify-start")}
                     >
-                      <div className="max-w-[85%] rounded-2xl border border-dashed border-primary/60 bg-[var(--glass-quiet)] px-4 py-2.5 backdrop-blur-md">
+                      <div className="bubble-interim max-w-[85%] px-4 py-2.5">
                         <p className="text-[11px] font-semibold text-muted-foreground">
                           {who === "user" ? t("me") : t("other")} · {words.live}
                         </p>
