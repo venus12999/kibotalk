@@ -337,7 +337,7 @@ export function SessionWorkbench() {
           ) : null}
 
           {transcriber.recording ? (
-            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--glass-quiet)] backdrop-blur-sm">
+            <div className="glass-fill mt-3 h-1.5 overflow-hidden rounded-full">
               <div
                 className="gradient-primary h-full rounded-full transition-[width] duration-100"
                 style={{ width: `${Math.round(transcriber.level * 100)}%` }}
