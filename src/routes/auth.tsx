@@ -6,6 +6,7 @@ import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AppBackground } from "@/components/kibo/app-background";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -88,7 +89,8 @@ function AuthPage() {
   };
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-background p-4">
+    <main className="flex min-h-dvh items-center justify-center p-4">
+      <AppBackground />
       <div className="paper-sheet w-full max-w-sm p-6 sm:p-8">
         <div className="flex items-center gap-3">
           <span className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
