@@ -17,7 +17,9 @@ import { useKibo, langLabel, levelLabel } from "@/lib/kibo/store";
 import { makeTurn } from "@/lib/kibo/mock";
 import type { Lifecycle, Round, Turn } from "@/lib/kibo/types";
 import { useTranscriber } from "@/lib/kibo/use-transcriber";
-import { suggestReplies, summarizeSession } from "@/lib/kibo/ai.functions";
+import { summarizeSession } from "@/lib/kibo/ai.functions";
+import { streamSuggestions } from "@/lib/kibo/suggest-stream";
+
 import { SuggestionStage } from "./suggestion-stage";
 import { SettingsSheet } from "./settings-sheet";
 import { HistorySheet } from "./history-sheet";
