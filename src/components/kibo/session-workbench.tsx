@@ -104,9 +104,13 @@ export function SessionWorkbench() {
         },
         (candidates) => {
           if (req !== reqRef.current) return;
-          setRounds((prev) =>
-            prev.map((r) => (r.id === roundId ? { ...r, candidates } : r)),
-          );
+          setRounds((prev) => {
+            // The streaming round is always the head; patch it in place.
+            if (prev[0]?.id !== roundId) return prev;
+            const next = prev.slice();
+            next[0] = { ...prev[0], candidates };
+            return next;
+          });
         },
       )
         .then((candidates) => {
