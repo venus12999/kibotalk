@@ -20,7 +20,7 @@ import { useTranscriber } from "@/lib/kibo/use-transcriber";
 import { summarizeSession } from "@/lib/kibo/ai.functions";
 import { streamSuggestions } from "@/lib/kibo/suggest-stream";
 
-import { SuggestionStage } from "./suggestion-stage";
+import { MemoSuggestionStage as SuggestionStage } from "./suggestion-stage";
 import { SettingsSheet } from "./settings-sheet";
 import { HistorySheet } from "./history-sheet";
 import { UiLanguageMenu } from "./ui-language-menu";
@@ -104,9 +104,13 @@ export function SessionWorkbench() {
         },
         (candidates) => {
           if (req !== reqRef.current) return;
-          setRounds((prev) =>
-            prev.map((r) => (r.id === roundId ? { ...r, candidates } : r)),
-          );
+          setRounds((prev) => {
+            // The streaming round is always the head; patch it in place.
+            if (prev[0]?.id !== roundId) return prev;
+            const next = prev.slice();
+            next[0] = { ...prev[0], candidates };
+            return next;
+          });
         },
       )
         .then((candidates) => {
