@@ -37,7 +37,7 @@ export async function streamSuggestions(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
-    signal,
+    signal: signal ?? null,
   });
 
   if (!res.ok || !res.body) {
