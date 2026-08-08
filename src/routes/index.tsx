@@ -1,24 +1,64 @@
+import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { KiboProvider, useKibo } from "@/lib/kibo/store";
+import { Onboarding } from "@/components/kibo/onboarding";
+import { Voiceprint } from "@/components/kibo/voiceprint";
+import { SessionWorkbench } from "@/components/kibo/session-workbench";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "KiboTalk — Real-time conversation coach" },
+      {
+        name: "description",
+        content:
+          "KiboTalk listens to your conversation, transcribes it live, and suggests natural replies in Japanese, English, or Chinese.",
+      },
+      { property: "og:title", content: "KiboTalk — Real-time conversation coach" },
+      {
+        property: "og:description",
+        content:
+          "Live transcription and AI reply suggestions for Japanese, English, and Chinese conversations.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: Page,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+type Screen = "onboarding" | "voiceprint" | "session";
+
+function App() {
+  const { prefs, hydrated } = useKibo();
+  const [screen, setScreen] = React.useState<Screen | null>(null);
+
+  React.useEffect(() => {
+    if (!hydrated || screen) return;
+    setScreen(!prefs.onboarded ? "onboarding" : !prefs.voiceprint ? "voiceprint" : "session");
+  }, [hydrated, prefs.onboarded, prefs.voiceprint, screen]);
+
+  if (!hydrated || !screen) {
+    return <div className="min-h-dvh bg-background" />;
+  }
+
+  if (screen === "session") return <SessionWorkbench />;
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <main className="flex min-h-dvh items-center justify-center bg-background p-4">
+      {screen === "onboarding" ? (
+        <Onboarding onContinue={() => setScreen("voiceprint")} />
+      ) : (
+        <Voiceprint onDone={() => setScreen("session")} />
+      )}
+    </main>
+  );
+}
+
+function Page() {
+  return (
+    <KiboProvider>
+      <App />
+    </KiboProvider>
   );
 }

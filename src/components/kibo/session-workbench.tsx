@@ -1,0 +1,245 @@
+import * as React from "react";
+import { History, Mic, Pause, Play, Settings, Square } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
+import { useKibo, langLabel, levelLabel } from "@/lib/kibo/store";
+import { script, summaryText, makeTurn } from "@/lib/kibo/mock";
+import type { Lifecycle, Round, Turn } from "@/lib/kibo/types";
+import { SuggestionStage } from "./suggestion-stage";
+import { SettingsSheet } from "./settings-sheet";
+import { HistorySheet } from "./history-sheet";
+import { UiLanguageMenu } from "./ui-language-menu";
+
+const uid = () => Math.random().toString(36).slice(2, 10);
+
+export function SessionWorkbench() {
+  const { prefs, t, addSession } = useKibo();
+  const [life, setLife] = React.useState<Lifecycle>("idle");
+  const [turns, setTurns] = React.useState<Turn[]>([]);
+  const [rounds, setRounds] = React.useState<Round[]>([]);
+  const [streaming, setStreaming] = React.useState(false);
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [historyOpen, setHistoryOpen] = React.useState(false);
+  const [confirmStop, setConfirmStop] = React.useState(false);
+  const [startedAt, setStartedAt] = React.useState(0);
+
+  const stepRef = React.useRef(0);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  const steps = script[prefs.conversationLang];
+
+  React.useEffect(() => {
+    if (life !== "running") return;
+    const id = window.setTimeout(() => {
+      const step = steps[stepRef.current % steps.length];
+      if (!step) return;
+      stepRef.current += 1;
+      setTurns((prev) => [...prev, makeTurn(step.speaker, step.text)]);
+      if (step.candidates) {
+        setStreaming(true);
+        window.setTimeout(() => {
+          setStreaming(false);
+          setRounds((prev) => [
+            { id: uid(), prompt: step.text, candidates: step.candidates! },
+            ...prev,
+          ]);
+        }, 900);
+      }
+    }, 2600);
+    return () => window.clearTimeout(id);
+  }, [life, turns.length, steps]);
+
+  React.useEffect(() => {
+    const el = scrollRef.current?.querySelector("[data-radix-scroll-area-viewport]");
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [turns.length, life]);
+
+  const startSession = () => {
+    stepRef.current = 0;
+    setTurns([]);
+    setRounds([]);
+    setStartedAt(Date.now());
+    setLife("preparing");
+    window.setTimeout(() => setLife("running"), 1100);
+  };
+
+  const finishSession = () => {
+    if (turns.length > 0) {
+      addSession({
+        id: uid(),
+        startedAt: startedAt || Date.now(),
+        endedAt: Date.now(),
+        conversationLang: prefs.conversationLang,
+        level: prefs.level,
+        turns,
+        summary: summaryText[prefs.conversationLang],
+      });
+    }
+    setLife("stopped");
+    setStreaming(false);
+    setConfirmStop(false);
+  };
+
+  const active = life === "running" || life === "paused" || life === "preparing";
+  const statusLabel =
+    life === "running"
+      ? t("listening")
+      : life === "paused"
+        ? t("paused")
+        : life === "preparing"
+          ? t("preparing")
+          : life === "stopped"
+            ? t("stopped")
+            : t("currentSession");
+
+  return (
+    <div className="mx-auto flex h-dvh max-w-6xl flex-col gap-4 p-4 sm:p-6">
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
+            <Mic className="size-4" />
+          </span>
+          <div>
+            <h1 className="text-base leading-tight font-bold tracking-tight">{t("appName")}</h1>
+            <p className="text-xs text-muted-foreground">
+              {langLabel(prefs.conversationLang, prefs.uiLang)} ·{" "}
+              {levelLabel(prefs.level, prefs.uiLang)} · {t(nodeKey(prefs.defaultNode))}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <UiLanguageMenu />
+          <Button variant="soft" size="icon" aria-label={t("history")} onClick={() => setHistoryOpen(true)}>
+            <History className="size-4" />
+          </Button>
+          <Button
+            variant="soft"
+            size="icon"
+            aria-label={t("settings")}
+            onClick={() => setSettingsOpen(true)}
+          >
+            <Settings className="size-4" />
+          </Button>
+        </div>
+      </header>
+
+      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[1.15fr_1fr]">
+        <section className="glass-transcript flex min-h-0 flex-col p-4 sm:p-5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold">{t("conversation")}</h2>
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold",
+                life === "running"
+                  ? "bg-primary/15 text-foreground"
+                  : "bg-muted text-muted-foreground",
+              )}
+            >
+              {life === "running" ? (
+                <span className="size-1.5 animate-pulse rounded-full bg-primary" />
+              ) : null}
+              {statusLabel}
+            </span>
+          </div>
+
+          <ScrollArea ref={scrollRef} className="mt-3 min-h-0 flex-1">
+            {turns.length === 0 ? (
+              <p className="py-16 text-center text-sm text-muted-foreground">{t("noTranscript")}</p>
+            ) : (
+              <ul className="space-y-3 pr-3">
+                {turns.map((turn) => (
+                  <li
+                    key={turn.id}
+                    className={cn("flex", turn.speaker === "user" ? "justify-end" : "justify-start")}
+                  >
+                    <div
+                      className={cn(
+                        "max-w-[85%] rounded-2xl px-4 py-2.5",
+                        turn.speaker === "user"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-card text-card-foreground shadow-sm",
+                      )}
+                    >
+                      <p className="text-[11px] font-semibold opacity-70">
+                        {turn.speaker === "user" ? t("me") : t("other")}
+                      </p>
+                      <p className="mt-0.5 text-sm leading-relaxed">{turn.text}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </ScrollArea>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {!active ? (
+              <Button className="flex-1" onClick={startSession}>
+                <Play className="size-4" />
+                {t("start")}
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="soft"
+                  className="flex-1"
+                  disabled={life === "preparing"}
+                  onClick={() => setLife(life === "paused" ? "running" : "paused")}
+                >
+                  {life === "paused" ? <Play className="size-4" /> : <Pause className="size-4" />}
+                  {life === "paused" ? t("resume") : t("pause")}
+                </Button>
+                <Button variant="destructive" className="flex-1" onClick={() => setConfirmStop(true)}>
+                  <Square className="size-4" />
+                  {t("stop")}
+                </Button>
+              </>
+            )}
+          </div>
+        </section>
+
+        <section className="paper-sheet flex min-h-0 flex-col p-4 sm:p-5">
+          <h2 className="text-sm font-bold">{t("suggestions")}</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t("aiSuggestions")}</p>
+          <SuggestionStage
+            className="mt-3 min-h-0 flex-1"
+            rounds={rounds}
+            streaming={streaming}
+            emptyHint={t("emptySuggestions")}
+            generatingLabel={t("generatingSuggestions")}
+            previousRoundLabel={t("previousRound")}
+          />
+        </section>
+      </div>
+
+      <AlertDialog open={confirmStop} onOpenChange={setConfirmStop}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("stopTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("stopDescription")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={finishSession}>{t("stopAndSave")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <SettingsSheet open={settingsOpen} onOpenChange={setSettingsOpen} locked={active} />
+      <HistorySheet open={historyOpen} onOpenChange={setHistoryOpen} />
+    </div>
+  );
+}
+
+function nodeKey(node: "local" | "japan" | "relay") {
+  return node === "local" ? "localNode" : node === "japan" ? "japanNode" : "relayNode";
+}
