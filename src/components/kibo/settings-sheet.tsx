@@ -1,10 +1,10 @@
-import { Trash2 } from "lucide-react";
+import * as React from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { PillGroup } from "./pill-group";
 import { useKibo, langLabel, levelLabel } from "@/lib/kibo/store";
-import type { AudioSource, ConvLang, Level, NodeId, Theme, UiLang } from "@/lib/kibo/types";
+import type { AudioSource, ConvLang, Level, Theme, UiLang } from "@/lib/kibo/types";
 
 function Row({
   title,
@@ -44,6 +44,41 @@ export function SettingsSheet({
   const { prefs, setPrefs, t, clearHistory, reset } = useKibo();
   const ui = prefs.uiLang;
 
+  const [mics, setMics] = React.useState<MediaDeviceInfo[]>([]);
+  const [micPermission, setMicPermission] = React.useState<PermissionState | "unknown">("unknown");
+
+  const refreshDevices = React.useCallback(async () => {
+    const all = await navigator.mediaDevices?.enumerateDevices().catch(() => []);
+    setMics((all ?? []).filter((d) => d.kind === "audioinput"));
+  }, []);
+
+  React.useEffect(() => {
+    if (!open) return;
+    void refreshDevices();
+    let status: PermissionStatus | null = null;
+    const onChange = () => setMicPermission(status?.state ?? "unknown");
+    navigator.permissions
+      ?.query({ name: "microphone" as PermissionName })
+      .then((s) => {
+        status = s;
+        onChange();
+        s.addEventListener("change", onChange);
+      })
+      .catch(() => setMicPermission("unknown"));
+    return () => status?.removeEventListener("change", onChange);
+  }, [open, refreshDevices]);
+
+  const requestMic = React.useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((tr) => tr.stop());
+      setMicPermission("granted");
+      await refreshDevices();
+    } catch {
+      setMicPermission("denied");
+    }
+  }, [refreshDevices]);
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-lg">
@@ -77,12 +112,6 @@ export function SettingsSheet({
                 { value: "light", label: t("light") },
                 { value: "dark", label: t("dark") },
               ]}
-            />
-          </Row>
-          <Row title={t("launchAtLogin")}>
-            <Switch
-              checked={prefs.launchAtLogin}
-              onCheckedChange={(v) => setPrefs({ launchAtLogin: v })}
             />
           </Row>
 
@@ -134,55 +163,33 @@ export function SettingsSheet({
             />
           </Row>
           <Row title={t("microphoneDevice")}>
-            <span className="text-sm text-muted-foreground">{t("systemDefault")}</span>
-          </Row>
-          <Row title={t("defaultNetworkNode")} description={t("defaultNetworkNodeDescription")}>
-            <PillGroup<NodeId>
-              label=""
+            <select
+              className="h-9 min-w-48 rounded-md border border-border bg-background px-2 text-sm"
               disabled={locked}
-              value={prefs.defaultNode}
-              onChange={(v) => setPrefs({ defaultNode: v })}
-              options={[
-                { value: "local", label: t("localNode") },
-                { value: "japan", label: t("japanNode") },
-                { value: "relay", label: t("relayNode") },
-              ]}
-            />
-          </Row>
-
-          <p className="pt-6 text-xs font-bold tracking-wide text-muted-foreground uppercase">
-            {t("voiceprint")}
-          </p>
-          <Row title={t("voiceprint")}>
-            <span
-              className={
-                prefs.voiceprint
-                  ? "rounded-full bg-accent px-3 py-1 text-xs font-semibold text-accent-foreground"
-                  : "rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground"
-              }
+              value={prefs.micDeviceId}
+              onChange={(e) => setPrefs({ micDeviceId: e.target.value })}
             >
-              {prefs.voiceprint ? t("voiceprintReady") : t("voiceprintMissing")}
-            </span>
+              <option value="">{t("systemDefault")}</option>
+              {mics.map((d, i) => (
+                <option key={d.deviceId} value={d.deviceId}>
+                  {d.label || `${t("microphone")} ${i + 1}`}
+                </option>
+              ))}
+            </select>
           </Row>
-          <Row title={t("deleteVoiceprint")} description={t("deleteVoiceprintDescription")} danger>
-            <Button
-              variant="soft"
-              size="sm"
-              disabled={locked || !prefs.voiceprint}
-              onClick={() => setPrefs({ voiceprint: false })}
-            >
-              <Trash2 className="size-3.5" />
-              {t("deleteVoiceprint")}
-            </Button>
-          </Row>
-
           <p className="pt-6 text-xs font-bold tracking-wide text-muted-foreground uppercase">
             {t("permissions")}
           </p>
           <Row title={t("microphonePermission")}>
-            <span className="text-sm font-semibold text-muted-foreground">{t("granted")}</span>
+            {micPermission === "granted" ? (
+              <span className="text-sm font-semibold text-muted-foreground">{t("granted")}</span>
+            ) : (
+              <Button variant="soft" size="sm" onClick={() => void requestMic()}>
+                {t("requestPermission")}
+              </Button>
+            )}
           </Row>
-          <Row title={t("screenPermission")}>
+          <Row title={t("screenPermission")} description={t("headphonesHint")}>
             <span className="text-sm font-semibold text-muted-foreground">
               {t("needsPermission")}
             </span>
