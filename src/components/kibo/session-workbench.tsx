@@ -20,7 +20,7 @@ import { useTranscriber } from "@/lib/kibo/use-transcriber";
 import { summarizeSession } from "@/lib/kibo/ai.functions";
 import { streamSuggestions } from "@/lib/kibo/suggest-stream";
 
-import { SuggestionStage } from "./suggestion-stage";
+import { MemoSuggestionStage as SuggestionStage } from "./suggestion-stage";
 import { SettingsSheet } from "./settings-sheet";
 import { HistorySheet } from "./history-sheet";
 import { UiLanguageMenu } from "./ui-language-menu";
