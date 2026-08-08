@@ -16,12 +16,32 @@ import { cn } from "@/lib/utils";
 import { useKibo, langLabel, levelLabel } from "@/lib/kibo/store";
 import { script, summaryText, makeTurn } from "@/lib/kibo/mock";
 import type { Lifecycle, Round, Turn } from "@/lib/kibo/types";
+import { useTranscriber } from "@/lib/kibo/use-transcriber";
 import { SuggestionStage } from "./suggestion-stage";
 import { SettingsSheet } from "./settings-sheet";
 import { HistorySheet } from "./history-sheet";
 import { UiLanguageMenu } from "./ui-language-menu";
 
 const uid = () => Math.random().toString(36).slice(2, 10);
+
+const copy = {
+  zh: {
+    micDenied: "无法访问麦克风，请在浏览器中允许麦克风权限后重试。",
+    failed: "语音转写失败：",
+    live: "正在听写…",
+  },
+  ja: {
+    micDenied: "マイクにアクセスできません。ブラウザでマイクを許可してからもう一度お試しください。",
+    failed: "文字起こしに失敗しました：",
+    live: "書き起こし中…",
+  },
+  en: {
+    micDenied: "Microphone access failed. Allow microphone permission and try again.",
+    failed: "Transcription failed: ",
+    live: "Transcribing…",
+  },
+} as const;
+
 
 export function SessionWorkbench() {
   const { prefs, t, addSession } = useKibo();
@@ -33,47 +53,69 @@ export function SessionWorkbench() {
   const [historyOpen, setHistoryOpen] = React.useState(false);
   const [confirmStop, setConfirmStop] = React.useState(false);
   const [startedAt, setStartedAt] = React.useState(0);
+  const [interim, setInterim] = React.useState("");
+  const [error, setError] = React.useState("");
 
   const stepRef = React.useRef(0);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const steps = script[prefs.conversationLang];
+  const stepsRef = React.useRef(steps);
+  stepsRef.current = steps;
+  const words = copy[prefs.uiLang] ?? copy.en;
 
-  React.useEffect(() => {
-    if (life !== "running") return;
-    const id = window.setTimeout(() => {
-      const step = steps[stepRef.current % steps.length];
-      if (!step) return;
-      stepRef.current += 1;
-      setTurns((prev) => [...prev, makeTurn(step.speaker, step.text)]);
-      if (step.candidates) {
-        setStreaming(true);
-        window.setTimeout(() => {
-          setStreaming(false);
-          setRounds((prev) => [
-            { id: uid(), prompt: step.text, candidates: step.candidates! },
-            ...prev,
-          ]);
-        }, 900);
-      }
-    }, 2600);
-    return () => window.clearTimeout(id);
-  }, [life, turns.length, steps]);
+  const handleFinal = React.useCallback((text: string) => {
+    setTurns((prev) => [...prev, makeTurn("other", text)]);
+    const withCandidates = stepsRef.current.filter((step) => step.candidates);
+    const step = withCandidates[stepRef.current % Math.max(1, withCandidates.length)];
+    stepRef.current += 1;
+    if (step?.candidates) {
+      setStreaming(true);
+      window.setTimeout(() => {
+        setStreaming(false);
+        setRounds((prev) => [{ id: uid(), prompt: text, candidates: step.candidates! }, ...prev]);
+      }, 700);
+    }
+  }, []);
+
+  const handleError = React.useCallback(
+    (message: string) => {
+      setError(message === "microphone" ? words.micDenied : `${words.failed}${message}`);
+    },
+    [words],
+  );
+
+  const transcriber = useTranscriber({
+    language: prefs.conversationLang,
+    onInterim: setInterim,
+    onFinal: handleFinal,
+    onError: handleError,
+  });
 
   React.useEffect(() => {
     const el = scrollRef.current?.querySelector("[data-radix-scroll-area-viewport]");
     if (el) el.scrollTop = el.scrollHeight;
-  }, [turns.length, life]);
+  }, [turns.length, life, interim]);
 
-  const startSession = () => {
+  const startSession = async () => {
     stepRef.current = 0;
     setTurns([]);
     setRounds([]);
+    setInterim("");
+    setError("");
     setStartedAt(Date.now());
     setLife("preparing");
-    window.setTimeout(() => setLife("running"), 1100);
+    const ok = await transcriber.start();
+    setLife(ok ? "running" : "idle");
+  };
+
+  const togglePause = () => {
+    const next = life === "paused" ? "running" : "paused";
+    transcriber.setPaused(next === "paused");
+    setLife(next);
   };
 
   const finishSession = () => {
+    transcriber.stop();
     if (turns.length > 0) {
       addSession({
         id: uid(),
@@ -87,8 +129,10 @@ export function SessionWorkbench() {
     }
     setLife("stopped");
     setStreaming(false);
+    setInterim("");
     setConfirmStop(false);
   };
+
 
   const active = life === "running" || life === "paused" || life === "preparing";
   const statusLabel =
@@ -153,7 +197,7 @@ export function SessionWorkbench() {
           </div>
 
           <ScrollArea ref={scrollRef} className="mt-3 min-h-0 flex-1">
-            {turns.length === 0 ? (
+            {turns.length === 0 && !interim ? (
               <p className="py-16 text-center text-sm text-muted-foreground">{t("noTranscript")}</p>
             ) : (
               <ul className="space-y-3 pr-3">
@@ -177,13 +221,38 @@ export function SessionWorkbench() {
                     </div>
                   </li>
                 ))}
+                {interim ? (
+                  <li className="flex justify-start">
+                    <div className="max-w-[85%] rounded-2xl border border-dashed border-primary/50 bg-card/70 px-4 py-2.5">
+                      <p className="text-[11px] font-semibold text-muted-foreground">{words.live}</p>
+                      <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">
+                        {interim}
+                      </p>
+                    </div>
+                  </li>
+                ) : null}
               </ul>
             )}
           </ScrollArea>
 
+          {error ? (
+            <p className="mt-3 rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              {error}
+            </p>
+          ) : null}
+
+          {transcriber.recording ? (
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary transition-[width] duration-100"
+                style={{ width: `${Math.round(transcriber.level * 100)}%` }}
+              />
+            </div>
+          ) : null}
+
           <div className="mt-4 flex flex-wrap gap-2">
             {!active ? (
-              <Button className="flex-1" onClick={startSession}>
+              <Button className="flex-1" onClick={() => void startSession()}>
                 <Play className="size-4" />
                 {t("start")}
               </Button>
@@ -193,7 +262,7 @@ export function SessionWorkbench() {
                   variant="soft"
                   className="flex-1"
                   disabled={life === "preparing"}
-                  onClick={() => setLife(life === "paused" ? "running" : "paused")}
+                  onClick={togglePause}
                 >
                   {life === "paused" ? <Play className="size-4" /> : <Pause className="size-4" />}
                   {life === "paused" ? t("resume") : t("pause")}
@@ -205,6 +274,7 @@ export function SessionWorkbench() {
               </>
             )}
           </div>
+
         </section>
 
         <section className="paper-sheet flex min-h-0 flex-col p-4 sm:p-5">
