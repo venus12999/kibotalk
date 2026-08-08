@@ -16,12 +16,32 @@ import { cn } from "@/lib/utils";
 import { useKibo, langLabel, levelLabel } from "@/lib/kibo/store";
 import { script, summaryText, makeTurn } from "@/lib/kibo/mock";
 import type { Lifecycle, Round, Turn } from "@/lib/kibo/types";
+import { useTranscriber } from "@/lib/kibo/use-transcriber";
 import { SuggestionStage } from "./suggestion-stage";
 import { SettingsSheet } from "./settings-sheet";
 import { HistorySheet } from "./history-sheet";
 import { UiLanguageMenu } from "./ui-language-menu";
 
 const uid = () => Math.random().toString(36).slice(2, 10);
+
+const copy = {
+  zh: {
+    micDenied: "无法访问麦克风，请在浏览器中允许麦克风权限后重试。",
+    failed: "语音转写失败：",
+    live: "正在听写…",
+  },
+  ja: {
+    micDenied: "マイクにアクセスできません。ブラウザでマイクを許可してからもう一度お試しください。",
+    failed: "文字起こしに失敗しました：",
+    live: "書き起こし中…",
+  },
+  en: {
+    micDenied: "Microphone access failed. Allow microphone permission and try again.",
+    failed: "Transcription failed: ",
+    live: "Transcribing…",
+  },
+} as const;
+
 
 export function SessionWorkbench() {
   const { prefs, t, addSession } = useKibo();
