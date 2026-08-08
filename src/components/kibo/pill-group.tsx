@@ -21,7 +21,7 @@ export function PillGroup<T extends string>({
       <div
         role="radiogroup"
         aria-label={label}
-        className="flex w-full gap-1.5 rounded-full bg-muted p-1"
+        className="glass-quiet flex w-full gap-1.5 rounded-full p-1"
       >
         {options.map((opt) => {
           const active = opt.value === value;
@@ -37,7 +37,7 @@ export function PillGroup<T extends string>({
                 "flex-1 cursor-pointer rounded-full px-3 py-2 text-sm font-semibold transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 active
-                  ? "bg-primary text-primary-foreground shadow-sm"
+                  ? "gradient-primary text-primary-foreground shadow-[0_8px_20px_-14px_oklch(60%_0.15_85_/_0.95)]"
                   : "text-muted-foreground hover:text-foreground",
                 disabled && "cursor-not-allowed opacity-60",
               )}

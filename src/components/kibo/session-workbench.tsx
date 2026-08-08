@@ -234,9 +234,9 @@ export function SessionWorkbench() {
 
   return (
     <div className="mx-auto flex h-dvh max-w-6xl flex-col gap-4 p-4 sm:p-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
+      <header className="glass-bar flex flex-wrap items-center justify-between gap-3 px-4 py-3">
         <div className="flex items-center gap-3">
-          <span className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
+          <span className="gradient-primary flex size-9 items-center justify-center rounded-full text-primary-foreground shadow-[0_8px_20px_-10px_oklch(60%_0.15_85_/_0.9)]">
             <Mic className="size-4" />
           </span>
           <div>
@@ -271,10 +271,10 @@ export function SessionWorkbench() {
             <h2 className="text-sm font-bold">{t("conversation")}</h2>
             <span
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold",
+                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold backdrop-blur-md",
                 life === "running"
-                  ? "bg-primary/15 text-foreground"
-                  : "bg-muted text-muted-foreground",
+                  ? "gradient-primary text-primary-foreground"
+                  : "glass-quiet text-muted-foreground",
               )}
             >
               {life === "running" ? (
@@ -296,10 +296,10 @@ export function SessionWorkbench() {
                   >
                     <div
                       className={cn(
-                        "max-w-[85%] rounded-2xl px-4 py-2.5",
+                        "max-w-[85%] rounded-2xl px-4 py-2.5 backdrop-blur-md",
                         turn.speaker === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-card text-card-foreground shadow-sm",
+                          ? "gradient-primary text-primary-foreground shadow-[0_12px_28px_-20px_oklch(60%_0.15_85_/_0.95)]"
+                          : "border border-[var(--glass-border)] bg-[var(--glass-strong)] text-card-foreground shadow-sm",
                       )}
                     >
                       <p className="text-[11px] font-semibold opacity-70">
@@ -315,7 +315,7 @@ export function SessionWorkbench() {
                       key={who}
                       className={cn("flex", who === "user" ? "justify-end" : "justify-start")}
                     >
-                      <div className="max-w-[85%] rounded-2xl border border-dashed border-primary/50 bg-card/70 px-4 py-2.5">
+                      <div className="max-w-[85%] rounded-2xl border border-dashed border-primary/60 bg-[var(--glass-quiet)] px-4 py-2.5 backdrop-blur-md">
                         <p className="text-[11px] font-semibold text-muted-foreground">
                           {who === "user" ? t("me") : t("other")} · {words.live}
                         </p>
@@ -337,9 +337,9 @@ export function SessionWorkbench() {
           ) : null}
 
           {transcriber.recording ? (
-            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--glass-quiet)] backdrop-blur-sm">
               <div
-                className="h-full rounded-full bg-primary transition-[width] duration-100"
+                className="gradient-primary h-full rounded-full transition-[width] duration-100"
                 style={{ width: `${Math.round(transcriber.level * 100)}%` }}
               />
             </div>
