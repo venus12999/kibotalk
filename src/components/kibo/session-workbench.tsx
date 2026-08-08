@@ -315,7 +315,7 @@ export function SessionWorkbench() {
                       key={who}
                       className={cn("flex", who === "user" ? "justify-end" : "justify-start")}
                     >
-                      <div className="max-w-[85%] rounded-2xl border border-dashed border-primary/50 bg-card/70 px-4 py-2.5">
+                      <div className="max-w-[85%] rounded-2xl border border-dashed border-primary/60 bg-[var(--glass-quiet)] px-4 py-2.5 backdrop-blur-md">
                         <p className="text-[11px] font-semibold text-muted-foreground">
                           {who === "user" ? t("me") : t("other")} · {words.live}
                         </p>
@@ -337,9 +337,9 @@ export function SessionWorkbench() {
           ) : null}
 
           {transcriber.recording ? (
-            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--glass-quiet)] backdrop-blur-sm">
               <div
-                className="h-full rounded-full bg-primary transition-[width] duration-100"
+                className="gradient-primary h-full rounded-full transition-[width] duration-100"
                 style={{ width: `${Math.round(transcriber.level * 100)}%` }}
               />
             </div>
