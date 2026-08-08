@@ -236,7 +236,7 @@ export function SessionWorkbench() {
     <div className="mx-auto flex h-dvh max-w-6xl flex-col gap-4 p-4 sm:p-6">
       <header className="glass-bar flex flex-wrap items-center justify-between gap-3 px-4 py-3">
         <div className="flex items-center gap-3">
-          <span className="gradient-primary flex size-9 items-center justify-center rounded-full text-primary-foreground shadow-[0_8px_20px_-10px_oklch(60%_0.15_85_/_0.9)]">
+          <span className="gradient-primary glow-sm flex size-9 items-center justify-center rounded-full text-primary-foreground">
             <Mic className="size-4" />
           </span>
           <div>
@@ -296,10 +296,10 @@ export function SessionWorkbench() {
                   >
                     <div
                       className={cn(
-                        "max-w-[85%] rounded-2xl px-4 py-2.5 backdrop-blur-md",
+                        "max-w-[85%] px-4 py-2.5",
                         turn.speaker === "user"
-                          ? "gradient-primary text-primary-foreground shadow-[0_12px_28px_-20px_oklch(60%_0.15_85_/_0.95)]"
-                          : "border border-[var(--glass-border)] bg-[var(--glass-strong)] text-card-foreground shadow-sm",
+                          ? "bubble-self"
+                          : "bubble-other text-card-foreground",
                       )}
                     >
                       <p className="text-[11px] font-semibold opacity-70">
@@ -315,7 +315,7 @@ export function SessionWorkbench() {
                       key={who}
                       className={cn("flex", who === "user" ? "justify-end" : "justify-start")}
                     >
-                      <div className="max-w-[85%] rounded-2xl border border-dashed border-primary/60 bg-[var(--glass-quiet)] px-4 py-2.5 backdrop-blur-md">
+                      <div className="bubble-interim max-w-[85%] px-4 py-2.5">
                         <p className="text-[11px] font-semibold text-muted-foreground">
                           {who === "user" ? t("me") : t("other")} · {words.live}
                         </p>
@@ -337,7 +337,7 @@ export function SessionWorkbench() {
           ) : null}
 
           {transcriber.recording ? (
-            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--glass-quiet)] backdrop-blur-sm">
+            <div className="glass-fill mt-3 h-1.5 overflow-hidden rounded-full">
               <div
                 className="gradient-primary h-full rounded-full transition-[width] duration-100"
                 style={{ width: `${Math.round(transcriber.level * 100)}%` }}
