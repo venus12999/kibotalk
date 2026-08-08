@@ -197,7 +197,7 @@ export function SessionWorkbench() {
           </div>
 
           <ScrollArea ref={scrollRef} className="mt-3 min-h-0 flex-1">
-            {turns.length === 0 ? (
+            {turns.length === 0 && !interim ? (
               <p className="py-16 text-center text-sm text-muted-foreground">{t("noTranscript")}</p>
             ) : (
               <ul className="space-y-3 pr-3">
@@ -221,13 +221,38 @@ export function SessionWorkbench() {
                     </div>
                   </li>
                 ))}
+                {interim ? (
+                  <li className="flex justify-start">
+                    <div className="max-w-[85%] rounded-2xl border border-dashed border-primary/50 bg-card/70 px-4 py-2.5">
+                      <p className="text-[11px] font-semibold text-muted-foreground">{words.live}</p>
+                      <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">
+                        {interim}
+                      </p>
+                    </div>
+                  </li>
+                ) : null}
               </ul>
             )}
           </ScrollArea>
 
+          {error ? (
+            <p className="mt-3 rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              {error}
+            </p>
+          ) : null}
+
+          {transcriber.recording ? (
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary transition-[width] duration-100"
+                style={{ width: `${Math.round(transcriber.level * 100)}%` }}
+              />
+            </div>
+          ) : null}
+
           <div className="mt-4 flex flex-wrap gap-2">
             {!active ? (
-              <Button className="flex-1" onClick={startSession}>
+              <Button className="flex-1" onClick={() => void startSession()}>
                 <Play className="size-4" />
                 {t("start")}
               </Button>
@@ -237,7 +262,7 @@ export function SessionWorkbench() {
                   variant="soft"
                   className="flex-1"
                   disabled={life === "preparing"}
-                  onClick={() => setLife(life === "paused" ? "running" : "paused")}
+                  onClick={togglePause}
                 >
                   {life === "paused" ? <Play className="size-4" /> : <Pause className="size-4" />}
                   {life === "paused" ? t("resume") : t("pause")}
@@ -249,6 +274,7 @@ export function SessionWorkbench() {
               </>
             )}
           </div>
+
         </section>
 
         <section className="paper-sheet flex min-h-0 flex-col p-4 sm:p-5">
