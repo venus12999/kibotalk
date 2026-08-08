@@ -14,15 +14,18 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { useKibo, langLabel, levelLabel } from "@/lib/kibo/store";
-import { script, summaryText, makeTurn } from "@/lib/kibo/mock";
+import { makeTurn } from "@/lib/kibo/mock";
 import type { Lifecycle, Round, Turn } from "@/lib/kibo/types";
 import { useTranscriber } from "@/lib/kibo/use-transcriber";
+import { suggestReplies, summarizeSession } from "@/lib/kibo/ai.functions";
 import { SuggestionStage } from "./suggestion-stage";
 import { SettingsSheet } from "./settings-sheet";
 import { HistorySheet } from "./history-sheet";
 import { UiLanguageMenu } from "./ui-language-menu";
+import { AccountMenu } from "./account-menu";
 
 const uid = () => Math.random().toString(36).slice(2, 10);
+
 
 const copy = {
   zh: {
@@ -56,26 +59,43 @@ export function SessionWorkbench() {
   const [interim, setInterim] = React.useState("");
   const [error, setError] = React.useState("");
 
-  const stepRef = React.useRef(0);
   const scrollRef = React.useRef<HTMLDivElement>(null);
-  const steps = script[prefs.conversationLang];
-  const stepsRef = React.useRef(steps);
-  stepsRef.current = steps;
   const words = copy[prefs.uiLang] ?? copy.en;
 
+  const turnsRef = React.useRef<Turn[]>([]);
+  turnsRef.current = turns;
+  const prefsRef = React.useRef(prefs);
+  prefsRef.current = prefs;
+  const reqRef = React.useRef(0);
+
   const handleFinal = React.useCallback((text: string) => {
-    setTurns((prev) => [...prev, makeTurn("other", text)]);
-    const withCandidates = stepsRef.current.filter((step) => step.candidates);
-    const step = withCandidates[stepRef.current % Math.max(1, withCandidates.length)];
-    stepRef.current += 1;
-    if (step?.candidates) {
-      setStreaming(true);
-      window.setTimeout(() => {
+    const turn = makeTurn("other", text);
+    turnsRef.current = [...turnsRef.current, turn];
+    setTurns(turnsRef.current);
+
+    const req = ++reqRef.current;
+    setStreaming(true);
+    void suggestReplies({
+      data: {
+        turns: turnsRef.current.map((x) => ({ speaker: x.speaker, text: x.text })),
+        conversationLang: prefsRef.current.conversationLang,
+        uiLang: prefsRef.current.uiLang,
+        level: prefsRef.current.level,
+      },
+    })
+      .then((res) => {
+        if (req !== reqRef.current) return;
         setStreaming(false);
-        setRounds((prev) => [{ id: uid(), prompt: text, candidates: step.candidates! }, ...prev]);
-      }, 700);
-    }
-  }, []);
+        if (res.candidates.length > 0) {
+          setRounds((prev) => [{ id: uid(), prompt: text, candidates: res.candidates }, ...prev]);
+        }
+      })
+      .catch((err: unknown) => {
+        if (req !== reqRef.current) return;
+        setStreaming(false);
+        setError(`${words.failed}${err instanceof Error ? err.message : String(err)}`);
+      });
+  }, [words]);
 
   const handleError = React.useCallback(
     (message: string) => {
@@ -97,7 +117,8 @@ export function SessionWorkbench() {
   }, [turns.length, life, interim]);
 
   const startSession = async () => {
-    stepRef.current = 0;
+    reqRef.current += 1;
+    turnsRef.current = [];
     setTurns([]);
     setRounds([]);
     setInterim("");
@@ -116,22 +137,46 @@ export function SessionWorkbench() {
 
   const finishSession = () => {
     transcriber.stop();
-    if (turns.length > 0) {
-      addSession({
-        id: uid(),
-        startedAt: startedAt || Date.now(),
-        endedAt: Date.now(),
+    reqRef.current += 1;
+    const saved = turnsRef.current;
+    const startedTs = startedAt || Date.now();
+    if (saved.length > 0) {
+      const payload = {
+        turns: saved.map((x) => ({ speaker: x.speaker, text: x.text })),
         conversationLang: prefs.conversationLang,
+        uiLang: prefs.uiLang,
         level: prefs.level,
-        turns,
-        summary: summaryText[prefs.conversationLang],
-      });
+      };
+      void summarizeSession({ data: payload })
+        .then((res) => {
+          addSession({
+            id: uid(),
+            startedAt: startedTs,
+            endedAt: Date.now(),
+            conversationLang: prefs.conversationLang,
+            level: prefs.level,
+            turns: saved,
+            summary: res.summary,
+          });
+        })
+        .catch(() => {
+          addSession({
+            id: uid(),
+            startedAt: startedTs,
+            endedAt: Date.now(),
+            conversationLang: prefs.conversationLang,
+            level: prefs.level,
+            turns: saved,
+            summary: "",
+          });
+        });
     }
     setLife("stopped");
     setStreaming(false);
     setInterim("");
     setConfirmStop(false);
   };
+
 
 
   const active = life === "running" || life === "paused" || life === "preparing";
@@ -163,6 +208,8 @@ export function SessionWorkbench() {
         </div>
         <div className="flex items-center gap-2">
           <UiLanguageMenu />
+          <AccountMenu />
+
           <Button variant="soft" size="icon" aria-label={t("history")} onClick={() => setHistoryOpen(true)}>
             <History className="size-4" />
           </Button>
