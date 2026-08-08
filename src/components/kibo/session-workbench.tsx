@@ -68,34 +68,51 @@ export function SessionWorkbench() {
   prefsRef.current = prefs;
   const reqRef = React.useRef(0);
 
-  const handleFinal = React.useCallback((text: string) => {
-    const turn = makeTurn("other", text);
-    turnsRef.current = [...turnsRef.current, turn];
-    setTurns(turnsRef.current);
+  const handleFinal = React.useCallback(
+    (text: string) => {
+      const turn = makeTurn("other", text);
+      turnsRef.current = [...turnsRef.current, turn];
+      setTurns(turnsRef.current);
 
-    const req = ++reqRef.current;
-    setStreaming(true);
-    void suggestReplies({
-      data: {
-        turns: turnsRef.current.map((x) => ({ speaker: x.speaker, text: x.text })),
-        conversationLang: prefsRef.current.conversationLang,
-        uiLang: prefsRef.current.uiLang,
-        level: prefsRef.current.level,
-      },
-    })
-      .then((res) => {
-        if (req !== reqRef.current) return;
-        setStreaming(false);
-        if (res.candidates.length > 0) {
-          setRounds((prev) => [{ id: uid(), prompt: text, candidates: res.candidates }, ...prev]);
-        }
-      })
-      .catch((err: unknown) => {
-        if (req !== reqRef.current) return;
-        setStreaming(false);
-        setError(`${words.failed}${err instanceof Error ? err.message : String(err)}`);
-      });
-  }, [words]);
+      const req = ++reqRef.current;
+      const roundId = uid();
+      setStreaming(true);
+      // Insert an empty round immediately, then fill it in as tokens arrive.
+      setRounds((prev) => [{ id: roundId, prompt: text, candidates: [] }, ...prev]);
+
+      void streamSuggestions(
+        {
+          turns: turnsRef.current.map((x) => ({ speaker: x.speaker, text: x.text })),
+          conversationLang: prefsRef.current.conversationLang,
+          uiLang: prefsRef.current.uiLang,
+          level: prefsRef.current.level,
+        },
+        (candidates) => {
+          if (req !== reqRef.current) return;
+          setRounds((prev) =>
+            prev.map((r) => (r.id === roundId ? { ...r, candidates } : r)),
+          );
+        },
+      )
+        .then((candidates) => {
+          if (req !== reqRef.current) return;
+          setStreaming(false);
+          setRounds((prev) =>
+            candidates.length > 0
+              ? prev.map((r) => (r.id === roundId ? { ...r, candidates } : r))
+              : prev.filter((r) => r.id !== roundId),
+          );
+        })
+        .catch((err: unknown) => {
+          if (req !== reqRef.current) return;
+          setStreaming(false);
+          setRounds((prev) => prev.filter((r) => r.id !== roundId));
+          setError(`${words.failed}${err instanceof Error ? err.message : String(err)}`);
+        });
+    },
+    [words],
+  );
+
 
   const handleError = React.useCallback(
     (message: string) => {
