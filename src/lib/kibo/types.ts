@@ -3,7 +3,6 @@ export type ConvLang = "ja" | "en" | "zh";
 export type Level = "beginner" | "intermediate" | "advanced";
 export type Theme = "system" | "light" | "dark";
 export type AudioSource = "microphone" | "system" | "both";
-export type NodeId = "local" | "japan" | "relay";
 export type Lifecycle = "idle" | "preparing" | "running" | "paused" | "stopped";
 
 export type Prefs = {
@@ -12,10 +11,8 @@ export type Prefs = {
   level: Level;
   theme: Theme;
   audioSource: AudioSource;
-  launchAtLogin: boolean;
-  defaultNode: NodeId;
+  micDeviceId: string;
   onboarded: boolean;
-  voiceprint: boolean;
 };
 
 export type Turn = {
@@ -53,8 +50,6 @@ export const defaultPrefs: Prefs = {
   level: "beginner",
   theme: "system",
   audioSource: "microphone",
-  launchAtLogin: false,
-  defaultNode: "japan",
+  micDeviceId: "",
   onboarded: false,
-  voiceprint: false,
 };
