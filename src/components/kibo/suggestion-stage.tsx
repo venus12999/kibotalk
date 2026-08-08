@@ -48,12 +48,18 @@ export function SuggestionStage({
           <ol className="space-y-3">
             {current.candidates.map((c, i) => (
               <li key={i} className="sticky-note p-4">
-                <p className="text-base leading-relaxed font-semibold">{c.text}</p>
+                <p className="text-base leading-relaxed font-semibold">
+                  {c.text}
+                  {streaming && i === current.candidates.length - 1 ? (
+                    <span className="ml-0.5 inline-block h-4 w-0.5 translate-y-0.5 animate-pulse bg-current align-middle" />
+                  ) : null}
+                </p>
                 <p className="mt-1.5 text-xs opacity-70">{c.meaning}</p>
               </li>
             ))}
           </ol>
         ) : null}
+
 
         {previous.slice(0, 2).map((round) => (
           <div key={round.id} className="rounded-md border border-border p-3.5">
