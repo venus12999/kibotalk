@@ -271,10 +271,10 @@ export function SessionWorkbench() {
             <h2 className="text-sm font-bold">{t("conversation")}</h2>
             <span
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold",
+                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold backdrop-blur-md",
                 life === "running"
-                  ? "bg-primary/15 text-foreground"
-                  : "bg-muted text-muted-foreground",
+                  ? "gradient-primary text-primary-foreground"
+                  : "glass-quiet text-muted-foreground",
               )}
             >
               {life === "running" ? (
@@ -296,10 +296,10 @@ export function SessionWorkbench() {
                   >
                     <div
                       className={cn(
-                        "max-w-[85%] rounded-2xl px-4 py-2.5",
+                        "max-w-[85%] rounded-2xl px-4 py-2.5 backdrop-blur-md",
                         turn.speaker === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-card text-card-foreground shadow-sm",
+                          ? "gradient-primary text-primary-foreground shadow-[0_12px_28px_-20px_oklch(60%_0.15_85_/_0.95)]"
+                          : "border border-[var(--glass-border)] bg-[var(--glass-strong)] text-card-foreground shadow-sm",
                       )}
                     >
                       <p className="text-[11px] font-semibold opacity-70">
