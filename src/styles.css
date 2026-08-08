@@ -127,15 +127,42 @@
   --sidebar-ring: oklch(79.5% 0.184 86.047);
 }
 
-/* Frosted-glass layer tokens — light glass stacked over a blurred yellow backdrop. */
+/*
+ * Glass design tokens — the single source of truth for every translucent
+ * surface, gradient, blur and shadow in the app. Components must never
+ * hardcode these values; they consume the utilities defined further below.
+ */
 :root {
+  /* Surface fills, from quietest to strongest */
+  --glass-quiet: oklch(100% 0 0 / 0.38);
   --glass: oklch(100% 0 0 / 0.55);
   --glass-strong: oklch(100% 0 0 / 0.72);
-  --glass-quiet: oklch(100% 0 0 / 0.38);
   --glass-border: oklch(100% 0 0 / 0.65);
+  --glass-border-vivid: oklch(100% 0 0 / 0.45);
+
+  /* Blur / saturation scale */
+  --glass-blur-sm: 8px;
+  --glass-blur-md: 14px;
+  --glass-blur-lg: 22px;
+  --glass-saturate: 160%;
+  --glass-filter: blur(var(--glass-blur-lg)) saturate(var(--glass-saturate));
+  --glass-filter-md: blur(var(--glass-blur-md)) saturate(150%);
+  --glass-filter-sm: blur(var(--glass-blur-sm)) saturate(140%);
+
+  /* Elevation */
   --glass-shadow: 0 1px 0 oklch(100% 0 0 / 0.6) inset,
     0 18px 45px -22px oklch(50% 0.12 80 / 0.55);
-  --glass-blur: 22px;
+  --shadow-glow-sm: 0 8px 20px -14px oklch(60% 0.15 85 / 0.95);
+  --shadow-glow: 0 10px 24px -14px oklch(60% 0.15 85 / 0.95);
+  --shadow-glow-lg: 0 12px 28px -18px oklch(60% 0.15 85 / 0.95);
+
+  /* Radii used by glass surfaces */
+  --glass-radius-sm: var(--radius-md);
+  --glass-radius: var(--radius-lg);
+  --glass-radius-lg: var(--radius-xl);
+  --bubble-radius: var(--radius-2xl);
+
+  /* Gradients */
   --gradient-primary: linear-gradient(
     135deg,
     oklch(90.5% 0.182 98.111) 0%,
@@ -151,12 +178,16 @@
 }
 
 .dark {
+  --glass-quiet: oklch(28% 0.02 80 / 0.38);
   --glass: oklch(28% 0.02 80 / 0.55);
   --glass-strong: oklch(30% 0.025 80 / 0.72);
-  --glass-quiet: oklch(28% 0.02 80 / 0.38);
   --glass-border: oklch(100% 0 0 / 0.14);
+  --glass-border-vivid: oklch(100% 0 0 / 0.22);
   --glass-shadow: 0 1px 0 oklch(100% 0 0 / 0.08) inset,
     0 20px 50px -24px oklch(0% 0 0 / 0.75);
+  --shadow-glow-sm: 0 8px 20px -14px oklch(0% 0 0 / 0.8);
+  --shadow-glow: 0 10px 26px -14px oklch(0% 0 0 / 0.85);
+  --shadow-glow-lg: 0 14px 32px -18px oklch(0% 0 0 / 0.9);
   --gradient-sheen: linear-gradient(
     160deg,
     oklch(100% 0 0 / 0.12) 0%,
@@ -164,6 +195,7 @@
     oklch(100% 0 0 / 0.08) 100%
   );
 }
+
 
 @layer base {
   * {
