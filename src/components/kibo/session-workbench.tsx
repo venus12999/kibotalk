@@ -296,10 +296,10 @@ export function SessionWorkbench() {
                   >
                     <div
                       className={cn(
-                        "max-w-[85%] rounded-2xl px-4 py-2.5 backdrop-blur-md",
+                        "max-w-[85%] px-4 py-2.5",
                         turn.speaker === "user"
-                          ? "gradient-primary text-primary-foreground shadow-[0_12px_28px_-20px_oklch(60%_0.15_85_/_0.95)]"
-                          : "border border-[var(--glass-border)] bg-[var(--glass-strong)] text-card-foreground shadow-sm",
+                          ? "bubble-self"
+                          : "bubble-other text-card-foreground",
                       )}
                     >
                       <p className="text-[11px] font-semibold opacity-70">
