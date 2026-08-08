@@ -32,16 +32,19 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const copy = {
   zh: {
     micDenied: "无法访问麦克风，请在浏览器中允许麦克风权限后重试。",
+    screenDenied: "未能获取系统音频，请在共享对话框中勾选“分享标签页/系统音频”。",
     failed: "语音转写失败：",
     live: "正在听写…",
   },
   ja: {
     micDenied: "マイクにアクセスできません。ブラウザでマイクを許可してからもう一度お試しください。",
+    screenDenied: "システム音声を取得できませんでした。共有ダイアログで「音声を共有」を有効にしてください。",
     failed: "文字起こしに失敗しました：",
     live: "書き起こし中…",
   },
   en: {
     micDenied: "Microphone access failed. Allow microphone permission and try again.",
+    screenDenied: "System audio was not shared. Enable “share audio” in the sharing dialog.",
     failed: "Transcription failed: ",
     live: "Transcribing…",
   },
@@ -58,7 +61,10 @@ export function SessionWorkbench() {
   const [historyOpen, setHistoryOpen] = React.useState(false);
   const [confirmStop, setConfirmStop] = React.useState(false);
   const [startedAt, setStartedAt] = React.useState(0);
-  const [interim, setInterim] = React.useState("");
+  const [interim, setInterim] = React.useState<{ user: string; other: string }>({
+    user: "",
+    other: "",
+  });
   const [error, setError] = React.useState("");
 
   const scrollRef = React.useRef<HTMLDivElement>(null);
@@ -70,11 +76,18 @@ export function SessionWorkbench() {
   prefsRef.current = prefs;
   const reqRef = React.useRef(0);
 
+  const handleInterim = React.useCallback((text: string, speaker: "user" | "other") => {
+    setInterim((prev) => ({ ...prev, [speaker]: text }));
+  }, []);
+
   const handleFinal = React.useCallback(
     (text: string, speaker: "user" | "other") => {
       const turn = makeTurn(speaker, text);
       turnsRef.current = [...turnsRef.current, turn];
       setTurns(turnsRef.current);
+
+      // Only the other person's line calls for a reply suggestion.
+      if (speaker === "user") return;
 
       const req = ++reqRef.current;
       const roundId = uid();
@@ -118,10 +131,13 @@ export function SessionWorkbench() {
 
   const handleError = React.useCallback(
     (message: string) => {
-      setError(message === "microphone" ? words.micDenied : `${words.failed}${message}`);
+      if (message === "microphone") setError(words.micDenied);
+      else if (message === "screen" || message === "system-audio") setError(words.screenDenied);
+      else setError(`${words.failed}${message}`);
     },
     [words],
   );
+
 
   const transcriber = useTranscriber({
     language: prefs.conversationLang,
