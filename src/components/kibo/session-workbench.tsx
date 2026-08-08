@@ -158,7 +158,7 @@ export function SessionWorkbench() {
     turnsRef.current = [];
     setTurns([]);
     setRounds([]);
-    setInterim("");
+    setInterim({ user: "", other: "" });
     setError("");
     setStartedAt(Date.now());
     setLife("preparing");
@@ -210,7 +210,7 @@ export function SessionWorkbench() {
     }
     setLife("stopped");
     setStreaming(false);
-    setInterim("");
+    setInterim({ user: "", other: "" });
     setConfirmStop(false);
   };
 
@@ -281,7 +281,7 @@ export function SessionWorkbench() {
           </div>
 
           <ScrollArea ref={scrollRef} className="mt-3 min-h-0 flex-1">
-            {turns.length === 0 && !interim ? (
+            {turns.length === 0 && !interim.user && !interim.other ? (
               <p className="py-16 text-center text-sm text-muted-foreground">{t("noTranscript")}</p>
             ) : (
               <ul className="space-y-3 pr-3">
@@ -305,16 +305,23 @@ export function SessionWorkbench() {
                     </div>
                   </li>
                 ))}
-                {interim ? (
-                  <li className="flex justify-start">
-                    <div className="max-w-[85%] rounded-2xl border border-dashed border-primary/50 bg-card/70 px-4 py-2.5">
-                      <p className="text-[11px] font-semibold text-muted-foreground">{words.live}</p>
-                      <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">
-                        {interim}
-                      </p>
-                    </div>
-                  </li>
-                ) : null}
+                {(["other", "user"] as const).map((who) =>
+                  interim[who] ? (
+                    <li
+                      key={who}
+                      className={cn("flex", who === "user" ? "justify-end" : "justify-start")}
+                    >
+                      <div className="max-w-[85%] rounded-2xl border border-dashed border-primary/50 bg-card/70 px-4 py-2.5">
+                        <p className="text-[11px] font-semibold text-muted-foreground">
+                          {who === "user" ? t("me") : t("other")} · {words.live}
+                        </p>
+                        <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">
+                          {interim[who]}
+                        </p>
+                      </div>
+                    </li>
+                  ) : null,
+                )}
               </ul>
             )}
           </ScrollArea>
