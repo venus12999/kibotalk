@@ -24,9 +24,37 @@ export function parseCandidates(buffer: string): Candidate[] {
     .filter((c) => c.text.length > 0);
 }
 
+/** Reuse previous candidate objects when unchanged so React can bail out of re-renders. */
+function reconcile(prev: Candidate[], next: Candidate[]): Candidate[] | null {
+  if (prev.length === next.length) {
+    let same = true;
+    const merged = next.map((c, i) => {
+      const p = prev[i];
+      if (p && p.text === c.text && p.meaning === c.meaning) return p;
+      same = false;
+      return c;
+    });
+    return same ? null : merged;
+  }
+  return next.map((c, i) => {
+    const p = prev[i];
+    return p && p.text === c.text && p.meaning === c.meaning ? p : c;
+  });
+}
+
+const schedule: (cb: () => void) => number =
+  typeof requestAnimationFrame === "function"
+    ? (cb) => requestAnimationFrame(cb)
+    : (cb) => setTimeout(cb, 33) as unknown as number;
+const unschedule = (id: number) => {
+  if (typeof cancelAnimationFrame === "function") cancelAnimationFrame(id);
+  else clearTimeout(id);
+};
+
 /**
- * Streams reply suggestions and calls `onUpdate` on every token so the UI can
- * render the answer as it is generated.
+ * Streams reply suggestions. Token deltas are accumulated and flushed to
+ * `onUpdate` at most once per animation frame (and only when the parsed result
+ * actually changed), so a fast token stream cannot outrun the renderer.
  */
 export async function streamSuggestions(
   input: SuggestStreamInput,
@@ -49,26 +77,56 @@ export async function streamSuggestions(
   let sse = "";
   let text = "";
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    sse += decoder.decode(value, { stream: true });
-    const frames = sse.split("\n\n");
-    sse = frames.pop() ?? "";
-    for (const frame of frames) {
-      const line = frame.split("\n").find((l) => l.startsWith("data:"));
-      if (!line) continue;
-      try {
-        const { delta } = JSON.parse(line.slice(5).trim()) as { delta?: string };
-        if (delta) {
-          text += delta;
-          onUpdate(parseCandidates(text));
+  let emitted: Candidate[] = [];
+  let frame = 0;
+  let dirty = false;
+
+  const flush = () => {
+    frame = 0;
+    if (!dirty) return;
+    dirty = false;
+    const merged = reconcile(emitted, parseCandidates(text));
+    if (merged) {
+      emitted = merged;
+      onUpdate(merged);
+    }
+  };
+  const markDirty = () => {
+    dirty = true;
+    // rAF self-throttles on slow devices: no queue build-up, no wasted parses.
+    if (!frame) frame = schedule(flush);
+  };
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      sse += decoder.decode(value, { stream: true });
+      const frames = sse.split("\n\n");
+      sse = frames.pop() ?? "";
+      for (const f of frames) {
+        const line = f.split("\n").find((l) => l.startsWith("data:"));
+        if (!line) continue;
+        try {
+          const { delta } = JSON.parse(line.slice(5).trim()) as { delta?: string };
+          if (delta) {
+            text += delta;
+            markDirty();
+          }
+        } catch {
+          /* ignore */
         }
-      } catch {
-        /* ignore */
       }
+    }
+  } finally {
+    if (frame) unschedule(frame);
+    try {
+      await reader.cancel();
+    } catch {
+      /* ignore */
     }
   }
 
-  return parseCandidates(text);
+  return reconcile(emitted, parseCandidates(text)) ?? emitted;
 }
+
