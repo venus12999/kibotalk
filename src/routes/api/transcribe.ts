@@ -9,7 +9,9 @@ export const Route = createFileRoute("/api/transcribe")({
           return new Response("Transcription is not configured", { status: 500 });
         }
 
-        const form = await request.formData();
+        const form = await request.formData().catch(() => null);
+        if (!form) return new Response("Expected multipart audio upload", { status: 400 });
+
         const file = form.get("file");
         const language = form.get("language");
 
