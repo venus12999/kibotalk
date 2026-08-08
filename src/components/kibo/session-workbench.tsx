@@ -32,16 +32,19 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const copy = {
   zh: {
     micDenied: "无法访问麦克风，请在浏览器中允许麦克风权限后重试。",
+    screenDenied: "未能获取系统音频，请在共享对话框中勾选“分享标签页/系统音频”。",
     failed: "语音转写失败：",
     live: "正在听写…",
   },
   ja: {
     micDenied: "マイクにアクセスできません。ブラウザでマイクを許可してからもう一度お試しください。",
+    screenDenied: "システム音声を取得できませんでした。共有ダイアログで「音声を共有」を有効にしてください。",
     failed: "文字起こしに失敗しました：",
     live: "書き起こし中…",
   },
   en: {
     micDenied: "Microphone access failed. Allow microphone permission and try again.",
+    screenDenied: "System audio was not shared. Enable “share audio” in the sharing dialog.",
     failed: "Transcription failed: ",
     live: "Transcribing…",
   },
@@ -58,7 +61,10 @@ export function SessionWorkbench() {
   const [historyOpen, setHistoryOpen] = React.useState(false);
   const [confirmStop, setConfirmStop] = React.useState(false);
   const [startedAt, setStartedAt] = React.useState(0);
-  const [interim, setInterim] = React.useState("");
+  const [interim, setInterim] = React.useState<{ user: string; other: string }>({
+    user: "",
+    other: "",
+  });
   const [error, setError] = React.useState("");
 
   const scrollRef = React.useRef<HTMLDivElement>(null);
@@ -70,11 +76,18 @@ export function SessionWorkbench() {
   prefsRef.current = prefs;
   const reqRef = React.useRef(0);
 
+  const handleInterim = React.useCallback((text: string, speaker: "user" | "other") => {
+    setInterim((prev) => ({ ...prev, [speaker]: text }));
+  }, []);
+
   const handleFinal = React.useCallback(
-    (text: string) => {
-      const turn = makeTurn("other", text);
+    (text: string, speaker: "user" | "other") => {
+      const turn = makeTurn(speaker, text);
       turnsRef.current = [...turnsRef.current, turn];
       setTurns(turnsRef.current);
+
+      // Only the other person's line calls for a reply suggestion.
+      if (speaker === "user") return;
 
       const req = ++reqRef.current;
       const roundId = uid();
@@ -118,14 +131,19 @@ export function SessionWorkbench() {
 
   const handleError = React.useCallback(
     (message: string) => {
-      setError(message === "microphone" ? words.micDenied : `${words.failed}${message}`);
+      if (message === "microphone") setError(words.micDenied);
+      else if (message === "screen" || message === "system-audio") setError(words.screenDenied);
+      else setError(`${words.failed}${message}`);
     },
     [words],
   );
 
+
   const transcriber = useTranscriber({
     language: prefs.conversationLang,
-    onInterim: setInterim,
+    audioSource: prefs.audioSource,
+    micDeviceId: prefs.micDeviceId,
+    onInterim: handleInterim,
     onFinal: handleFinal,
     onError: handleError,
   });
@@ -140,7 +158,7 @@ export function SessionWorkbench() {
     turnsRef.current = [];
     setTurns([]);
     setRounds([]);
-    setInterim("");
+    setInterim({ user: "", other: "" });
     setError("");
     setStartedAt(Date.now());
     setLife("preparing");
@@ -192,7 +210,7 @@ export function SessionWorkbench() {
     }
     setLife("stopped");
     setStreaming(false);
-    setInterim("");
+    setInterim({ user: "", other: "" });
     setConfirmStop(false);
   };
 
@@ -221,7 +239,7 @@ export function SessionWorkbench() {
             <h1 className="text-base leading-tight font-bold tracking-tight">{t("appName")}</h1>
             <p className="text-xs text-muted-foreground">
               {langLabel(prefs.conversationLang, prefs.uiLang)} ·{" "}
-              {levelLabel(prefs.level, prefs.uiLang)} · {t(nodeKey(prefs.defaultNode))}
+              {levelLabel(prefs.level, prefs.uiLang)} · {t(sourceKey(prefs.audioSource))}
             </p>
           </div>
         </div>
@@ -263,7 +281,7 @@ export function SessionWorkbench() {
           </div>
 
           <ScrollArea ref={scrollRef} className="mt-3 min-h-0 flex-1">
-            {turns.length === 0 && !interim ? (
+            {turns.length === 0 && !interim.user && !interim.other ? (
               <p className="py-16 text-center text-sm text-muted-foreground">{t("noTranscript")}</p>
             ) : (
               <ul className="space-y-3 pr-3">
@@ -287,16 +305,23 @@ export function SessionWorkbench() {
                     </div>
                   </li>
                 ))}
-                {interim ? (
-                  <li className="flex justify-start">
-                    <div className="max-w-[85%] rounded-2xl border border-dashed border-primary/50 bg-card/70 px-4 py-2.5">
-                      <p className="text-[11px] font-semibold text-muted-foreground">{words.live}</p>
-                      <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">
-                        {interim}
-                      </p>
-                    </div>
-                  </li>
-                ) : null}
+                {(["other", "user"] as const).map((who) =>
+                  interim[who] ? (
+                    <li
+                      key={who}
+                      className={cn("flex", who === "user" ? "justify-end" : "justify-start")}
+                    >
+                      <div className="max-w-[85%] rounded-2xl border border-dashed border-primary/50 bg-card/70 px-4 py-2.5">
+                        <p className="text-[11px] font-semibold text-muted-foreground">
+                          {who === "user" ? t("me") : t("other")} · {words.live}
+                        </p>
+                        <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">
+                          {interim[who]}
+                        </p>
+                      </div>
+                    </li>
+                  ) : null,
+                )}
               </ul>
             )}
           </ScrollArea>
@@ -376,6 +401,6 @@ export function SessionWorkbench() {
   );
 }
 
-function nodeKey(node: "local" | "japan" | "relay") {
-  return node === "local" ? "localNode" : node === "japan" ? "japanNode" : "relayNode";
+function sourceKey(source: "microphone" | "system" | "both") {
+  return source === "microphone" ? "microphone" : source === "system" ? "systemAudio" : "bothAudio";
 }
