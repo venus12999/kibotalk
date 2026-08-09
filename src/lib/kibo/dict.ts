@@ -393,7 +393,7 @@ export const dict = {
     "deleteSessionDescription": "This session's transcript, suggestions, and summary will be permanently deleted.",
     "resetPersonalData": "Clear personal data and reset",
     "resetTitle": "Clear personal data and reset?",
-    "resetDescription": "Preferences, voiceprint, and history are deleted. Prepared speech features remain.",
+    "resetDescription": "Preferences and history are deleted. Prepared speech features remain.",
     "about": "About",
     "version": "Version",
     "lockedWhileActive": "Conversation settings are locked while running or paused. Stop the session to change them.",
