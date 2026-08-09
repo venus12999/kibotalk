@@ -1,7 +1,10 @@
-import { ArrowRight } from "lucide-react";
+import * as React from "react";
+import { ArrowRight, ArrowLeft, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { PillGroup } from "./pill-group";
 import { UiLanguageMenu } from "./ui-language-menu";
+import { GuideContent } from "./guide-content";
 import { useKibo, langLabel, levelLabel } from "@/lib/kibo/store";
 import type { ConvLang, Level } from "@/lib/kibo/types";
 
@@ -14,9 +17,45 @@ const translateCopy = {
   },
 } as const;
 
+const guideCopy = {
+  zh: { next: "下一步：怎么用", back: "上一步", start: "我知道了，开始使用" },
+  ja: { next: "次へ：使い方", back: "戻る", start: "はじめる" },
+  en: { next: "Next: how to use", back: "Back", start: "Got it, start" },
+} as const;
+
 export function Onboarding({ onContinue }: { onContinue: () => void }) {
   const { prefs, setPrefs, t } = useKibo();
   const ui = prefs.uiLang;
+  const [step, setStep] = React.useState<0 | 1>(0);
+  const g = guideCopy[ui] ?? guideCopy.en;
+
+  if (step === 1) {
+    return (
+      <div className="paper-sheet flex max-h-[88dvh] w-full max-w-md flex-col p-6 sm:p-7">
+        <ScrollArea className="min-h-0 flex-1 pr-2">
+          <GuideContent />
+        </ScrollArea>
+        <div className="mt-5 flex gap-2">
+          <Button variant="soft" size="pill" className="flex-none" onClick={() => setStep(0)}>
+            <ArrowLeft className="size-4" />
+            {g.back}
+          </Button>
+          <Button
+            size="pill"
+            className="flex-1"
+            onClick={() => {
+              navigator.vibrate?.(12);
+              setPrefs({ onboarded: true });
+              onContinue();
+            }}
+          >
+            <Rocket className="size-4" />
+            {g.start}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="paper-sheet w-full max-w-md p-6 sm:p-7">
@@ -62,16 +101,9 @@ export function Onboarding({ onContinue }: { onContinue: () => void }) {
         />
       </div>
 
-      <Button
-        size="pill"
-        className="mt-7"
-        onClick={() => {
-          setPrefs({ onboarded: true });
-          onContinue();
-        }}
-      >
+      <Button size="pill" className="mt-7" onClick={() => setStep(1)}>
         <ArrowRight className="size-4" />
-        {t("continueSetup")}
+        {g.next}
       </Button>
     </div>
   );
