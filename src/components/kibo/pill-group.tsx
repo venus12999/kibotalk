@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-type Option<T extends string> = { value: T; label: string };
+type Option<T extends string> = { value: T; label: string; description?: string };
 
 export function PillGroup<T extends string>({
   options,
@@ -18,12 +18,12 @@ export function PillGroup<T extends string>({
   return (
     <div className="space-y-1.5">
       {label ? (
-        <p className="text-xs font-semibold text-muted-foreground">{label}</p>
+        <p className="text-xs font-semibold text-foreground/70">{label}</p>
       ) : null}
       <div
         role="radiogroup"
         aria-label={label}
-        className="glass-quiet flex w-full items-center gap-1 rounded-xl p-1"
+        className="glass-quiet flex w-full items-stretch gap-1 rounded-xl p-1"
       >
         {options.map((opt) => {
           const active = opt.value === value;
@@ -36,15 +36,21 @@ export function PillGroup<T extends string>({
               disabled={disabled}
               onClick={() => onChange(opt.value)}
               className={cn(
-                "flex-1 cursor-pointer rounded-lg px-2 py-1.5 text-sm font-semibold transition-all",
+                "flex-1 cursor-pointer rounded-lg px-2 py-2 text-sm font-semibold transition-all",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                "flex flex-col items-center justify-center gap-0.5 leading-tight",
                 active
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
+                  ? "gradient-primary text-primary-foreground glow shadow-sm"
+                  : "text-foreground/70 hover:text-foreground",
                 disabled && "cursor-not-allowed opacity-60",
               )}
             >
-              {opt.label}
+              <span>{opt.label}</span>
+              {opt.description ? (
+                <span className="max-w-full truncate px-0.5 text-[10px] font-medium opacity-80">
+                  {opt.description}
+                </span>
+              ) : null}
             </button>
           );
         })}
@@ -52,5 +58,6 @@ export function PillGroup<T extends string>({
     </div>
   );
 }
+
 
 
