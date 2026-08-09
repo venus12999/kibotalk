@@ -38,7 +38,6 @@ function AuthPage() {
   const [error, setError] = React.useState("");
   const [notice, setNotice] = React.useState("");
   const [cooldown, setCooldown] = React.useState(0);
-  const [code, setCode] = React.useState("");
 
   React.useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -61,37 +60,9 @@ function AuthPage() {
     setMode("verify");
     setError("");
     setNotice(message);
-    setCode("");
     setCooldown(60);
   };
 
-  const verifyCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (busy) return;
-    setBusy(true);
-    setError("");
-    setNotice("");
-    try {
-      const { error: err } = await supabase.auth.verifyOtp({
-        email,
-        token: code.trim(),
-        type: "signup",
-      });
-      if (err) {
-        setError(
-          /expired/i.test(err.message)
-            ? "That code has expired. Request a new one below."
-            : /invalid|token/i.test(err.message)
-              ? "That code isn't right. Check the email and try again."
-              : err.message,
-        );
-        return;
-      }
-      await navigate({ to: "/" });
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const resend = async () => {
     if (cooldown > 0 || busy) return;
