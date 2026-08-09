@@ -18,8 +18,8 @@ const SLICE_BYTES = 6400;
 type VolcOptions = {
   appId: string;
   accessToken: string;
-  resourceId?: string;
-  language?: string;
+  resourceId?: string | undefined;
+  language?: string | undefined;
 };
 
 /** Strip the 44-byte RIFF header from the WAV the client uploads. */
