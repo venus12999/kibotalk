@@ -63,7 +63,9 @@ export type SessionRecord = {
 export const defaultPrefs: Prefs = {
   uiLang: "en",
   conversationLang: "ja",
+  translateLang: "en",
   level: "beginner",
+
   theme: "system",
   audioSource: "microphone",
   micDeviceId: "",
