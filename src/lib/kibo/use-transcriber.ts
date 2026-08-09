@@ -1,14 +1,7 @@
 import * as React from "react";
 import { encodeWav, rms, toMono16k, TARGET_RATE } from "./wav";
-import {
-  classifySpeaker,
-  embedVoice,
-  loadVoiceprint,
-  updateCentroid,
-  VOICEPRINT_KEY,
-} from "./voiceprint";
 import { matchesLanguage } from "./lang-guard";
-import type { AudioSource, ConvLang } from "./types";
+import type { AudioSource, CaptureMode, ConvLang } from "./types";
 
 type Speaker = "user" | "other";
 
@@ -16,6 +9,10 @@ type Options = {
   language: string;
   audioSource: AudioSource;
   micDeviceId?: string;
+  /** "push" = hold a button to record one turn; "continuous" = always listening. */
+  mode: CaptureMode;
+  /** Who the microphone is attributed to in continuous mode. */
+  activeSpeaker: Speaker;
   onInterim: (text: string, speaker: Speaker) => void;
   onFinal: (text: string, speaker: Speaker) => void;
   onError: (message: string) => void;
@@ -24,6 +21,8 @@ type Options = {
 const SILENCE_RMS = 0.012;
 const SILENCE_MS = 700;
 const MIN_SPEECH_MS = 600;
+/** A held button may capture a very short word — keep almost everything. */
+const MIN_PUSH_SPEECH_MS = 150;
 const MAX_SEGMENT_MS = 12000;
 /** How often an unfinished segment is re-transcribed to show live partials. */
 const PARTIAL_EVERY_MS = 1600;
@@ -48,6 +47,8 @@ export function useTranscriber({
   language,
   audioSource,
   micDeviceId,
+  mode,
+  activeSpeaker,
   onInterim,
   onFinal,
   onError,
@@ -55,42 +56,25 @@ export function useTranscriber({
   const [recording, setRecording] = React.useState(false);
   const [level, setLevel] = React.useState(0);
   const [transcribing, setTranscribing] = React.useState(false);
+  const [holding, setHolding] = React.useState<Speaker | null>(null);
 
   const ctxRef = React.useRef<AudioContext | null>(null);
   const pipesRef = React.useRef<Pipeline[]>([]);
   const pausedRef = React.useRef(false);
+  const userPausedRef = React.useRef(false);
   const inFlightRef = React.useRef(0);
-
-  // Voiceprint state for the current session.
-  const enrolledRef = React.useRef<Float32Array | null>(null);
-  const otherCentroidRef = React.useRef<Float32Array | null>(null);
-  const lastSpeakerRef = React.useRef<Speaker | null>(null);
+  /** Speaker the microphone is attributed to right now. */
+  const speakerRef = React.useRef<Speaker>(activeSpeaker);
+  const modeRef = React.useRef<CaptureMode>(mode);
+  modeRef.current = mode;
+  if (mode === "continuous") speakerRef.current = activeSpeaker;
 
   const cbRef = React.useRef({ onInterim, onFinal, onError, language });
   cbRef.current = { onInterim, onFinal, onError, language };
 
-  /** Decide who spoke a segment: source routing first, voiceprint when unsure. */
-  const resolveSpeaker = React.useCallback(
-    (pipe: Pipeline, chunks: Float32Array[], sampleRate: number): Speaker => {
-      if (!pipe.ambiguous) return pipe.speaker;
-      const enrolled = enrolledRef.current;
-      if (!enrolled) return pipe.speaker;
-
-      const embedding = embedVoice(toMono16k(chunks, sampleRate));
-      if (!embedding) return lastSpeakerRef.current ?? pipe.speaker;
-
-      const { speaker, confident } = classifySpeaker(
-        embedding,
-        enrolled,
-        otherCentroidRef.current,
-        lastSpeakerRef.current,
-      );
-      if (speaker === "other" && confident) {
-        otherCentroidRef.current = updateCentroid(otherCentroidRef.current, embedding);
-      }
-      lastSpeakerRef.current = speaker;
-      return speaker;
-    },
+  /** Source routing decides the speaker; a lone microphone follows the buttons. */
+  const speakerOf = React.useCallback(
+    (pipe: Pipeline): Speaker => (pipe.ambiguous ? speakerRef.current : pipe.speaker),
     [],
   );
 
@@ -202,28 +186,33 @@ export function useTranscriber({
   }, []);
 
   const flushPipe = React.useCallback(
-    (pipe: Pipeline) => {
+    (pipe: Pipeline, minSpeechMs = MIN_SPEECH_MS) => {
       const sampleRate = ctxRef.current?.sampleRate ?? 48000;
       const chunks = pipe.chunks;
       const speechMs = pipe.speechMs;
+      const speaker = speakerOf(pipe);
       pipe.chunks = [];
       pipe.speechMs = 0;
       pipe.silenceMs = 0;
       pipe.partialAt = 0;
       pipe.segment += 1;
-      if (chunks.length > 0 && speechMs >= MIN_SPEECH_MS) {
-        const speaker = resolveSpeaker(pipe, chunks, sampleRate);
+      if (chunks.length > 0 && speechMs >= minSpeechMs) {
         // Clear the live bubble of whichever side owned the partials.
-        cbRef.current.onInterim("", pipe.speaker);
+        cbRef.current.onInterim("", speaker);
         void sendSegment(chunks, sampleRate, speaker);
+      } else {
+        cbRef.current.onInterim("", speaker);
       }
     },
-    [sendSegment, resolveSpeaker],
+    [sendSegment, speakerOf],
   );
 
-  const flushAll = React.useCallback(() => {
-    pipesRef.current.forEach(flushPipe);
-  }, [flushPipe]);
+  const flushAll = React.useCallback(
+    (minSpeechMs?: number) => {
+      pipesRef.current.forEach((pipe) => flushPipe(pipe, minSpeechMs));
+    },
+    [flushPipe],
+  );
 
   const start = React.useCallback(async () => {
     if (pipesRef.current.length > 0) return true;
@@ -295,10 +284,9 @@ export function useTranscriber({
     const ctx = new AudioContext();
     await ctx.resume().catch(() => undefined);
     ctxRef.current = ctx;
-    pausedRef.current = false;
-    enrolledRef.current = loadVoiceprint();
-    otherCentroidRef.current = null;
-    lastSpeakerRef.current = null;
+    userPausedRef.current = false;
+    // Push-to-talk starts silent: audio is only kept while a button is held.
+    pausedRef.current = modeRef.current === "push";
 
     const attach = (stream: MediaStream, speaker: Speaker, ambiguous: boolean) => {
       const source = ctx.createMediaStreamSource(stream);
@@ -334,17 +322,25 @@ export function useTranscriber({
           pipe.silenceMs += chunkMs;
         }
 
+        const push = modeRef.current === "push";
         const totalMs = pipe.speechMs + pipe.silenceMs;
-        const endedByPause = pipe.silenceMs >= SILENCE_MS && pipe.speechMs >= MIN_SPEECH_MS;
-        if (endedByPause || totalMs >= MAX_SEGMENT_MS) {
-          flushPipe(pipe);
-          return;
-        }
-        if (pipe.silenceMs >= SILENCE_MS * 3 && pipe.speechMs < MIN_SPEECH_MS) {
-          pipe.chunks = [];
-          pipe.speechMs = 0;
-          pipe.silenceMs = 0;
-          pipe.partialAt = 0;
+        if (!push) {
+          // Continuous mode still segments on a pause so text keeps flowing.
+          const endedByPause = pipe.silenceMs >= SILENCE_MS && pipe.speechMs >= MIN_SPEECH_MS;
+          if (endedByPause || totalMs >= MAX_SEGMENT_MS) {
+            flushPipe(pipe);
+            return;
+          }
+          if (pipe.silenceMs >= SILENCE_MS * 3 && pipe.speechMs < MIN_SPEECH_MS) {
+            pipe.chunks = [];
+            pipe.speechMs = 0;
+            pipe.silenceMs = 0;
+            pipe.partialAt = 0;
+            return;
+          }
+        } else if (totalMs >= MAX_SEGMENT_MS) {
+          // A very long hold is split so transcription stays responsive.
+          flushPipe(pipe, MIN_PUSH_SPEECH_MS);
           return;
         }
 
@@ -360,10 +356,11 @@ export function useTranscriber({
           pipe.partialBusy = true;
           const snapshot = pipe.chunks.slice();
           const segmentId = pipe.segment;
-          void sendSegment(snapshot, ctx.sampleRate, pipe.speaker, true).finally(() => {
+          const who = speakerOf(pipe);
+          void sendSegment(snapshot, ctx.sampleRate, who, true).finally(() => {
             pipe.partialBusy = false;
             // A finished segment already cleared the bubble — don't resurrect it.
-            if (pipe.segment !== segmentId) cbRef.current.onInterim("", pipe.speaker);
+            if (pipe.segment !== segmentId) cbRef.current.onInterim("", who);
           });
         }
       };
@@ -374,18 +371,46 @@ export function useTranscriber({
     };
 
     // With both sources the microphone is you and the system audio is the other
-    // person. With a single microphone the voiceprint decides who is speaking.
-    if (micStream) attach(micStream, sysStream ? "user" : "other", !sysStream);
+    // person. With a single microphone the buttons decide who is speaking.
+    if (micStream) attach(micStream, sysStream ? "user" : speakerRef.current, !sysStream);
     if (sysStream) attach(sysStream, "other", false);
 
     setRecording(true);
     return true;
-  }, [audioSource, micDeviceId, flushPipe, sendSegment]);
+  }, [audioSource, micDeviceId, flushPipe, sendSegment, speakerOf]);
+
+  /** Push-to-talk: start capturing one turn for `speaker`. */
+  const beginTurn = React.useCallback((speaker: Speaker) => {
+    if (userPausedRef.current || pipesRef.current.length === 0) return;
+    speakerRef.current = speaker;
+    for (const pipe of pipesRef.current) {
+      pipe.chunks = [];
+      pipe.speechMs = 0;
+      pipe.silenceMs = 0;
+      pipe.partialAt = 0;
+      pipe.segment += 1;
+    }
+    pausedRef.current = false;
+    setHolding(speaker);
+  }, []);
+
+  /** Push-to-talk: the button was released — this turn is finished. */
+  const endTurn = React.useCallback(() => {
+    if (pipesRef.current.length === 0) return;
+    pausedRef.current = true;
+    setHolding(null);
+    setLevel(0);
+    flushAll(MIN_PUSH_SPEECH_MS);
+  }, [flushAll]);
 
   const setPaused = React.useCallback(
     (paused: boolean) => {
-      pausedRef.current = paused;
-      if (paused) flushAll();
+      userPausedRef.current = paused;
+      pausedRef.current = paused || modeRef.current === "push";
+      if (paused) {
+        setHolding(null);
+        flushAll();
+      }
       setLevel(0);
     },
     [flushAll],
@@ -395,13 +420,24 @@ export function useTranscriber({
     flushAll();
     teardown();
     pausedRef.current = false;
+    userPausedRef.current = false;
+    setHolding(null);
     setRecording(false);
     setLevel(0);
   }, [flushAll, teardown]);
 
   React.useEffect(() => () => teardown(), [teardown]);
 
-  return { start, stop, setPaused, recording, level, transcribing, sampleRate: TARGET_RATE };
+  return {
+    start,
+    stop,
+    setPaused,
+    beginTurn,
+    endTurn,
+    holding,
+    recording,
+    level,
+    transcribing,
+    sampleRate: TARGET_RATE,
+  };
 }
-
-export { VOICEPRINT_KEY };
