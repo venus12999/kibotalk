@@ -274,21 +274,29 @@ export function SessionWorkbench() {
             : t("currentSession");
 
   return (
-    <div className="mx-auto flex h-dvh max-w-6xl flex-col gap-4 p-4 sm:p-6">
-      <header className="glass-bar flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-        <div className="flex items-center gap-3">
-          <span className="gradient-primary glow-sm flex size-9 items-center justify-center rounded-full text-primary-foreground">
+    <div
+      className="mx-auto flex min-h-dvh max-w-6xl flex-col gap-3 p-3 sm:gap-4 sm:p-6 lg:h-dvh"
+      style={{
+        paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
+        paddingTop: "max(0.75rem, env(safe-area-inset-top))",
+      }}
+    >
+      <header className="glass-bar grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <span className="gradient-primary glow-sm flex size-9 shrink-0 items-center justify-center rounded-full text-primary-foreground">
             <Mic className="size-4" />
           </span>
-          <div>
-            <h1 className="text-base leading-tight font-bold tracking-tight">{t("appName")}</h1>
-            <p className="text-xs text-muted-foreground">
+          <div className="min-w-0">
+            <h1 className="truncate text-base leading-tight font-bold tracking-tight">
+              {t("appName")}
+            </h1>
+            <p className="truncate text-xs text-muted-foreground">
               {langLabel(prefs.conversationLang, prefs.uiLang)} ·{" "}
               {levelLabel(prefs.level, prefs.uiLang)} · {t(sourceKey(prefs.audioSource))}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           <UiLanguageMenu />
           <AccountMenu />
 
@@ -305,6 +313,7 @@ export function SessionWorkbench() {
           </Button>
         </div>
       </header>
+
 
       {user && !voiceprintReady && !enrollDismissed ? (
         <div className="glass-quiet flex flex-wrap items-start gap-3 rounded-2xl p-4">
