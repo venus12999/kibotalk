@@ -80,9 +80,10 @@ export function SessionWorkbench() {
   const [rounds, setRounds] = React.useState<Round[]>([]);
   const [streaming, setStreaming] = React.useState(false);
   const [aiStatus, setAiStatus] = React.useState<
-    "idle" | "connecting" | "streaming" | "done" | "error"
+    "idle" | "connecting" | "retrying" | "streaming" | "done" | "error"
   >("idle");
   const [aiError, setAiError] = React.useState("");
+  const [aiAttempt, setAiAttempt] = React.useState(0);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [historyOpen, setHistoryOpen] = React.useState(false);
   const [confirmStop, setConfirmStop] = React.useState(false);
@@ -125,12 +126,18 @@ export function SessionWorkbench() {
     [cancelSuggestions],
   );
 
-  const lastPromptRef = React.useRef("");
+  type SuggestPayload = {
+    turns: { speaker: "user" | "other"; text: string }[];
+    conversationLang: string;
+    uiLang: string;
+    level: string;
+  };
+  /** The exact prompt + context of the last attempt, so a retry replays it. */
+  const lastRequestRef = React.useRef<{ text: string; payload: SuggestPayload } | null>(null);
 
   /** Kick off a suggestion stream for one incoming line, tracking its status. */
   const runSuggestions = React.useCallback(
-    (text: string) => {
-      lastPromptRef.current = text;
+    (text: string, replay?: SuggestPayload) => {
       const req = ++reqRef.current;
       const roundId = uid();
       // A new turn makes the in-flight suggestion obsolete — cancel it.
@@ -139,13 +146,14 @@ export function SessionWorkbench() {
       abortRef.current = controller;
       setStreaming(true);
       setAiError("");
-      setAiStatus("connecting");
+      setAiStatus(replay ? "retrying" : "connecting");
+      setAiAttempt((n) => (replay ? n + 1 : 0));
       // Insert an empty round immediately, then fill it in as tokens arrive.
       setRounds((prev) => [{ id: roundId, prompt: text, candidates: [] }, ...prev]);
 
       const onUpdate = (candidates: Candidate[]) => {
         if (req !== reqRef.current) return;
-        setAiStatus((s) => (s === "connecting" ? "streaming" : s));
+        setAiStatus((s) => (s === "connecting" || s === "retrying" ? "streaming" : s));
         setRounds((prev) => {
           // The streaming round is always the head; patch it in place.
           if (prev[0]?.id !== roundId) return prev;
@@ -155,12 +163,15 @@ export function SessionWorkbench() {
         });
       };
 
-      const payload = {
-        turns: turnsRef.current.map((x) => ({ speaker: x.speaker, text: x.text })),
-        conversationLang: prefsRef.current.conversationLang,
-        uiLang: prefsRef.current.uiLang,
-        level: prefsRef.current.level,
-      };
+      // Retries replay the captured context verbatim; fresh turns snapshot it now.
+      const payload: SuggestPayload =
+        replay ?? {
+          turns: turnsRef.current.map((x) => ({ speaker: x.speaker, text: x.text })),
+          conversationLang: prefsRef.current.conversationLang,
+          uiLang: prefsRef.current.uiLang,
+          level: prefsRef.current.level,
+        };
+      lastRequestRef.current = { text, payload };
 
       // One transparent retry: a dropped connection mid-turn is common on mobile.
       const run = async () => {
@@ -196,7 +207,8 @@ export function SessionWorkbench() {
   );
 
   const retrySuggestions = React.useCallback(() => {
-    if (lastPromptRef.current) runSuggestions(lastPromptRef.current);
+    const last = lastRequestRef.current;
+    if (last) runSuggestions(last.text, last.payload);
   }, [runSuggestions]);
 
   const handleFinal = React.useCallback(
@@ -498,9 +510,12 @@ export function SessionWorkbench() {
             streaming={streaming}
             status={aiStatus}
             errorMessage={aiError}
+            attempt={aiAttempt}
             onRetry={retrySuggestions}
+            canRetry={lastRequestRef.current !== null}
             statusLabels={{
               connecting: t("aiConnecting"),
+              retrying: t("aiRetrying"),
               streaming: t("aiStreaming"),
               done: t("aiDone"),
               failed: t("aiFailed"),
