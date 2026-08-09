@@ -71,6 +71,8 @@ export const Route = createFileRoute("/api/suggest")({
         }
 
 
+        const wantsStream = body.stream !== false;
+
         const upstream = await fetch("https://api.deepseek.com/chat/completions", {
           method: "POST",
           headers: {
@@ -79,7 +81,8 @@ export const Route = createFileRoute("/api/suggest")({
           },
           body: JSON.stringify({
             model: aiModels.suggest,
-            stream: true,
+            stream: wantsStream,
+
             // DeepSeek v4 flash reasons before answering by default, which
             // delays the first visible token — the coach must be instant.
             thinking: { type: "disabled" },
