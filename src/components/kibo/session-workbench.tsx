@@ -529,11 +529,24 @@ export function SessionWorkbench() {
         </section>
       </div>
 
-      {/* Kept in the viewport on phones, where the panels scroll past the fold. */}
+      {/* Spacer so the floating phone dock never covers the last panel. */}
       <div
-        className="glass-bar sticky bottom-0 z-20 flex flex-col gap-2 px-3 py-2.5 sm:px-4"
-        style={{ marginBottom: "calc(env(safe-area-inset-bottom) * -1)", paddingBottom: "max(0.625rem, env(safe-area-inset-bottom))" }}
+        aria-hidden
+        className="shrink-0 sm:hidden"
+        style={{ height: "calc(var(--kibo-dock-h, 9.5rem) + env(safe-area-inset-bottom))" }}
+      />
+
+      {/* Phone: floating thumb-reach dock. Tablet/desktop: inline sticky bar. */}
+      <div
+        className={cn(
+          "glass-bar z-30 flex flex-col gap-2.5 px-3 py-3",
+          "fixed inset-x-2 bottom-2 shadow-lg",
+          "sm:static sm:inset-auto sm:bottom-auto sm:mx-0 sm:mt-0 sm:gap-2 sm:px-4 sm:py-2.5 sm:shadow-none",
+          "sm:sticky sm:bottom-0",
+        )}
+        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
       >
+
         {active && life !== "preparing" ? (
           prefs.captureMode === "push" ? (
             <>
