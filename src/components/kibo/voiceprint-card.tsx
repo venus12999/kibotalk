@@ -1,26 +1,47 @@
 import * as React from "react";
-import { Loader2, Mic, Trash2, Check } from "lucide-react";
+import { Loader2, Mic, Trash2, Check, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useKibo } from "@/lib/kibo/store";
 import { toMono16k } from "@/lib/kibo/wav";
-import { clearVoiceprint, embedVoice, loadVoiceprint, saveVoiceprint } from "@/lib/kibo/voiceprint";
+import {
+  clearVoiceprint,
+  embedVoice,
+  loadVoiceprint,
+  saveVoiceprint,
+  voiceprintEnrolledAt,
+} from "@/lib/kibo/voiceprint";
+
+const copy = {
+  zh: { at: "录入时间", unknown: "时间未知", refresh: "刷新状态", refreshed: "状态已刷新" },
+  ja: { at: "登録日時", unknown: "日時不明", refresh: "状態を更新", refreshed: "状態を更新しました" },
+  en: { at: "Enrolled at", unknown: "Time unknown", refresh: "Refresh status", refreshed: "Status refreshed" },
+} as const;
 
 const ENROLL_MS = 6000;
 
 /** Records a short sample of the user's voice and stores its embedding locally. */
 export function VoiceprintCard({ locked }: { locked: boolean }) {
-  const { t } = useKibo();
+  const { t, prefs } = useKibo();
+  const words = copy[prefs.uiLang] ?? copy.en;
   const [enrolled, setEnrolled] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const [remaining, setRemaining] = React.useState(0);
   const [error, setError] = React.useState("");
+  const [enrolledAt, setEnrolledAt] = React.useState<number | null>(null);
+  const [refreshedAt, setRefreshedAt] = React.useState(0);
+
+  const sync = React.useCallback(() => {
+    setEnrolled(loadVoiceprint() !== null);
+    setEnrolledAt(voiceprintEnrolledAt());
+  }, []);
 
   React.useEffect(() => {
-    const sync = () => setEnrolled(loadVoiceprint() !== null);
     sync();
     window.addEventListener("kibo:voiceprint", sync);
     return () => window.removeEventListener("kibo:voiceprint", sync);
-  }, []);
+  }, [sync]);
+
+  const localeTag = prefs.uiLang === "zh" ? "zh-CN" : prefs.uiLang === "ja" ? "ja-JP" : "en-US";
 
   const record = async () => {
     if (busy) return;
@@ -71,7 +92,7 @@ export function VoiceprintCard({ locked }: { locked: boolean }) {
       return;
     }
     saveVoiceprint(embedding);
-    setEnrolled(true);
+    sync();
   };
 
   return (
@@ -98,14 +119,33 @@ export function VoiceprintCard({ locked }: { locked: boolean }) {
             disabled={locked}
             onClick={() => {
               clearVoiceprint();
-              setEnrolled(false);
+              sync();
             }}
           >
             <Trash2 className="size-3.5" />
             {t("deleteVoiceprint")}
           </Button>
         ) : null}
+        <Button
+          variant="ghost"
+          size="sm"
+          aria-label={words.refresh}
+          onClick={() => {
+            sync();
+            setRefreshedAt(Date.now());
+          }}
+        >
+          <RefreshCw className="size-3.5" />
+          {words.refresh}
+        </Button>
       </div>
+      {enrolled ? (
+        <p className="text-xs text-muted-foreground">
+          {words.at}:{" "}
+          {enrolledAt ? new Date(enrolledAt).toLocaleString(localeTag) : words.unknown}
+        </p>
+      ) : null}
+      {refreshedAt ? <p className="text-xs text-muted-foreground">{words.refreshed}</p> : null}
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
     </div>
   );
