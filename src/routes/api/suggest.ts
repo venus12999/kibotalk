@@ -89,6 +89,7 @@ export const Route = createFileRoute("/api/suggest")({
                   briefing,
                   `Propose exactly 3 short, distinct, natural replies the user could say next, in ${target}.`,
 
+
                   LEVEL_HINT[body.level ?? "beginner"] ?? "",
                   `Output EXACTLY 3 lines. Each line is one compact JSON object and nothing else — no markdown fence, no numbering, no blank lines.`,
                   `Shape: {"targetText":"<the reply in ${target}>","meaning":"<one-line explanation in ${ui}>","segments":[{"t":"<surface>","r":"<reading>","role":"content|particle|punct"}]}`,
