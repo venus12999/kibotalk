@@ -1,12 +1,12 @@
 import * as React from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { Mic, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AppBackground } from "@/components/kibo/app-background";
+import logoAsset from "@/assets/kibotalk-logo.png.asset.json";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -56,7 +56,20 @@ function AuthPage() {
           password,
           options: { emailRedirectTo: window.location.origin },
         });
-        if (err) throw err;
+        if (err) {
+          if (/already registered|already exists|User already/i.test(err.message)) {
+            setError("This email already has an account. Sign in instead.");
+            setMode("signin");
+            return;
+          }
+          throw err;
+        }
+        // Supabase returns an empty identities array when the email is taken.
+        if (data.user && (data.user.identities?.length ?? 0) === 0) {
+          setError("This email already has an account. Sign in instead.");
+          setMode("signin");
+          return;
+        }
         if (!data.session) {
           setNotice("Check your inbox and confirm your email to finish signing up.");
           return;
@@ -73,48 +86,25 @@ function AuthPage() {
     }
   };
 
-  const google = async () => {
-    setBusy(true);
-    setError("");
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
-      setError(String(result.error));
-      setBusy(false);
-      return;
-    }
-    if (result.redirected) return;
-    await navigate({ to: "/" });
-  };
-
   return (
     <main className="flex min-h-dvh items-center justify-center p-4">
       <AppBackground />
       <div className="paper-sheet w-full max-w-sm p-6 sm:p-8">
-        <div className="flex items-center gap-3">
-          <span className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <Mic className="size-4" />
-          </span>
-          <div>
-            <h1 className="text-base leading-tight font-bold tracking-tight">KiboTalk</h1>
-            <p className="text-xs text-muted-foreground">
-              {mode === "signin" ? "Sign in to sync your sessions" : "Create an account to sync"}
-            </p>
-          </div>
+        <div className="flex items-center">
+          <img
+            src={logoAsset.url}
+            alt="KiboTalk"
+            className="h-8 w-auto select-none"
+            draggable={false}
+          />
         </div>
+        <p className="mt-3 text-xs text-muted-foreground">
+          {mode === "signin"
+            ? "Sign in with your email to sync your sessions"
+            : "Create an account with your email — one account per email address"}
+        </p>
 
-        <Button variant="soft" className="mt-6 w-full" disabled={busy} onClick={() => void google()}>
-          Continue with Google
-        </Button>
-
-        <div className="my-5 flex items-center gap-3 text-[11px] text-muted-foreground">
-          <span className="h-px flex-1 bg-border" />
-          or
-          <span className="h-px flex-1 bg-border" />
-        </div>
-
-        <form className="space-y-3" onSubmit={submit}>
+        <form className="mt-5 space-y-3" onSubmit={submit}>
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
             <Input
