@@ -1,23 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-
-const GATEWAY = "https://api.deepseek.com/chat/completions";
-// Fastest / cheapest model in the catalog — suggestions must land while the
-// other person is still talking.
-
-
-const LANG_NAME: Record<string, string> = {
-  ja: "Japanese",
-  en: "English",
-  zh: "Simplified Chinese",
-};
-
-const LEVEL_HINT: Record<string, string> = {
-  beginner: "Use short, simple, very common sentences.",
-  intermediate: "Use natural everyday sentences of moderate length.",
-  advanced: "Use fluent, nuanced, idiomatic sentences.",
-};
-
-type Turn = { speaker: "user" | "other"; text: string };
+import { LANG_NAME, LEVEL_HINT, gateway, type Turn } from "./ai-core.server";
 
 export type SuggestInput = {
   turns: Turn[];
@@ -25,26 +7,6 @@ export type SuggestInput = {
   uiLang: string;
   level: string;
 };
-
-async function gateway(body: unknown) {
-  const key = process.env["DEEPSEEK_API_KEY"];
-  if (!key) throw new Error("Missing DEEPSEEK_API_KEY");
-  const res = await fetch(GATEWAY, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${key}`,
-    },
-    body: JSON.stringify(body),
-  });
-  if (res.status === 429) throw new Error("rate_limited");
-  if (res.status === 402) throw new Error("credits_exhausted");
-  if (!res.ok) throw new Error(`ai_error_${res.status}: ${(await res.text()).slice(0, 300)}`);
-  const json = (await res.json()) as {
-    choices?: { message?: { content?: string } }[];
-  };
-  return json.choices?.[0]?.message?.content ?? "";
-}
 
 export const suggestReplies = createServerFn({ method: "POST" })
   .inputValidator((input: SuggestInput) => input)
@@ -59,7 +21,6 @@ export const suggestReplies = createServerFn({ method: "POST" })
     const { getAiModels } = await import("./model-config.server");
     const content = await gateway({
       model: (await getAiModels()).suggest,
-      thinking: { type: "disabled" },
       messages: [
         {
           role: "system",
@@ -138,7 +99,6 @@ export const translateLine = createServerFn({ method: "POST" })
     const { getAiModels } = await import("./model-config.server");
     const translation = await gateway({
       model: (await getAiModels()).suggest,
-      thinking: { type: "disabled" },
       messages: [
         {
           role: "system",

@@ -6,8 +6,8 @@ export type AiModels = {
 
 export const DEFAULT_MODELS: AiModels = {
   // DeepSeek official API model ids.
-  suggest: "deepseek-chat",
-  summary: "deepseek-chat",
+  suggest: "deepseek-v4-flash",
+  summary: "deepseek-v4-flash",
   // Volcengine streaming ASR resource id.
   transcribe: "volc.bigasr.sauc.duration",
 };
