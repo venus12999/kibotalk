@@ -89,7 +89,7 @@ export const dict = {
     "deleteSessionDescription": "该会话的转写、建议与总结将被永久删除，无法恢复。",
     "resetPersonalData": "清除个人数据并重置",
     "resetTitle": "清除个人数据并重置？",
-    "resetDescription": "会删除偏好、声纹和历史，但保留已经准备好的本机语音能力。",
+    "resetDescription": "会删除偏好和历史，但保留已经准备好的本机语音能力。",
     "about": "关于",
     "version": "版本",
     "lockedWhileActive": "进行中或暂停的会话会锁定会话设置。停止后即可修改。",
