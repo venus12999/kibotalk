@@ -27,6 +27,8 @@ import { GuideSheet } from "./guide-sheet";
 import { UiLanguageMenu } from "./ui-language-menu";
 import { AccountMenu } from "./account-menu";
 import { HoldTalkButton } from "./hold-talk-button";
+import { VadDiagnostics } from "./vad-diagnostics";
+
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
