@@ -104,9 +104,7 @@ function AuthPage() {
             : "Create an account with your email — one account per email address"}
         </p>
 
-
-
-        <form className="space-y-3" onSubmit={submit}>
+        <form className="mt-5 space-y-3" onSubmit={submit}>
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
             <Input
