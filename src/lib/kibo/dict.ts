@@ -241,7 +241,7 @@ export const dict = {
     "deleteSessionDescription": "この会話の文字起こし・候補・まとめが完全に削除され、元に戻せません。",
     "resetPersonalData": "個人データを消去してリセット",
     "resetTitle": "個人データを消去してリセットしますか？",
-    "resetDescription": "設定、声紋、履歴を削除します。準備済みの音声機能は残ります。",
+    "resetDescription": "設定と履歴を削除します。準備済みの音声機能は残ります。",
     "about": "このアプリについて",
     "version": "バージョン",
     "lockedWhileActive": "進行中または一時停止中は会話設定を変更できません。停止後に変更できます。",
