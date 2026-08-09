@@ -54,7 +54,9 @@ export function VoiceprintCard({
 }) {
   const { t, prefs } = useKibo();
   const words = copy[prefs.uiLang] ?? copy.en;
-  const lines = sampleLines[prefs.conversationLang] ?? sampleLines.en;
+  const [lineLang, setLineLang] = React.useState<ConvLang>(prefs.conversationLang);
+  React.useEffect(() => setLineLang(prefs.conversationLang), [prefs.conversationLang]);
+  const lines = sampleLines[lineLang] ?? sampleLines.en;
   const [enrolled, setEnrolled] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const [remaining, setRemaining] = React.useState(0);
