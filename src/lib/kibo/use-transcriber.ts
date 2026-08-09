@@ -514,7 +514,7 @@ export function useTranscriber({
     pausedRef.current = true;
     setHolding(null);
     setLevel(0);
-    flushAll(MIN_PUSH_SPEECH_MS);
+    flushAll(MIN_PUSH_SPEECH_MS, "manual");
   }, [flushAll]);
 
   const setPaused = React.useCallback(
@@ -523,7 +523,7 @@ export function useTranscriber({
       pausedRef.current = paused || modeRef.current === "push";
       if (paused) {
         setHolding(null);
-        flushAll();
+        flushAll(undefined, "manual");
       }
       setLevel(0);
     },
@@ -531,7 +531,7 @@ export function useTranscriber({
   );
 
   const stop = React.useCallback(() => {
-    flushAll();
+    flushAll(undefined, "manual");
     teardown();
     pausedRef.current = false;
     userPausedRef.current = false;
@@ -552,6 +552,8 @@ export function useTranscriber({
     recording,
     level,
     transcribing,
+    diagnostics,
     sampleRate: TARGET_RATE,
   };
+
 }
