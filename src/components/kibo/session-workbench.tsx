@@ -530,22 +530,20 @@ export function SessionWorkbench() {
       </div>
 
       {/* Spacer so the floating phone dock never covers the last panel. */}
-      <div
-        aria-hidden
-        className="shrink-0 sm:hidden"
-        style={{ height: "calc(var(--kibo-dock-h, 9.5rem) + env(safe-area-inset-bottom))" }}
-      />
+      <div aria-hidden className="shrink-0 sm:hidden" style={{ height: dockHeight + 16 }} />
 
       {/* Phone: floating thumb-reach dock. Tablet/desktop: inline sticky bar. */}
       <div
+        ref={dockRef}
         className={cn(
           "glass-bar z-30 flex flex-col gap-2.5 px-3 py-3",
           "fixed inset-x-2 bottom-2 shadow-lg",
-          "sm:static sm:inset-auto sm:bottom-auto sm:mx-0 sm:mt-0 sm:gap-2 sm:px-4 sm:py-2.5 sm:shadow-none",
+          "sm:static sm:inset-auto sm:bottom-auto sm:gap-2 sm:px-4 sm:py-2.5 sm:shadow-none",
           "sm:sticky sm:bottom-0",
         )}
         style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
       >
+
 
         {active && life !== "preparing" ? (
           prefs.captureMode === "push" ? (
