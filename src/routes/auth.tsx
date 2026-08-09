@@ -404,7 +404,27 @@ function AuthPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            {mode === "signup" ? (
+              <p className="text-[11px] text-muted-foreground">{PASSWORD_HINT}</p>
+            ) : null}
           </div>
+          {mode === "signup" ? (
+            <div className="space-y-1.5">
+              <Label htmlFor="confirm-password">Confirm password</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                autoComplete="new-password"
+                required
+                minLength={6}
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+              />
+              {confirm && confirm !== password ? (
+                <p className="text-[11px] text-destructive">The two passwords don't match.</p>
+              ) : null}
+            </div>
+          ) : null}
           {error ? (
             <p className="rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
               {error}
