@@ -19,32 +19,8 @@ type RawCandidate = {
 
 const ROLES = new Set(["content", "particle", "punct"]);
 
-function normalize(raw: RawCandidate): Candidate | null {
-  const text = (raw.targetText ?? "").trim();
-  if (!text) return null;
-  const segments = Array.isArray(raw.segments)
-    ? raw.segments
-        .map((s): Segment | null => {
-          const t = (s?.t ?? "").toString();
-          if (!t) return null;
-          const raw = (s?.r ?? "").toString().trim();
-          // A reading identical to the surface adds nothing above the text.
-          const r = raw === t ? "" : raw;
-          const role: Segment["role"] = ROLES.has(s?.role ?? "")
-            ? (s?.role as NonNullable<Segment["role"]>)
-            : "content";
-          return r ? { t, r, role } : { t, role };
 
 
-        })
-        .filter((s): s is Segment => s !== null)
-    : [];
-  return {
-    text,
-    meaning: (raw.meaning ?? "").trim(),
-    ...(segments.length > 0 ? { segments } : {}),
-  };
-}
 
 const STR = (key: string) => new RegExp(`"${key}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"?`);
 const unquote = (v: string | undefined) => {
