@@ -126,6 +126,7 @@ export function SessionWorkbench() {
 
   type SuggestPayload = {
     turns: { speaker: "user" | "other"; text: string }[];
+    latest: string;
     conversationLang: string;
     uiLang: string;
     level: string;
@@ -146,8 +147,9 @@ export function SessionWorkbench() {
       setAiError("");
       setAiStatus(replay ? "retrying" : "connecting");
       setAiAttempt((n) => (replay ? n + 1 : 0));
-      // Insert an empty round immediately, then fill it in as tokens arrive.
-      setRounds((prev) => [{ id: roundId, prompt: text, candidates: [] }, ...prev]);
+      // Only the round for the newest line stays on screen: suggestions written
+      // for an older message are stale the moment the context moves on.
+      setRounds([{ id: roundId, prompt: text, candidates: [] }]);
 
       const onUpdate = (candidates: Candidate[]) => {
         if (req !== reqRef.current) return;
@@ -165,11 +167,13 @@ export function SessionWorkbench() {
       const payload: SuggestPayload =
         replay ?? {
           turns: turnsRef.current.map((x) => ({ speaker: x.speaker, text: x.text })),
+          latest: text,
           conversationLang: prefsRef.current.conversationLang,
           uiLang: prefsRef.current.uiLang,
           level: prefsRef.current.level,
         };
       lastRequestRef.current = { text, payload };
+
 
       // One transparent retry: a dropped connection mid-turn is common on mobile.
       const run = async () => {
