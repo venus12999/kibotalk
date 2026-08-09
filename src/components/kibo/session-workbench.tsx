@@ -67,16 +67,9 @@ const copy = {
 
 
 export function SessionWorkbench() {
-  const { prefs, t, addSession, user } = useKibo();
-  const [voiceprintReady, setVoiceprintReady] = React.useState(true);
-  const [enrollDismissed, setEnrollDismissed] = React.useState(false);
-
-  React.useEffect(() => {
-    const sync = () => setVoiceprintReady(loadVoiceprint() !== null);
-    sync();
-    window.addEventListener("kibo:voiceprint", sync);
-    return () => window.removeEventListener("kibo:voiceprint", sync);
-  }, []);
+  const { prefs, t, addSession } = useKibo();
+  /** Continuous mode: who the microphone is currently attributed to. */
+  const [speaker, setSpeaker] = React.useState<"user" | "other">("other");
   const [life, setLife] = React.useState<Lifecycle>("idle");
   const [turns, setTurns] = React.useState<Turn[]>([]);
   const [rounds, setRounds] = React.useState<Round[]>([]);
