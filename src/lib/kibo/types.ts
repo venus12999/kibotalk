@@ -4,6 +4,8 @@ export type Level = "beginner" | "intermediate" | "advanced";
 export type Theme = "system" | "light" | "dark";
 export type AudioSource = "microphone" | "system" | "both";
 export type Lifecycle = "idle" | "preparing" | "running" | "paused" | "stopped";
+/** How turns are captured: hold a button, or listen non-stop and ask manually. */
+export type CaptureMode = "push" | "continuous";
 
 export type Prefs = {
   uiLang: UiLang;
@@ -14,6 +16,7 @@ export type Prefs = {
   theme: Theme;
   audioSource: AudioSource;
   micDeviceId: string;
+  captureMode: CaptureMode;
   onboarded: boolean;
 };
 
