@@ -36,6 +36,8 @@ export function HoldTalkButton({
   // Bumping these keys restarts the one-shot press / release animations.
   const [pressKey, setPressKey] = React.useState(0);
   const [releaseKey, setReleaseKey] = React.useState(0);
+  const onEndRef = React.useRef(onEnd);
+  onEndRef.current = onEnd;
 
   React.useEffect(() => {
     if (!active) {
@@ -47,19 +49,47 @@ export function HoldTalkButton({
     return () => window.clearInterval(id);
   }, [active]);
 
-  const release = React.useCallback(
-    (event?: React.PointerEvent<HTMLButtonElement>) => {
-      if (pointerRef.current === null) return;
-      if (event && event.pointerId !== pointerRef.current) return;
-      pointerRef.current = null;
-      hapticPressEnd();
-      setReleaseKey((k) => k + 1);
-      onEnd();
-    },
-    [onEnd],
-  );
+  /**
+   * Release is tracked on `window`, not via pointer capture: on iOS Safari a
+   * re-render of the button (which happens the instant a turn starts) can drop
+   * an implicit pointer capture and fire `lostpointercapture`, which used to
+   * end the turn immediately — the "long press doesn't work on phones" bug.
+   */
+  const release = React.useCallback((pointerId?: number) => {
+    if (pointerRef.current === null) return;
+    if (pointerId !== undefined && pointerId !== pointerRef.current) return;
+    pointerRef.current = null;
+    hapticPressEnd();
+    setReleaseKey((k) => k + 1);
+    onEndRef.current();
+  }, []);
+
+  React.useEffect(() => () => release(), [release]);
 
   const inert = disabled || blocked;
+
+  const begin = (pointerId: number) => {
+    pointerRef.current = pointerId;
+    hapticPressStart();
+    setPressKey((k) => k + 1);
+    onBegin();
+
+    const up = (e: PointerEvent) => release(e.pointerId);
+    const cancel = (e: PointerEvent) => release(e.pointerId);
+    const blur = () => release();
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", cancel);
+    window.addEventListener("blur", blur);
+    const cleanup = () => {
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", cancel);
+      window.removeEventListener("blur", blur);
+      window.removeEventListener("pointerup", cleanup);
+      window.removeEventListener("pointercancel", cleanup);
+    };
+    window.addEventListener("pointerup", cleanup);
+    window.addEventListener("pointercancel", cleanup);
+  };
 
   return (
     <button
@@ -67,6 +97,7 @@ export function HoldTalkButton({
       aria-pressed={active}
       aria-label={label}
       disabled={disabled}
+      style={{ WebkitTouchCallout: "none", WebkitUserSelect: "none", touchAction: "none" }}
       className={cn(
         "relative flex h-20 flex-1 select-none touch-none flex-col items-center justify-center gap-0.5 overflow-hidden rounded-2xl sm:h-16",
         "text-sm font-semibold transition-all duration-150 ease-out will-change-transform",
@@ -85,18 +116,13 @@ export function HoldTalkButton({
           return;
         }
         e.preventDefault();
-        pointerRef.current = e.pointerId;
-        e.currentTarget.setPointerCapture(e.pointerId);
-        hapticPressStart();
-        setPressKey((k) => k + 1);
-        onBegin();
+        begin(e.pointerId);
       }}
-      onPointerUp={release}
-      onPointerCancel={release}
-      onLostPointerCapture={() => release()}
+      onTouchStart={(e) => e.preventDefault()}
       onContextMenu={(e) => e.preventDefault()}
       onDragStart={(e) => e.preventDefault()}
     >
+
       {/* press ripple */}
       {pressKey > 0 ? (
         <span
