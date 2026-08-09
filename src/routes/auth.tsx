@@ -148,16 +148,14 @@ function AuthPage() {
           return;
         }
         if (!data.session) {
-          goVerify(`We sent a confirmation link to ${email}. Open it to activate your account.`);
+          goVerify(`We sent a 6-digit verification code to ${email}.`);
           return;
         }
       } else {
         const { error: err } = await supabase.auth.signInWithPassword({ email, password });
         if (err) {
           if (/not confirmed|confirm your email/i.test(err.message)) {
-            goVerify(
-              "Your email isn't confirmed yet. Open the link we sent, or request a new one below.",
-            );
+            goVerify("Your email isn't verified yet. Enter the code we emailed you.");
             return;
           }
           throw err;
