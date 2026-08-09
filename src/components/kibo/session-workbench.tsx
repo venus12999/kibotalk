@@ -316,6 +316,8 @@ export function SessionWorkbench() {
     }
     setLife("stopped");
     setStreaming(false);
+    setAiStatus("idle");
+    setAiError("");
     setInterim({ user: "", other: "" });
     setConfirmStop(false);
   };
