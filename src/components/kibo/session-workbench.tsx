@@ -32,6 +32,14 @@ import { VadDiagnostics } from "./vad-diagnostics";
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
+/** Shown when the model returns nothing usable, so the panel is never blank. */
+const emptyAiMessage: Record<string, string> = {
+  zh: "这次没有生成建议，点重试再来一次。",
+  ja: "候補が生成されませんでした。再試行してください。",
+  en: "No suggestions came back — tap retry.",
+};
+
+
 
 const copy = {
   zh: {
