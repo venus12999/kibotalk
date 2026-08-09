@@ -414,3 +414,41 @@
   animation: ptt-flash 320ms ease-out forwards;
 }
 
+
+/* Compact typography/spacing for two-column (row) layout on narrow screens */
+@media (max-width: 640px) {
+  .panel-compact :is(.text-base) {
+    font-size: 0.8125rem;
+    line-height: 1.15rem;
+  }
+  .panel-compact :is(.text-sm) {
+    font-size: 0.75rem;
+    line-height: 1.05rem;
+  }
+  .panel-compact :is(.text-xs) {
+    font-size: 0.6563rem;
+    line-height: 0.95rem;
+  }
+  .panel-compact :is(.text-\[11px\]) {
+    font-size: 0.625rem;
+    line-height: 0.9rem;
+  }
+  .panel-compact :is(.gap-3) {
+    gap: 0.5rem;
+  }
+  .panel-compact :is(.p-3) {
+    padding: 0.5rem;
+  }
+  .panel-compact :is(.px-3) {
+    padding-inline: 0.5rem;
+  }
+  .panel-compact :is(.py-2) {
+    padding-block: 0.3rem;
+  }
+  .panel-compact :is(button) {
+    min-height: 1.9rem;
+  }
+  .panel-compact * {
+    overflow-wrap: anywhere;
+  }
+}

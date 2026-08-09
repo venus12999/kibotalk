@@ -454,20 +454,23 @@ export function SessionWorkbench() {
       <div
         className={cn(
           "grid min-h-0 flex-1 gap-3 sm:gap-4",
-          prefs.panelLayout === "row" && "grid-cols-2",
+          prefs.panelLayout === "row" &&
+            "grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-2 sm:gap-4",
           prefs.panelLayout === "column" && "grid-cols-1",
           (!prefs.panelLayout || prefs.panelLayout === "auto") && "lg:grid-cols-[1.15fr_1fr]",
         )}
       >
         <section
           className={cn(
-            "glass-transcript flex min-h-[9rem] flex-col p-3 sm:p-5",
-            prefs.panelLayout === "row" && "max-h-[52dvh] sm:max-h-none sm:min-h-[20rem] lg:min-h-0",
+            "glass-transcript flex min-h-[9rem] min-w-0 flex-col p-3 sm:p-5",
+            prefs.panelLayout === "row" &&
+              "panel-compact max-h-[46dvh] min-h-[8rem] p-2.5 sm:max-h-none sm:min-h-[20rem] sm:p-5 lg:min-h-0",
             prefs.panelLayout === "column" && "max-h-[34dvh] sm:max-h-[40dvh] sm:min-h-[12rem]",
             (!prefs.panelLayout || prefs.panelLayout === "auto") &&
               "max-h-[34dvh] sm:max-h-none sm:min-h-[20rem] lg:min-h-0",
           )}
         >
+
 
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold">{t("conversation")}</h2>
@@ -565,13 +568,15 @@ export function SessionWorkbench() {
 
         <section
           className={cn(
-            "paper-sheet flex min-h-[10rem] flex-col p-3 sm:p-5",
-            prefs.panelLayout === "row" && "max-h-[52dvh] sm:max-h-none sm:min-h-[18rem] lg:min-h-0",
+            "paper-sheet flex min-h-[10rem] min-w-0 flex-col p-3 sm:p-5",
+            prefs.panelLayout === "row" &&
+              "panel-compact max-h-[46dvh] min-h-[8rem] p-2.5 sm:max-h-none sm:min-h-[18rem] sm:p-5 lg:min-h-0",
             prefs.panelLayout === "column" && "max-h-[38dvh] sm:max-h-[40dvh] sm:min-h-[12rem]",
             (!prefs.panelLayout || prefs.panelLayout === "auto") &&
               "max-h-[38dvh] sm:max-h-none sm:min-h-[18rem] lg:min-h-0",
           )}
         >
+
 
           <h2 className="text-sm font-bold">{t("suggestions")}</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">{t("aiSuggestions")}</p>
