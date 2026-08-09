@@ -15,7 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useKibo, langLabel, levelLabel } from "@/lib/kibo/store";
 import { makeTurn } from "@/lib/kibo/mock";
-import type { Lifecycle, Round, Turn } from "@/lib/kibo/types";
+import type { Candidate, Lifecycle, Round, Turn } from "@/lib/kibo/types";
 import { useTranscriber } from "@/lib/kibo/use-transcriber";
 import { summarizeSession } from "@/lib/kibo/ai.functions";
 import { streamSuggestions } from "@/lib/kibo/suggest-stream";
@@ -75,6 +75,7 @@ export function SessionWorkbench() {
   const prefsRef = React.useRef(prefs);
   prefsRef.current = prefs;
   const reqRef = React.useRef(0);
+  const abortRef = React.useRef<AbortController | null>(null);
 
   const handleInterim = React.useCallback((text: string, speaker: "user" | "other") => {
     setInterim((prev) => ({ ...prev, [speaker]: text }));
