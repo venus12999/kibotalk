@@ -11,16 +11,15 @@ import logoAsset from "@/assets/kibotalk-logo.png.asset.json";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign in — KiboTalk" },
+      { title: "登录 — KiboTalk 语言陪练" },
       {
         name: "description",
-        content:
-          "Sign in to KiboTalk to sync your preferences, voice settings and conversation history across devices.",
+        content: "登录 KiboTalk，同步你的偏好设置、语音配置与会话记录，随时随地继续练习口语。",
       },
-      { property: "og:title", content: "Sign in — KiboTalk" },
+      { property: "og:title", content: "登录 — KiboTalk 语言陪练" },
       {
         property: "og:description",
-        content: "Sync your KiboTalk preferences and conversation history across devices.",
+        content: "登录 KiboTalk，跨设备同步偏好设置与会话记录。",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -39,15 +38,25 @@ function AuthPage() {
   const [error, setError] = React.useState("");
   const [notice, setNotice] = React.useState("");
   const [cooldown, setCooldown] = React.useState(0);
-  const PASSWORD_HINT = "At least 6 characters — letters, numbers or symbols.";
+  const PASSWORD_HINT = "至少 6 位，可包含字母、数字或符号。";
+
+  // Mobile keyboards love to capitalize and append a space — normalize before
+  // sending, otherwise Supabase reports "invalid credentials" for a correct password.
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanPassword = password;
+
+  const describeError = (raw: string) => {
+    if (/invalid login credentials|invalid_credentials/i.test(raw))
+      return "邮箱或密码不正确。请检查有没有多余空格或大小写问题；忘记密码可以点下方「忘记密码？」重设。";
+    if (/rate|too many|seconds/i.test(raw)) return "请求过于频繁，请稍等一会儿再试。";
+    if (/network|fetch/i.test(raw)) return "网络连接失败，请检查网络后重试。";
+    return raw;
+  };
 
   React.useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) void navigate({ to: "/", replace: true });
     });
-    // The confirmation link signs the user in — leave the verify screen as soon
-    // as it lands, including when the link was opened in another tab (supabase-js
-    // mirrors the session across tabs and emits SIGNED_IN here).
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session) {
         void navigate({ to: "/", replace: true });
@@ -56,8 +65,6 @@ function AuthPage() {
     return () => sub.subscription.unsubscribe();
   }, [navigate]);
 
-  // While waiting on the email, poll gently so a confirmation completed on the
-  // phone still lands the user in the app on this device.
   React.useEffect(() => {
     if (mode !== "verify") return;
     const id = window.setInterval(() => {
@@ -81,7 +88,6 @@ function AuthPage() {
     setCooldown(60);
   };
 
-  /** Explicit "I clicked the link" path for users who confirmed elsewhere. */
   const checkNow = async () => {
     if (busy) return;
     setBusy(true);
@@ -92,10 +98,10 @@ function AuthPage() {
         await navigate({ to: "/", replace: true });
         return;
       }
-      if (password) {
+      if (cleanPassword) {
         const { data: signed, error: err } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+          email: cleanEmail,
+          password: cleanPassword,
         });
         if (signed.session) {
           await navigate({ to: "/", replace: true });
@@ -103,15 +109,13 @@ function AuthPage() {
         }
         if (err && !/not confirmed|confirm your email/i.test(err.message)) throw err;
       }
-      setNotice("Still waiting on the confirmation — open the link in the email, then try again.");
+      setNotice("还没有检测到验证完成，请先打开邮件里的链接，再点这里继续。");
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(describeError(err instanceof Error ? err.message : String(err)));
     } finally {
       setBusy(false);
     }
   };
-
-
 
   const resend = async () => {
     if (cooldown > 0 || busy) return;
@@ -121,48 +125,37 @@ function AuthPage() {
     try {
       const { error: err } = await supabase.auth.resend({
         type: "signup",
-        email,
+        email: cleanEmail,
         options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
       });
       if (err) throw err;
-      setNotice(`A new confirmation link is on its way to ${email}.`);
+      setNotice(`新的验证链接已发送至 ${cleanEmail}。`);
       setCooldown(60);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setError(
-        /rate|too many|seconds/i.test(msg)
-          ? "Too many requests — please wait a moment before asking for another code."
-          : msg,
-      );
+      setError(describeError(err instanceof Error ? err.message : String(err)));
     } finally {
       setBusy(false);
     }
   };
 
-
   const sendReset = async () => {
     if (busy || cooldown > 0) return;
-    if (!email) {
-      setError("Enter your email first.");
+    if (!cleanEmail) {
+      setError("请先填写邮箱。");
       return;
     }
     setBusy(true);
     setError("");
     setNotice("");
     try {
-      const { error: err } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error: err } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (err) throw err;
-      setNotice(`We sent a password reset link to ${email}. Open it to choose a new password.`);
+      setNotice(`重设密码链接已发送至 ${cleanEmail}，打开邮件即可设置新密码。`);
       setCooldown(60);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setError(
-        /rate|too many|seconds/i.test(msg)
-          ? "Too many requests — please wait a moment before asking for another email."
-          : msg,
-      );
+      setError(describeError(err instanceof Error ? err.message : String(err)));
     } finally {
       setBusy(false);
     }
@@ -171,12 +164,12 @@ function AuthPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (mode === "signup") {
-      if (password.length < 6) {
-        setError(`Password too short. ${PASSWORD_HINT}`);
+      if (cleanPassword.length < 6) {
+        setError(`密码太短。${PASSWORD_HINT}`);
         return;
       }
-      if (password !== confirm) {
-        setError("The two passwords don't match.");
+      if (cleanPassword !== confirm) {
+        setError("两次输入的密码不一致。");
         return;
       }
     }
@@ -186,33 +179,35 @@ function AuthPage() {
     try {
       if (mode === "signup") {
         const { data, error: err } = await supabase.auth.signUp({
-          email,
-          password,
+          email: cleanEmail,
+          password: cleanPassword,
           options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
         });
         if (err) {
           if (/already registered|already exists|User already/i.test(err.message)) {
-            setError("This email already has an account. Sign in instead.");
+            setError("该邮箱已注册，请直接登录。");
             setMode("signin");
             return;
           }
           throw err;
         }
-        // Supabase returns an empty identities array when the email is taken.
         if (data.user && (data.user.identities?.length ?? 0) === 0) {
-          setError("This email already has an account. Sign in instead.");
+          setError("该邮箱已注册，请直接登录。");
           setMode("signin");
           return;
         }
         if (!data.session) {
-          goVerify(`We sent a confirmation link to ${email}. Open it to activate your account.`);
+          goVerify(`验证链接已发送至 ${cleanEmail}，打开邮件即可激活账号。`);
           return;
         }
       } else {
-        const { error: err } = await supabase.auth.signInWithPassword({ email, password });
+        const { error: err } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password: cleanPassword,
+        });
         if (err) {
           if (/not confirmed|confirm your email/i.test(err.message)) {
-            goVerify("Your email isn't verified yet. Open the confirmation link we emailed you.");
+            goVerify("邮箱还没有验证，请先打开我们发送的验证链接。");
             return;
           }
           throw err;
@@ -220,7 +215,7 @@ function AuthPage() {
       }
       await navigate({ to: "/" });
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(describeError(err instanceof Error ? err.message : String(err)));
     } finally {
       setBusy(false);
     }
@@ -241,10 +236,10 @@ function AuthPage() {
           </div>
           <h2 className="mt-4 flex items-center gap-2 text-sm font-semibold">
             <KeyRound className="size-4 text-primary" />
-            Reset your password
+            重设密码
           </h2>
           <p className="mt-2 text-xs text-muted-foreground">
-            Enter your account email and we'll send you a link to set a new password.
+            输入注册邮箱，我们会发送一封设置新密码的邮件。
           </p>
 
           <form
@@ -255,11 +250,14 @@ function AuthPage() {
             }}
           >
             <div className="space-y-1.5">
-              <Label htmlFor="reset-email">Email</Label>
+              <Label htmlFor="reset-email">邮箱</Label>
               <Input
                 id="reset-email"
                 type="email"
                 autoComplete="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -275,7 +273,7 @@ function AuthPage() {
             ) : null}
             <Button type="submit" className="w-full" disabled={busy || cooldown > 0}>
               {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-              {cooldown > 0 ? `Resend link in ${cooldown}s` : "Send reset link"}
+              {cooldown > 0 ? `${cooldown} 秒后可重新发送` : "发送重设链接"}
             </Button>
           </form>
 
@@ -288,7 +286,7 @@ function AuthPage() {
               setNotice("");
             }}
           >
-            Back to sign in
+            返回登录
           </button>
         </div>
       </main>
@@ -310,13 +308,11 @@ function AuthPage() {
           </div>
           <h2 className="mt-4 flex items-center gap-2 text-sm font-semibold">
             <MailCheck className="size-4 text-primary" />
-            Confirm your email
+            验证你的邮箱
           </h2>
           <p className="mt-2 text-xs text-muted-foreground">
-            We sent a confirmation link to{" "}
-            <span className="font-medium text-foreground">{email}</span>. Click it and you'll be
-            signed in automatically. Links expire after a while — if yours no longer works, send a
-            new one.
+            验证链接已发送至 <span className="font-medium text-foreground">{cleanEmail}</span>
+            。点击链接后会自动登录。链接有时效，失效了可以重新发送。
           </p>
 
           {error ? (
@@ -330,10 +326,9 @@ function AuthPage() {
             </p>
           ) : null}
 
-
           <Button className="mt-3 w-full" disabled={busy} onClick={() => void checkNow()}>
             {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-            I've confirmed — continue
+            我已验证，继续
           </Button>
 
           <Button
@@ -342,9 +337,8 @@ function AuthPage() {
             disabled={busy || cooldown > 0}
             onClick={() => void resend()}
           >
-            {cooldown > 0 ? `Resend link in ${cooldown}s` : "Resend confirmation email"}
+            {cooldown > 0 ? `${cooldown} 秒后可重新发送` : "重新发送验证邮件"}
           </Button>
-
 
           <button
             type="button"
@@ -355,7 +349,7 @@ function AuthPage() {
               setNotice("");
             }}
           >
-            Back to sign in
+            返回登录
           </button>
         </div>
       </main>
@@ -376,29 +370,35 @@ function AuthPage() {
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
           {mode === "signin"
-            ? "Sign in with your email to sync your sessions"
-            : "Create an account with your email — one account per email address"}
+            ? "使用邮箱登录，同步你的会话记录与设置"
+            : "使用邮箱注册 —— 每个邮箱只能创建一个账号"}
         </p>
-
 
         <form className="mt-5 space-y-3" onSubmit={submit}>
           <div className="space-y-1.5">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">邮箱</Label>
             <Input
               id="email"
               type="email"
+              inputMode="email"
               autoComplete="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">密码</Label>
             <Input
               id="password"
               type="password"
               autoComplete={mode === "signin" ? "current-password" : "new-password"}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               required
               minLength={6}
               value={password}
@@ -410,18 +410,21 @@ function AuthPage() {
           </div>
           {mode === "signup" ? (
             <div className="space-y-1.5">
-              <Label htmlFor="confirm-password">Confirm password</Label>
+              <Label htmlFor="confirm-password">确认密码</Label>
               <Input
                 id="confirm-password"
                 type="password"
                 autoComplete="new-password"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 required
                 minLength={6}
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
               />
               {confirm && confirm !== password ? (
-                <p className="text-[11px] text-destructive">The two passwords don't match.</p>
+                <p className="text-[11px] text-destructive">两次输入的密码不一致。</p>
               ) : null}
             </div>
           ) : null}
@@ -435,7 +438,7 @@ function AuthPage() {
           ) : null}
           <Button type="submit" className="w-full" disabled={busy}>
             {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-            {mode === "signin" ? "Sign in" : "Create account"}
+            {mode === "signin" ? "登录" : "注册"}
           </Button>
         </form>
 
@@ -450,11 +453,9 @@ function AuthPage() {
               setCooldown(0);
             }}
           >
-            Forgot your password?
+            忘记密码？
           </button>
         ) : null}
-
-
 
         <button
           type="button"
@@ -466,13 +467,12 @@ function AuthPage() {
             setNotice("");
           }}
         >
-          {mode === "signin" ? "No account? Create one" : "Already have an account? Sign in"}
+          {mode === "signin" ? "还没有账号？立即注册" : "已有账号？去登录"}
         </button>
 
         <p className="mt-3 text-center text-[11px] text-muted-foreground">
-          Every account needs a confirmed email before you can start a session.
+          账号需完成邮箱验证后才能开始会话。
         </p>
-
       </div>
     </main>
   );
