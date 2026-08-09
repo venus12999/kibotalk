@@ -457,31 +457,6 @@ export function SessionWorkbench() {
             </div>
           ) : null}
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            {!active ? (
-              <Button className="flex-1" onClick={() => void startSession()}>
-                <Play className="size-4" />
-                {t("start")}
-              </Button>
-            ) : (
-              <>
-                <Button
-                  variant="soft"
-                  className="flex-1"
-                  disabled={life === "preparing"}
-                  onClick={togglePause}
-                >
-                  {life === "paused" ? <Play className="size-4" /> : <Pause className="size-4" />}
-                  {life === "paused" ? t("resume") : t("pause")}
-                </Button>
-                <Button variant="destructive" className="flex-1" onClick={() => setConfirmStop(true)}>
-                  <Square className="size-4" />
-                  {t("stop")}
-                </Button>
-              </>
-            )}
-          </div>
-
         </section>
 
         <section className="paper-sheet flex min-h-[18rem] flex-col p-3 sm:p-5 lg:min-h-0">
@@ -496,6 +471,35 @@ export function SessionWorkbench() {
             previousRoundLabel={t("previousRound")}
           />
         </section>
+      </div>
+
+      {/* Kept in the viewport on phones, where the panels scroll past the fold. */}
+      <div
+        className="glass-bar sticky bottom-0 z-20 flex gap-2 px-3 py-2.5 sm:px-4"
+        style={{ marginBottom: "calc(env(safe-area-inset-bottom) * -1)", paddingBottom: "max(0.625rem, env(safe-area-inset-bottom))" }}
+      >
+        {!active ? (
+          <Button className="flex-1" onClick={() => void startSession()}>
+            <Play className="size-4" />
+            {t("start")}
+          </Button>
+        ) : (
+          <>
+            <Button
+              variant="soft"
+              className="flex-1"
+              disabled={life === "preparing"}
+              onClick={togglePause}
+            >
+              {life === "paused" ? <Play className="size-4" /> : <Pause className="size-4" />}
+              {life === "paused" ? t("resume") : t("pause")}
+            </Button>
+            <Button variant="destructive" className="flex-1" onClick={() => setConfirmStop(true)}>
+              <Square className="size-4" />
+              {t("stop")}
+            </Button>
+          </>
+        )}
       </div>
 
       <AlertDialog open={confirmStop} onOpenChange={setConfirmStop}>
