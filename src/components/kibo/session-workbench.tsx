@@ -265,6 +265,8 @@ export function SessionWorkbench() {
     language: prefs.conversationLang,
     audioSource: prefs.audioSource,
     micDeviceId: prefs.micDeviceId,
+    mode: prefs.captureMode,
+    activeSpeaker: speaker,
     onInterim: handleInterim,
     onFinal: handleFinal,
     onError: handleError,
