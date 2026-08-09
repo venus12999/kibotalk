@@ -296,6 +296,7 @@ export function SuggestionStage({
   canRetry = true,
   emptyHint,
   previousRoundLabel,
+  detailLabels,
   className,
 }: {
   rounds: Round[];
