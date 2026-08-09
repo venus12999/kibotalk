@@ -346,6 +346,8 @@ export const dict = {
     "holdMe": "Hold: me",
     "holdOther": "Hold: other",
     "holdHint": "Hold while the person speaks, release to finish the sentence.",
+    "holdingMe": "Recording · me",
+    "holdingOther": "Recording · other",
     "askIdeas": "Give me ideas",
     "permissions": "Permissions",
     "microphonePermission": "Microphone permission",
