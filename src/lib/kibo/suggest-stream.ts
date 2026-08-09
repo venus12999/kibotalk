@@ -24,8 +24,11 @@ function normalize(raw: RawCandidate): Candidate | null {
           const t = (s?.t ?? "").toString();
           if (!t) return null;
           const r = (s?.r ?? "").toString().trim();
-          const role = ROLES.has(s?.role ?? "") ? (s?.role as Segment["role"]) : "content";
+          const role: Segment["role"] = ROLES.has(s?.role ?? "")
+            ? (s?.role as NonNullable<Segment["role"]>)
+            : "content";
           return r ? { t, r, role } : { t, role };
+
         })
         .filter((s): s is Segment => s !== null)
     : [];
