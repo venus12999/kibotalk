@@ -188,7 +188,7 @@ const StatusBar = React.memo(function StatusBar({
         {status === "error" && errorMessage ? (
           <span className="ml-1 font-normal opacity-80">{errorMessage}</span>
         ) : null}
-        {attempt > 0 && status !== "idle" ? (
+        {attempt > 0 ? (
           <span className="ml-1 font-normal opacity-70">
             {labels.attempt.replace("{n}", String(attempt))}
           </span>
