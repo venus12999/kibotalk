@@ -102,7 +102,7 @@ export const dict = {
     "activeSessionRecovered": "上次会话意外中断，已恢复为暂停状态。",
     "selectLanguage": "选择对话语言",
     "onboardingDescription": "确认双方使用的语言和你的当前水平。",
-    "continueVoiceprint": "确认并继续",
+    "continueSetup": "确认并继续",
     "languageJapanese": "日语",
     "languageEnglish": "英语",
     "languageChinese": "中文",
