@@ -25,6 +25,7 @@ import { SettingsSheet } from "./settings-sheet";
 import { HistorySheet } from "./history-sheet";
 import { UiLanguageMenu } from "./ui-language-menu";
 import { AccountMenu } from "./account-menu";
+import { HoldTalkButton } from "./hold-talk-button";
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
