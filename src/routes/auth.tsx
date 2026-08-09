@@ -1,6 +1,6 @@
 import * as React from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { KeyRound, Loader2, MailCheck } from "lucide-react";
+import { Eye, EyeOff, KeyRound, Loader2, MailCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +34,8 @@ function AuthPage() {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [confirm, setConfirm] = React.useState("");
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [showConfirm, setShowConfirm] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState("");
   const [notice, setNotice] = React.useState("");
@@ -392,18 +394,31 @@ function AuthPage() {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="password">密码</Label>
-            <Input
-              id="password"
-              type="password"
-              autoComplete={mode === "signin" ? "current-password" : "new-password"}
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                required
+                minLength={6}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                tabIndex={-1}
+                aria-label={showPassword ? "隐藏密码" : "显示密码"}
+                aria-pressed={showPassword}
+                onClick={() => setShowPassword((s) => !s)}
+                className="absolute inset-y-0 right-0 flex items-center justify-center px-3 text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:text-foreground"
+              >
+                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
+            </div>
             {mode === "signup" ? (
               <p className="text-[11px] text-muted-foreground">{PASSWORD_HINT}</p>
             ) : null}
@@ -411,18 +426,31 @@ function AuthPage() {
           {mode === "signup" ? (
             <div className="space-y-1.5">
               <Label htmlFor="confirm-password">确认密码</Label>
-              <Input
-                id="confirm-password"
-                type="password"
-                autoComplete="new-password"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                required
-                minLength={6}
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-              />
+              <div className="relative">
+                <Input
+                  id="confirm-password"
+                  type={showConfirm ? "text" : "password"}
+                  autoComplete="new-password"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  required
+                  minLength={6}
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  aria-label={showConfirm ? "隐藏密码" : "显示密码"}
+                  aria-pressed={showConfirm}
+                  onClick={() => setShowConfirm((s) => !s)}
+                  className="absolute inset-y-0 right-0 flex items-center justify-center px-3 text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:text-foreground"
+                >
+                  {showConfirm ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
               {confirm && confirm !== password ? (
                 <p className="text-[11px] text-destructive">两次输入的密码不一致。</p>
               ) : null}
