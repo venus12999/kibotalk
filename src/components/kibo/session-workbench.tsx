@@ -556,8 +556,8 @@ export function SessionWorkbench() {
         className={cn(
           "glass-bar z-30 flex flex-col gap-2.5 px-3 py-3",
           "fixed inset-x-2 bottom-2 shadow-lg",
-          "sm:static sm:inset-auto sm:bottom-auto sm:gap-2 sm:px-4 sm:py-2.5 sm:shadow-none",
-          "sm:sticky sm:bottom-0",
+          "sm:sticky sm:inset-x-auto sm:bottom-0 sm:gap-2 sm:px-4 sm:py-2.5 sm:shadow-none",
+
         )}
         style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
       >
