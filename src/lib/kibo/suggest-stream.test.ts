@@ -88,9 +88,14 @@ describe("parseCandidates — mid-stream partials", () => {
     expect(texts(buffer)).toEqual(["Done one", "Half tw"]);
   });
 
-  test("waits for the next frame when a partial ends mid escape sequence", () => {
-    expect(texts('{"targetText":"Line\\')).toEqual([]);
+  test("drops the dangling backslash of an unfinished escape", () => {
+    expect(texts('{"targetText":"Line\\')).toEqual(["Line"]);
   });
+
+  test("waits for the next frame when a unicode escape is half written", () => {
+    expect(texts('{"targetText":"Line\\u00')).toEqual([]);
+  });
+
 
   test("grows monotonically as deltas arrive", () => {
     const full = '{"targetText":"Sounds good to me.","meaning":"我同意。"}';
