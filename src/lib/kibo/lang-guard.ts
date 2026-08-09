@@ -24,8 +24,9 @@ export function matchesLanguage(text: string, lang: ConvLang): boolean {
     return KANA.test(value) || CJK.test(value) || !LATIN.test(value);
   }
   if (lang === "zh") {
-    return CJK.test(value) || !LATIN.test(value) ? !KANA.test(value) : false;
+    return (CJK.test(value) || !LATIN.test(value)) && !KANA.test(value);
   }
+
   // English: reject text that is mostly non-latin script.
   const letters = value.replace(/[^\p{L}]/gu, "");
   if (!letters) return true;
