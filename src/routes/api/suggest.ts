@@ -34,7 +34,8 @@ export const Route = createFileRoute("/api/suggest")({
         }
 
         const { getAiModels } = await import("@/lib/kibo/model-config.server");
-        const aiModels = await getAiModels();
+        const { getCoachPrompt } = await import("@/lib/kibo/coach-prompt.server");
+        const [aiModels, coachPrompt] = await Promise.all([getAiModels(), getCoachPrompt()]);
 
         const target = LANG_NAME[body.conversationLang ?? "en"] ?? "English";
         const ui = LANG_NAME[body.uiLang ?? "en"] ?? "English";
@@ -87,6 +88,7 @@ export const Route = createFileRoute("/api/suggest")({
                     ? `Reply directly to this newest line from the other person: "${latest}". Earlier turns are background context only — never answer an older line.`
                     : ``,
                   briefing,
+                  coachPrompt,
                   `Propose exactly 3 short, distinct, natural replies the user could say next, in ${target}.`,
 
 
