@@ -76,5 +76,6 @@ export const defaultPrefs: Prefs = {
   audioSource: "microphone",
   micDeviceId: "",
   captureMode: "push",
+  panelLayout: "auto",
   onboarded: false,
 };
