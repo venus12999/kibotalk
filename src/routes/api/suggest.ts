@@ -46,6 +46,23 @@ export const Route = createFileRoute("/api/suggest")({
           [...body.turns].reverse().find((t) => t.speaker === "other")?.text.trim() ||
           "";
 
+        // Emotion-intelligence read of the moment: dictionary match on the
+        // newest line plus the user's own last line, so replies serve the
+        // real communication need instead of just answering the words.
+        let briefing = "";
+        try {
+          const { loadEmotionLibrary, matchEmotions, emotionBriefing } = await import(
+            "@/lib/kibo/emotion.server"
+          );
+          const rows = await loadEmotionLibrary();
+          const myLast = [...body.turns].reverse().find((t) => t.speaker === "user")?.text ?? "";
+          const matches = matchEmotions(`${latest}\n${myLast}`, rows, 3);
+          briefing = emotionBriefing(matches);
+        } catch {
+          /* emotion library is an enhancement; never block a suggestion */
+        }
+
+
         const upstream = await fetch("https://api.deepseek.com/chat/completions", {
           method: "POST",
           headers: {
