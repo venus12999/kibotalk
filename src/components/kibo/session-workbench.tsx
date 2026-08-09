@@ -350,7 +350,11 @@ export function SessionWorkbench() {
   React.useEffect(() => {
     const el = dockRef.current;
     if (!el || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(([entry]) => setDockHeight(entry.contentRect.height));
+    const ro = new ResizeObserver((entries) => {
+      const h = entries[0]?.contentRect.height;
+      if (h) setDockHeight(h);
+    });
+
     ro.observe(el);
     setDockHeight(el.getBoundingClientRect().height);
     return () => ro.disconnect();
