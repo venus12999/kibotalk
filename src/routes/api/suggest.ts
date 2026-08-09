@@ -46,6 +46,23 @@ export const Route = createFileRoute("/api/suggest")({
           [...body.turns].reverse().find((t) => t.speaker === "other")?.text.trim() ||
           "";
 
+        // Emotion-intelligence read of the moment: dictionary match on the
+        // newest line plus the user's own last line, so replies serve the
+        // real communication need instead of just answering the words.
+        let briefing = "";
+        try {
+          const { loadEmotionLibrary, matchEmotions, emotionBriefing } = await import(
+            "@/lib/kibo/emotion.server"
+          );
+          const rows = await loadEmotionLibrary();
+          const myLast = [...body.turns].reverse().find((t) => t.speaker === "user")?.text ?? "";
+          const matches = matchEmotions(`${latest}\n${myLast}`, rows, 3);
+          briefing = emotionBriefing(matches);
+        } catch {
+          /* emotion library is an enhancement; never block a suggestion */
+        }
+
+
         const upstream = await fetch("https://api.deepseek.com/chat/completions", {
           method: "POST",
           headers: {
@@ -69,7 +86,10 @@ export const Route = createFileRoute("/api/suggest")({
                   latest
                     ? `Reply directly to this newest line from the other person: "${latest}". Earlier turns are background context only — never answer an older line.`
                     : ``,
+                  briefing,
                   `Propose exactly 3 short, distinct, natural replies the user could say next, in ${target}.`,
+
+
                   LEVEL_HINT[body.level ?? "beginner"] ?? "",
                   `Output EXACTLY 3 lines. Each line is one compact JSON object and nothing else — no markdown fence, no numbering, no blank lines.`,
                   `Shape: {"targetText":"<the reply in ${target}>","meaning":"<one-line explanation in ${ui}>","segments":[{"t":"<surface>","r":"<reading>","role":"content|particle|punct"}]}`,

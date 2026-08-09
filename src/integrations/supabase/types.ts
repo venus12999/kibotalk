@@ -35,6 +35,54 @@ export type Database = {
         }
         Relationships: []
       }
+      emotion_intelligence: {
+        Row: {
+          ai_response_strategy: string
+          communication_state: Database["public"]["Enums"]["communication_state"]
+          created_at: string
+          emotion: string
+          emotion_category: Database["public"]["Enums"]["emotion_category"]
+          id: string
+          intensity: number
+          keywords: string[]
+          language: string
+          scenario: string
+          text_pattern: string
+          updated_at: string
+          user_need: string
+        }
+        Insert: {
+          ai_response_strategy?: string
+          communication_state: Database["public"]["Enums"]["communication_state"]
+          created_at?: string
+          emotion: string
+          emotion_category: Database["public"]["Enums"]["emotion_category"]
+          id?: string
+          intensity?: number
+          keywords?: string[]
+          language?: string
+          scenario?: string
+          text_pattern: string
+          updated_at?: string
+          user_need?: string
+        }
+        Update: {
+          ai_response_strategy?: string
+          communication_state?: Database["public"]["Enums"]["communication_state"]
+          created_at?: string
+          emotion?: string
+          emotion_category?: Database["public"]["Enums"]["emotion_category"]
+          id?: string
+          intensity?: number
+          keywords?: string[]
+          language?: string
+          scenario?: string
+          text_pattern?: string
+          updated_at?: string
+          user_need?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -146,6 +194,22 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      communication_state:
+        | "confident"
+        | "hesitant"
+        | "blocked"
+        | "overthinking"
+        | "misunderstood"
+        | "need_translation"
+        | "need_rephrase"
+        | "need_social_help"
+        | "need_explanation"
+        | "lack_of_confidence"
+        | "motivated"
+        | "low_motivation"
+        | "social_pressure"
+        | "learning"
+      emotion_category: "positive" | "negative" | "neutral"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -274,6 +338,23 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      communication_state: [
+        "confident",
+        "hesitant",
+        "blocked",
+        "overthinking",
+        "misunderstood",
+        "need_translation",
+        "need_rephrase",
+        "need_social_help",
+        "need_explanation",
+        "lack_of_confidence",
+        "motivated",
+        "low_motivation",
+        "social_pressure",
+        "learning",
+      ],
+      emotion_category: ["positive", "negative", "neutral"],
     },
   },
 } as const
