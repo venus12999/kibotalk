@@ -49,8 +49,22 @@ export function SettingsSheet({
 
   const refreshDevices = React.useCallback(async () => {
     const all = await navigator.mediaDevices?.enumerateDevices().catch(() => []);
-    setMics((all ?? []).filter((d) => d.kind === "audioinput"));
+    const inputs = (all ?? []).filter((d) => d.kind === "audioinput");
+    // Before permission is granted browsers expose placeholder entries with empty
+    // labels (and often several per physical mic). Showing them produced the
+    // bogus "Microphone 1/2/3" list, so keep only real, de-duplicated devices.
+    const seen = new Set<string>();
+    setMics(
+      inputs.filter((d) => {
+        if (!d.label || d.deviceId === "default" || d.deviceId === "communications") return false;
+        const key = d.groupId || d.label;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      }),
+    );
   }, []);
+
 
   React.useEffect(() => {
     if (!open) return;
