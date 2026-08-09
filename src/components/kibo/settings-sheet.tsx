@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import { PillGroup } from "./pill-group";
 import { useKibo, langLabel, levelLabel } from "@/lib/kibo/store";
 import type { AudioSource, CaptureMode, ConvLang, Level, PanelLayout, Theme, UiLang } from "@/lib/kibo/types";
@@ -283,7 +284,7 @@ export function SettingsSheet({
                       max={max}
                       step={0.05}
                       value={[value]}
-                      onValueChange={([v]) => setPrefs({ [key]: v ?? 1 } as Partial<typeof prefs>)}
+                      onValueChange={([v]: number[]) => setPrefs({ [key]: v ?? 1 } as Partial<typeof prefs>)}
                     />
                     <span className="w-10 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
                       {Math.round(value * 100)}%
