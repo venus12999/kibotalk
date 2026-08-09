@@ -1,6 +1,6 @@
 import * as React from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { Loader2 } from "lucide-react";
+import { Loader2, MailCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,18 +31,63 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = React.useState<"signin" | "signup">("signin");
+  const [mode, setMode] = React.useState<"signin" | "signup" | "verify">("signin");
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState("");
   const [notice, setNotice] = React.useState("");
+  const [cooldown, setCooldown] = React.useState(0);
 
   React.useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) void navigate({ to: "/" });
     });
+    // The confirmation link signs the user in — leave the verify screen as soon as it lands.
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session) void navigate({ to: "/" });
+    });
+    return () => sub.subscription.unsubscribe();
   }, [navigate]);
+
+  React.useEffect(() => {
+    if (cooldown <= 0) return;
+    const id = window.setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => window.clearTimeout(id);
+  }, [cooldown]);
+
+  const goVerify = (message: string) => {
+    setMode("verify");
+    setError("");
+    setNotice(message);
+    setCooldown(60);
+  };
+
+  const resend = async () => {
+    if (cooldown > 0 || busy) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const { error: err } = await supabase.auth.resend({
+        type: "signup",
+        email,
+        options: { emailRedirectTo: window.location.origin },
+      });
+      if (err) throw err;
+      setNotice(`A new confirmation link is on its way to ${email}.`);
+      setCooldown(60);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(
+        /rate|too many|seconds/i.test(msg)
+          ? "Too many requests — please wait a moment before asking for another link."
+          : msg,
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,12 +116,20 @@ function AuthPage() {
           return;
         }
         if (!data.session) {
-          setNotice("Check your inbox and confirm your email to finish signing up.");
+          goVerify(`We sent a confirmation link to ${email}. Open it to activate your account.`);
           return;
         }
       } else {
         const { error: err } = await supabase.auth.signInWithPassword({ email, password });
-        if (err) throw err;
+        if (err) {
+          if (/not confirmed|confirm your email/i.test(err.message)) {
+            goVerify(
+              "Your email isn't confirmed yet. Open the link we sent, or request a new one below.",
+            );
+            return;
+          }
+          throw err;
+        }
       }
       await navigate({ to: "/" });
     } catch (err) {
@@ -85,6 +138,65 @@ function AuthPage() {
       setBusy(false);
     }
   };
+
+  if (mode === "verify") {
+    return (
+      <main className="flex min-h-dvh items-center justify-center p-4">
+        <AppBackground />
+        <div className="paper-sheet w-full max-w-sm p-6 sm:p-8">
+          <div className="flex items-center">
+            <img
+              src={logoAsset.url}
+              alt="KiboTalk"
+              className="h-8 w-auto select-none"
+              draggable={false}
+            />
+          </div>
+          <h2 className="mt-4 flex items-center gap-2 text-sm font-semibold">
+            <MailCheck className="size-4 text-primary" />
+            Confirm your email
+          </h2>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Click the link we emailed to <span className="font-medium text-foreground">{email}</span>
+            . This page signs you in automatically once it&apos;s confirmed. Links expire after a
+            while — if yours no longer works, send a fresh one.
+          </p>
+
+          {error ? (
+            <p className="mt-3 rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              {error}
+            </p>
+          ) : null}
+          {notice ? (
+            <p className="mt-3 rounded-xl bg-primary/10 px-3 py-2 text-xs text-foreground">
+              {notice}
+            </p>
+          ) : null}
+
+          <Button
+            className="mt-5 w-full"
+            disabled={busy || cooldown > 0}
+            onClick={() => void resend()}
+          >
+            {busy ? <Loader2 className="size-4 animate-spin" /> : null}
+            {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend confirmation email"}
+          </Button>
+
+          <button
+            type="button"
+            className="mt-4 w-full text-xs text-muted-foreground underline-offset-4 hover:underline"
+            onClick={() => {
+              setMode("signin");
+              setError("");
+              setNotice("");
+            }}
+          >
+            Back to sign in
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="flex min-h-dvh items-center justify-center p-4">
@@ -103,6 +215,7 @@ function AuthPage() {
             ? "Sign in with your email to sync your sessions"
             : "Create an account with your email — one account per email address"}
         </p>
+
 
         <form className="mt-5 space-y-3" onSubmit={submit}>
           <div className="space-y-1.5">
