@@ -36,21 +36,22 @@ export function PillGroup<T extends string>({
               disabled={disabled}
               onClick={() => onChange(opt.value)}
               className={cn(
-                "flex-1 cursor-pointer rounded-lg px-2 py-2 text-sm font-semibold transition-all",
+                "min-w-0 flex-1 cursor-pointer rounded-lg px-1.5 py-2 text-sm font-semibold transition-all",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                "flex flex-col items-center justify-center gap-0.5 leading-tight",
+                "flex flex-col items-center justify-center gap-0.5 text-center leading-tight",
                 active
                   ? "gradient-primary text-primary-foreground glow shadow-sm"
                   : "text-foreground/70 hover:text-foreground",
                 disabled && "cursor-not-allowed opacity-60",
               )}
             >
-              <span>{opt.label}</span>
+              <span className="w-full break-words">{opt.label}</span>
               {opt.description ? (
-                <span className="max-w-full truncate px-0.5 text-[10px] font-medium opacity-80">
+                <span className="w-full text-[10px] font-medium break-words opacity-80">
                   {opt.description}
                 </span>
               ) : null}
+
             </button>
           );
         })}

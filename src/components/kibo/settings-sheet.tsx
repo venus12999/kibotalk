@@ -35,7 +35,8 @@ function Row({
           <p className="mt-1 text-xs text-muted-foreground">{description}</p>
         ) : null}
       </div>
-      <div className="shrink-0">{children}</div>
+      <div className="w-full min-w-0 sm:w-auto sm:shrink-0">{children}</div>
+
     </div>
   );
 }
