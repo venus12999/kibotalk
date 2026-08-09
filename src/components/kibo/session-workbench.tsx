@@ -536,32 +536,91 @@ export function SessionWorkbench() {
 
       {/* Kept in the viewport on phones, where the panels scroll past the fold. */}
       <div
-        className="glass-bar sticky bottom-0 z-20 flex gap-2 px-3 py-2.5 sm:px-4"
+        className="glass-bar sticky bottom-0 z-20 flex flex-col gap-2 px-3 py-2.5 sm:px-4"
         style={{ marginBottom: "calc(env(safe-area-inset-bottom) * -1)", paddingBottom: "max(0.625rem, env(safe-area-inset-bottom))" }}
       >
-        {!active ? (
-          <Button className="flex-1" onClick={() => void startSession()}>
-            <Play className="size-4" />
-            {t("start")}
-          </Button>
-        ) : (
-          <>
-            <Button
-              variant="soft"
-              className="flex-1"
-              disabled={life === "preparing"}
-              onClick={togglePause}
-            >
-              {life === "paused" ? <Play className="size-4" /> : <Pause className="size-4" />}
-              {life === "paused" ? t("resume") : t("pause")}
+        {active && life !== "preparing" ? (
+          prefs.captureMode === "push" ? (
+            <>
+              <div className="flex gap-2">
+                {(["other", "user"] as const).map((who) => (
+                  <Button
+                    key={who}
+                    variant={transcriber.holding === who ? "default" : "soft"}
+                    className={cn("h-14 flex-1 touch-none select-none", transcriber.holding === who && "glow-sm")}
+                    disabled={life === "paused"}
+                    onPointerDown={(e) => {
+                      e.currentTarget.setPointerCapture(e.pointerId);
+                      navigator.vibrate?.(8);
+                      transcriber.beginTurn(who);
+                    }}
+                    onPointerUp={() => transcriber.endTurn()}
+                    onPointerCancel={() => transcriber.endTurn()}
+                    onContextMenu={(e) => e.preventDefault()}
+                  >
+                    {who === "other" ? <Users className="size-4" /> : <User className="size-4" />}
+                    {who === "other" ? t("holdOther") : t("holdMe")}
+                  </Button>
+                ))}
+              </div>
+              <p className="text-center text-[11px] text-muted-foreground">{t("holdHint")}</p>
+            </>
+          ) : (
+            <div className="flex gap-2">
+              <div className="flex flex-1 gap-1 rounded-full bg-muted/60 p-1">
+                {(["other", "user"] as const).map((who) => (
+                  <button
+                    key={who}
+                    type="button"
+                    onClick={() => {
+                      navigator.vibrate?.(6);
+                      setSpeaker(who);
+                    }}
+                    className={cn(
+                      "flex-1 rounded-full px-3 py-2 text-xs font-semibold transition",
+                      speaker === who
+                        ? "gradient-primary text-primary-foreground"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    {who === "other" ? t("other") : t("me")}
+                  </button>
+                ))}
+              </div>
+              <Button className="flex-1" onClick={askForIdeas} disabled={streaming}>
+                <Lightbulb className="size-4" />
+                {t("askIdeas")}
+              </Button>
+            </div>
+          )
+        ) : null}
+
+        <div className="flex gap-2">
+          {!active ? (
+            <Button className="flex-1" onClick={() => void startSession()}>
+              <Play className="size-4" />
+              {t("start")}
             </Button>
-            <Button variant="destructive" className="flex-1" onClick={() => setConfirmStop(true)}>
-              <Square className="size-4" />
-              {t("stop")}
-            </Button>
-          </>
-        )}
+          ) : (
+            <>
+              <Button
+                variant="soft"
+                className="flex-1"
+                disabled={life === "preparing"}
+                onClick={togglePause}
+              >
+                {life === "paused" ? <Play className="size-4" /> : <Pause className="size-4" />}
+                {life === "paused" ? t("resume") : t("pause")}
+              </Button>
+              <Button variant="destructive" className="flex-1" onClick={() => setConfirmStop(true)}>
+                <Square className="size-4" />
+                {t("stop")}
+              </Button>
+            </>
+          )}
+        </div>
       </div>
+
 
       <AlertDialog open={confirmStop} onOpenChange={setConfirmStop}>
         <AlertDialogContent>
