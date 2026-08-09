@@ -79,6 +79,10 @@ export function SessionWorkbench() {
   const [turns, setTurns] = React.useState<Turn[]>([]);
   const [rounds, setRounds] = React.useState<Round[]>([]);
   const [streaming, setStreaming] = React.useState(false);
+  const [aiStatus, setAiStatus] = React.useState<
+    "idle" | "connecting" | "streaming" | "done" | "error"
+  >("idle");
+  const [aiError, setAiError] = React.useState("");
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [historyOpen, setHistoryOpen] = React.useState(false);
   const [confirmStop, setConfirmStop] = React.useState(false);
