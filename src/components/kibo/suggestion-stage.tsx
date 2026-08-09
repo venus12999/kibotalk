@@ -365,20 +365,11 @@ export function SuggestionStage({
     points: "Key words",
   };
 
-  if (!current && status === "idle") {
-    return (
-      <div
-        className={cn(
-          "flex items-center justify-center rounded-md border border-dashed border-border p-8 text-center text-sm text-muted-foreground",
-          className,
-        )}
-      >
-        {emptyHint}
-      </div>
-    );
-  }
-
-  const last = current ? current.candidates.length - 1 : -1;
+  const candidates = current?.candidates ?? [];
+  const last = candidates.length - 1;
+  // Three slots always exist: the panel keeps one stable height whether the
+  // ideas are still streaming in or already complete.
+  const slots = [0, 1, 2];
 
   return (
     <ScrollArea className={className}>
@@ -395,21 +386,41 @@ export function SuggestionStage({
           canRetry={canRetry}
         />
 
-        {current ? (
-          <ol className="space-y-3">
-            {current.candidates.map((c, i) => (
-              <NoteCard
+        <ol className="space-y-3">
+          {slots.map((i) => {
+            const c = candidates[i];
+            if (c) {
+              return (
+                <NoteCard
+                  key={i}
+                  candidate={c}
+                  caret={streaming && i === last}
+                  index={i}
+                  expanded={openIndex === i}
+                  onToggle={() => setOpenIndex((prev) => (prev === i ? null : i))}
+                  labels={labels}
+                />
+              );
+            }
+            return (
+              <li
                 key={i}
-                candidate={c}
-                caret={streaming && i === last}
-                index={i}
-                expanded={openIndex === i}
-                onToggle={() => setOpenIndex((prev) => (prev === i ? null : i))}
-                labels={labels}
-              />
-            ))}
-          </ol>
-        ) : null}
+                className="flex min-h-[4.5rem] items-center justify-center rounded-md border border-dashed border-border px-4 py-3 text-center text-xs text-muted-foreground"
+              >
+                {i === 0 && candidates.length === 0 && status === "idle" ? (
+                  emptyHint
+                ) : (
+                  <span className="flex gap-1" aria-hidden>
+                    <i className="size-1.5 animate-pulse rounded-full bg-current opacity-40" />
+                    <i className="size-1.5 animate-pulse rounded-full bg-current opacity-40 [animation-delay:150ms]" />
+                    <i className="size-1.5 animate-pulse rounded-full bg-current opacity-40 [animation-delay:300ms]" />
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+
 
 
         <PreviousRounds rounds={previous} label={previousRoundLabel} />
