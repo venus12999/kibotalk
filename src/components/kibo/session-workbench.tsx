@@ -598,10 +598,23 @@ export function SessionWorkbench() {
                   />
                 ))}
               </div>
-              <p className="text-center text-[11px] text-muted-foreground">
-                {transcriber.holding ? t("releaseToSend") : t("holdHint")}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="min-w-0 flex-1 text-[11px] text-muted-foreground">
+                  {transcriber.holding ? t("releaseToSend") : t("holdHint")}
+                </p>
+                <Button
+                  variant="soft"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={askForIdeas}
+                  disabled={streaming || !turns.some((x) => x.speaker === "other")}
+                >
+                  <Lightbulb className="size-4" />
+                  {t("askIdeas")}
+                </Button>
+              </div>
             </>
+
 
           ) : (
             <div className="flex gap-2">
