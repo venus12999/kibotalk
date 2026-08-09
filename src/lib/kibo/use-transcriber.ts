@@ -150,6 +150,12 @@ export function useTranscriber({
                 if (matchesLanguage(text, cbRef.current.language as ConvLang)) {
                   cbRef.current.onInterim(text, speaker);
                 }
+              } else if (event.type === "transcript.text.reset") {
+                // The recognizer rewrote the sentence — replace, don't append.
+                text = event.text ?? text;
+                if (matchesLanguage(text, cbRef.current.language as ConvLang)) {
+                  cbRef.current.onInterim(text, speaker);
+                }
               } else if (event.type === "transcript.text.done") {
                 text = event.text ?? text;
               }
