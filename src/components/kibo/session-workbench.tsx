@@ -1,5 +1,5 @@
 import * as React from "react";
-import { History, Mic, Pause, Play, Settings, Square } from "lucide-react";
+import { History, Mic, Pause, Play, Settings, Square, X, Fingerprint } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -19,6 +19,7 @@ import type { Candidate, Lifecycle, Round, Turn } from "@/lib/kibo/types";
 import { useTranscriber } from "@/lib/kibo/use-transcriber";
 import { summarizeSession } from "@/lib/kibo/ai.functions";
 import { streamSuggestions } from "@/lib/kibo/suggest-stream";
+import { loadVoiceprint } from "@/lib/kibo/voiceprint";
 
 import { MemoSuggestionStage as SuggestionStage } from "./suggestion-stage";
 import { SettingsSheet } from "./settings-sheet";
@@ -35,24 +36,45 @@ const copy = {
     screenDenied: "未能获取系统音频，请在共享对话框中勾选“分享标签页/系统音频”。",
     failed: "语音转写失败：",
     live: "正在听写…",
+    enrollTitle: "先录入你的声纹",
+    enrollBody: "录入后系统才能在对话中分清哪句是你说的。只需 6 秒，数据只保存在本机。",
+    enrollCta: "去录入",
+    dismiss: "稍后再说",
   },
   ja: {
     micDenied: "マイクにアクセスできません。ブラウザでマイクを許可してからもう一度お試しください。",
     screenDenied: "システム音声を取得できませんでした。共有ダイアログで「音声を共有」を有効にしてください。",
     failed: "文字起こしに失敗しました：",
     live: "書き起こし中…",
+    enrollTitle: "まず声紋を登録しましょう",
+    enrollBody: "登録すると会話中にあなたの発言を判別できます。約6秒、データは端末内のみに保存されます。",
+    enrollCta: "登録する",
+    dismiss: "あとで",
   },
   en: {
     micDenied: "Microphone access failed. Allow microphone permission and try again.",
     screenDenied: "System audio was not shared. Enable “share audio” in the sharing dialog.",
     failed: "Transcription failed: ",
     live: "Transcribing…",
+    enrollTitle: "Enroll your voiceprint first",
+    enrollBody: "It lets the app tell your speech apart during a conversation. Takes 6 seconds and stays on this device.",
+    enrollCta: "Enroll now",
+    dismiss: "Later",
   },
 } as const;
 
 
 export function SessionWorkbench() {
-  const { prefs, t, addSession } = useKibo();
+  const { prefs, t, addSession, user } = useKibo();
+  const [voiceprintReady, setVoiceprintReady] = React.useState(true);
+  const [enrollDismissed, setEnrollDismissed] = React.useState(false);
+
+  React.useEffect(() => {
+    const sync = () => setVoiceprintReady(loadVoiceprint() !== null);
+    sync();
+    window.addEventListener("kibo:voiceprint", sync);
+    return () => window.removeEventListener("kibo:voiceprint", sync);
+  }, []);
   const [life, setLife] = React.useState<Lifecycle>("idle");
   const [turns, setTurns] = React.useState<Turn[]>([]);
   const [rounds, setRounds] = React.useState<Round[]>([]);
@@ -283,6 +305,29 @@ export function SessionWorkbench() {
           </Button>
         </div>
       </header>
+
+      {user && !voiceprintReady && !enrollDismissed ? (
+        <div className="glass-quiet flex flex-wrap items-start gap-3 rounded-2xl p-4">
+          <Fingerprint className="mt-0.5 size-5 text-primary" />
+          <div className="min-w-48 flex-1">
+            <p className="text-sm font-bold">{words.enrollTitle}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{words.enrollBody}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="soft" size="sm" onClick={() => setSettingsOpen(true)}>
+              {words.enrollCta}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={words.dismiss}
+              onClick={() => setEnrollDismissed(true)}
+            >
+              <X className="size-4" />
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[1.15fr_1fr]">
         <section className="glass-transcript flex min-h-0 flex-col p-4 sm:p-5">
