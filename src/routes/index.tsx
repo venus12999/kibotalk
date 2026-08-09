@@ -4,8 +4,6 @@ import { KiboProvider, useKibo } from "@/lib/kibo/store";
 import { Onboarding } from "@/components/kibo/onboarding";
 import { SessionWorkbench } from "@/components/kibo/session-workbench";
 import { AppBackground } from "@/components/kibo/app-background";
-import { VoiceprintStep } from "@/components/kibo/voiceprint-step";
-import { loadVoiceprint } from "@/lib/kibo/voiceprint";
 import { useSession } from "@/lib/kibo/use-session";
 
 
