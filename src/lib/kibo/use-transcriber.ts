@@ -246,9 +246,23 @@ export function useTranscriber({
     if (wantSystem) {
       try {
         const display = await navigator.mediaDevices.getDisplayMedia({
-          video: true,
-          audio: true,
-        });
+          // A video track is required by the spec, but we drop it immediately —
+          // we only ever keep the audio. Hint the picker toward tab capture with
+          // audio so users see the "share tab audio" toggle.
+          video: { width: 1, height: 1, frameRate: 1 },
+          audio: {
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false,
+          },
+          // Non-standard but widely supported hints (Chromium).
+          ...({
+            systemAudio: "include",
+            selfBrowserSurface: "exclude",
+            surfaceSwitching: "include",
+            preferCurrentTab: false,
+          } as Record<string, unknown>),
+        } as DisplayMediaStreamOptions);
         if (display.getAudioTracks().length === 0) {
           display.getTracks().forEach((t) => t.stop());
           throw new Error("no-system-audio");
@@ -256,15 +270,21 @@ export function useTranscriber({
         display.getVideoTracks().forEach((t) => t.stop());
         sysStream = new MediaStream(display.getAudioTracks());
       } catch (error) {
-        micStream?.getTracks().forEach((t) => t.stop());
-        cbRef.current.onError(
+        const reason =
           error instanceof Error && error.message === "no-system-audio"
             ? "system-audio"
-            : "screen",
-        );
-        return false;
+            : "screen";
+        // "Both" still works with just the microphone — keep the session alive
+        // and only warn, instead of failing the whole start.
+        if (micStream) {
+          cbRef.current.onError(`${reason}:soft`);
+        } else {
+          cbRef.current.onError(reason);
+          return false;
+        }
       }
     }
+
 
     const ctx = new AudioContext();
     await ctx.resume().catch(() => undefined);
