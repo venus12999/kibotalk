@@ -22,8 +22,11 @@ export const Route = createFileRoute("/api/transcribe")({
           return new Response("Audio file too large", { status: 413 });
         }
 
+        const { getAiModels } = await import("@/lib/kibo/model-config.server");
+        const aiModels = await getAiModels();
+
         const upstream = new FormData();
-        upstream.append("model", "openai/gpt-4o-mini-transcribe");
+        upstream.append("model", aiModels.transcribe);
         upstream.append("file", file, "recording.wav");
         upstream.append("stream", "true");
         if (typeof language === "string" && /^[a-z]{2}$/.test(language)) {
