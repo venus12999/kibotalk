@@ -31,13 +31,19 @@ export function HoldTalkButton({
   onBegin,
   onEnd,
 }: Props) {
+  const buttonRef = React.useRef<HTMLButtonElement | null>(null);
   const pointerRef = React.useRef<number | null>(null);
+  const inputRef = React.useRef<"pointer" | "touch" | null>(null);
   const [elapsed, setElapsed] = React.useState(0);
   // Bumping these keys restarts the one-shot press / release animations.
   const [pressKey, setPressKey] = React.useState(0);
   const [releaseKey, setReleaseKey] = React.useState(0);
   const onEndRef = React.useRef(onEnd);
   onEndRef.current = onEnd;
+  const onBeginRef = React.useRef(onBegin);
+  onBeginRef.current = onBegin;
+  const inertRef = React.useRef(Boolean(disabled || blocked));
+  inertRef.current = Boolean(disabled || blocked);
 
   React.useEffect(() => {
     if (!active) {
@@ -55,44 +61,76 @@ export function HoldTalkButton({
    * an implicit pointer capture and fire `lostpointercapture`, which used to
    * end the turn immediately — the "long press doesn't work on phones" bug.
    */
-  const release = React.useCallback((pointerId?: number) => {
+  const release = React.useCallback((pointerId?: number, input?: "pointer" | "touch") => {
     if (pointerRef.current === null) return;
+    if (input && inputRef.current !== input) return;
     if (pointerId !== undefined && pointerId !== pointerRef.current) return;
     pointerRef.current = null;
+    inputRef.current = null;
     hapticPressEnd();
     setReleaseKey((k) => k + 1);
     onEndRef.current();
   }, []);
 
-  React.useEffect(() => () => release(), [release]);
-
   const inert = disabled || blocked;
 
-  const begin = (pointerId: number) => {
+  const begin = React.useCallback((pointerId: number, input: "pointer" | "touch") => {
+    if (pointerRef.current !== null) return;
+    if (inertRef.current) {
+      hapticReject();
+      return;
+    }
     pointerRef.current = pointerId;
+    inputRef.current = input;
     hapticPressStart();
     setPressKey((k) => k + 1);
-    onBegin();
+    onBeginRef.current();
+  }, []);
 
-    const up = (e: PointerEvent) => release(e.pointerId);
-    const cancel = (e: PointerEvent) => release(e.pointerId);
-    const blur = () => release();
-    window.addEventListener("pointerup", up);
-    window.addEventListener("pointercancel", cancel);
-    window.addEventListener("blur", blur);
-    const cleanup = () => {
-      window.removeEventListener("pointerup", up);
-      window.removeEventListener("pointercancel", cancel);
-      window.removeEventListener("blur", blur);
-      window.removeEventListener("pointerup", cleanup);
-      window.removeEventListener("pointercancel", cleanup);
+  React.useEffect(() => {
+    const button = buttonRef.current;
+    if (!button) return;
+
+    // iOS may emit pointercancel as soon as React re-renders a held control.
+    // Handle fingers with native, non-passive Touch Events instead and reserve
+    // Pointer Events for mouse / pen input.
+    const touchStart = (event: TouchEvent) => {
+      event.preventDefault();
+      const touch = event.changedTouches[0];
+      if (touch) begin(touch.identifier, "touch");
     };
-    window.addEventListener("pointerup", cleanup);
-    window.addEventListener("pointercancel", cleanup);
-  };
+    const touchMove = (event: TouchEvent) => event.preventDefault();
+    const touchEnd = (event: TouchEvent) => {
+      for (const touch of Array.from(event.changedTouches)) {
+        release(touch.identifier, "touch");
+      }
+    };
+    const pointerUp = (event: PointerEvent) => release(event.pointerId, "pointer");
+    const pointerCancel = (event: PointerEvent) => release(event.pointerId, "pointer");
+    const blur = () => release();
+
+    button.addEventListener("touchstart", touchStart, { passive: false });
+    button.addEventListener("touchmove", touchMove, { passive: false });
+    window.addEventListener("touchend", touchEnd, { passive: true });
+    window.addEventListener("touchcancel", touchEnd, { passive: true });
+    window.addEventListener("pointerup", pointerUp);
+    window.addEventListener("pointercancel", pointerCancel);
+    window.addEventListener("blur", blur);
+    return () => {
+      button.removeEventListener("touchstart", touchStart);
+      button.removeEventListener("touchmove", touchMove);
+      window.removeEventListener("touchend", touchEnd);
+      window.removeEventListener("touchcancel", touchEnd);
+      window.removeEventListener("pointerup", pointerUp);
+      window.removeEventListener("pointercancel", pointerCancel);
+      window.removeEventListener("blur", blur);
+      release();
+    };
+  }, [begin, release]);
 
   return (
     <button
+      ref={buttonRef}
       type="button"
       aria-pressed={active}
       aria-label={label}
@@ -108,6 +146,8 @@ export function HoldTalkButton({
         inert && !active && "pointer-events-none opacity-45",
       )}
       onPointerDown={(e) => {
+        // Touch input is handled by native Touch Events above for iOS stability.
+        if (e.pointerType === "touch") return;
         // Only the first primary pointer arms a turn; extra fingers are ignored.
         if (!e.isPrimary || pointerRef.current !== null) return;
         if (e.pointerType === "mouse" && e.button !== 0) return;
@@ -116,9 +156,8 @@ export function HoldTalkButton({
           return;
         }
         e.preventDefault();
-        begin(e.pointerId);
+        begin(e.pointerId, "pointer");
       }}
-      onTouchStart={(e) => e.preventDefault()}
       onContextMenu={(e) => e.preventDefault()}
       onDragStart={(e) => e.preventDefault()}
     >
