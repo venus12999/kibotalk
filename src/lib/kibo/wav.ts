@@ -66,3 +66,8 @@ export function encodeWav(chunks: Float32Array[], sampleRate: number) {
 
   return new Blob([buffer], { type: "audio/wav" });
 }
+
+/** Merge and resample captured chunks to the 16 kHz mono buffer models expect. */
+export function toMono16k(chunks: Float32Array[], sampleRate: number) {
+  return downsample(concatChunks(chunks), sampleRate, TARGET_RATE);
+}

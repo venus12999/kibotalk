@@ -15,7 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useKibo, langLabel, levelLabel } from "@/lib/kibo/store";
 import { makeTurn } from "@/lib/kibo/mock";
-import type { Lifecycle, Round, Turn } from "@/lib/kibo/types";
+import type { Candidate, Lifecycle, Round, Turn } from "@/lib/kibo/types";
 import { useTranscriber } from "@/lib/kibo/use-transcriber";
 import { summarizeSession } from "@/lib/kibo/ai.functions";
 import { streamSuggestions } from "@/lib/kibo/suggest-stream";
@@ -75,6 +75,7 @@ export function SessionWorkbench() {
   const prefsRef = React.useRef(prefs);
   prefsRef.current = prefs;
   const reqRef = React.useRef(0);
+  const abortRef = React.useRef<AbortController | null>(null);
 
   const handleInterim = React.useCallback((text: string, speaker: "user" | "other") => {
     setInterim((prev) => ({ ...prev, [speaker]: text }));
@@ -91,28 +92,43 @@ export function SessionWorkbench() {
 
       const req = ++reqRef.current;
       const roundId = uid();
+      // A new turn makes the in-flight suggestion obsolete — cancel it.
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
       setStreaming(true);
       // Insert an empty round immediately, then fill it in as tokens arrive.
       setRounds((prev) => [{ id: roundId, prompt: text, candidates: [] }, ...prev]);
 
-      void streamSuggestions(
-        {
-          turns: turnsRef.current.map((x) => ({ speaker: x.speaker, text: x.text })),
-          conversationLang: prefsRef.current.conversationLang,
-          uiLang: prefsRef.current.uiLang,
-          level: prefsRef.current.level,
-        },
-        (candidates) => {
-          if (req !== reqRef.current) return;
-          setRounds((prev) => {
-            // The streaming round is always the head; patch it in place.
-            if (prev[0]?.id !== roundId) return prev;
-            const next = prev.slice();
-            next[0] = { ...prev[0], candidates };
-            return next;
-          });
-        },
-      )
+      const onUpdate = (candidates: Candidate[]) => {
+        if (req !== reqRef.current) return;
+        setRounds((prev) => {
+          // The streaming round is always the head; patch it in place.
+          if (prev[0]?.id !== roundId) return prev;
+          const next = prev.slice();
+          next[0] = { ...prev[0], candidates };
+          return next;
+        });
+      };
+
+      const payload = {
+        turns: turnsRef.current.map((x) => ({ speaker: x.speaker, text: x.text })),
+        conversationLang: prefsRef.current.conversationLang,
+        uiLang: prefsRef.current.uiLang,
+        level: prefsRef.current.level,
+      };
+
+      // One transparent retry: a dropped connection mid-turn is common on mobile.
+      const run = async () => {
+        try {
+          return await streamSuggestions(payload, onUpdate, controller.signal);
+        } catch (err) {
+          if (controller.signal.aborted) throw err;
+          return await streamSuggestions(payload, onUpdate, controller.signal);
+        }
+      };
+
+      void run()
         .then((candidates) => {
           if (req !== reqRef.current) return;
           setStreaming(false);
@@ -123,7 +139,7 @@ export function SessionWorkbench() {
           );
         })
         .catch((err: unknown) => {
-          if (req !== reqRef.current) return;
+          if (req !== reqRef.current || controller.signal.aborted) return;
           setStreaming(false);
           setRounds((prev) => prev.filter((r) => r.id !== roundId));
           setError(`${words.failed}${err instanceof Error ? err.message : String(err)}`);
@@ -131,6 +147,7 @@ export function SessionWorkbench() {
     },
     [words],
   );
+
 
 
   const handleError = React.useCallback(
@@ -159,6 +176,7 @@ export function SessionWorkbench() {
 
   const startSession = async () => {
     reqRef.current += 1;
+    abortRef.current?.abort();
     turnsRef.current = [];
     setTurns([]);
     setRounds([]);
@@ -179,6 +197,7 @@ export function SessionWorkbench() {
   const finishSession = () => {
     transcriber.stop();
     reqRef.current += 1;
+    abortRef.current?.abort();
     const saved = turnsRef.current;
     const startedTs = startedAt || Date.now();
     if (saved.length > 0) {

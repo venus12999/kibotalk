@@ -1,3 +1,4 @@
+import { VoiceprintCard } from "@/components/kibo/voiceprint-card";
 import * as React from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -176,6 +177,10 @@ export function SettingsSheet({
               ))}
             </select>
           </Row>
+          <Row title={t("voiceprint")} description={t("voiceprintSavedLocal")}>
+            <VoiceprintCard locked={locked} />
+          </Row>
+
           <p className="pt-6 text-xs font-bold tracking-wide text-muted-foreground uppercase">
             {t("permissions")}
           </p>

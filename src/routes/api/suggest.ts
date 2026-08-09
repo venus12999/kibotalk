@@ -49,7 +49,7 @@ export const Route = createFileRoute("/api/suggest")({
             model: "google/gemini-2.5-flash-lite",
             stream: true,
             temperature: 0.7,
-            max_tokens: 500,
+            max_tokens: 1200,
             messages: [
               {
                 role: "system",
@@ -57,12 +57,19 @@ export const Route = createFileRoute("/api/suggest")({
                   `You are a real-time conversation coach. The user is speaking ${target} with another person.`,
                   `Given the transcript, propose exactly 3 short, distinct, natural replies the user could say next, in ${target}.`,
                   LEVEL_HINT[body.level ?? "beginner"] ?? "",
-                  `Output EXACTLY 3 lines and nothing else. Each line: the reply in ${target}, then " ||| ", then a one-line note in ${ui} explaining what that reply achieves.`,
-                  `No numbering, no bullets, no extra commentary.`,
+                  `Output EXACTLY 3 lines. Each line is one compact JSON object and nothing else — no markdown fence, no numbering, no blank lines.`,
+                  `Shape: {"targetText":"<the reply in ${target}>","meaning":"<one-line explanation in ${ui}>","segments":[{"t":"<surface>","r":"<reading>","role":"content|particle|punct"}]}`,
+                  `segments must tile targetText exactly in order when the "t" values are concatenated.`,
+                  target === "Japanese"
+                    ? `"r" is hiragana furigana for kanji spans; use "" when the span is already kana or punctuation.`
+                    : target === "Simplified Chinese"
+                      ? `"r" is the pinyin with tone marks for each span; use "" for punctuation.`
+                      : `"r" is "" for every span in English.`,
                 ].join(" "),
               },
               { role: "user", content: transcript || "(the conversation just started)" },
             ],
+
           }),
         });
 
