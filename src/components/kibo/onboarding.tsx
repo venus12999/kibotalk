@@ -35,14 +35,14 @@ export function Onboarding({ onContinue }: { onContinue: () => void }) {
         <ScrollArea className="min-h-0 flex-1 pr-2">
           <GuideContent />
         </ScrollArea>
-        <div className="mt-5 flex gap-2">
+        <div className="mt-5 flex flex-wrap gap-2">
           <Button variant="soft" size="pill" className="flex-none" onClick={() => setStep(0)}>
             <ArrowLeft className="size-4" />
             {g.back}
           </Button>
           <Button
             size="pill"
-            className="flex-1"
+            className="min-w-0 flex-1 whitespace-normal px-3 text-center"
             onClick={() => {
               navigator.vibrate?.(12);
               setPrefs({ onboarded: true });
@@ -53,6 +53,7 @@ export function Onboarding({ onContinue }: { onContinue: () => void }) {
             {g.start}
           </Button>
         </div>
+
       </div>
     );
   }
