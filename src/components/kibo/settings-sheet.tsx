@@ -3,7 +3,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button";
 import { PillGroup } from "./pill-group";
 import { useKibo, langLabel, levelLabel } from "@/lib/kibo/store";
-import type { AudioSource, CaptureMode, ConvLang, Level, Theme, UiLang } from "@/lib/kibo/types";
+import type { AudioSource, CaptureMode, ConvLang, Level, PanelLayout, Theme, UiLang } from "@/lib/kibo/types";
 
 const translateCopy = {
   zh: { label: "翻译语言", hint: "把对方说的话翻译成这个语言显示" },
@@ -238,6 +238,27 @@ export function SettingsSheet({
               ]}
             />
           </div>
+          <div className="flex flex-col gap-2 border-b border-border py-4">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">{t("panelLayout")}</p>
+              <p className="mt-0.5 text-xs text-foreground/70">{t("panelLayoutDescription")}</p>
+            </div>
+            <PillGroup<PanelLayout>
+              label=""
+              value={prefs.panelLayout ?? "auto"}
+              onChange={(v) => setPrefs({ panelLayout: v })}
+              options={[
+                { value: "auto", label: t("layoutAuto"), description: t("layoutAutoDescription") },
+                { value: "row", label: t("layoutRow"), description: t("layoutRowDescription") },
+                {
+                  value: "column",
+                  label: t("layoutColumn"),
+                  description: t("layoutColumnDescription"),
+                },
+              ]}
+            />
+          </div>
+
 
 
 

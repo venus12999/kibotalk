@@ -6,6 +6,8 @@ export type AudioSource = "microphone" | "system" | "both";
 export type Lifecycle = "idle" | "preparing" | "running" | "paused" | "stopped";
 /** How turns are captured: hold a button, or listen non-stop and ask manually. */
 export type CaptureMode = "push" | "continuous";
+/** How the transcript and suggestion panels are arranged. */
+export type PanelLayout = "auto" | "row" | "column";
 
 export type Prefs = {
   uiLang: UiLang;
@@ -17,6 +19,7 @@ export type Prefs = {
   audioSource: AudioSource;
   micDeviceId: string;
   captureMode: CaptureMode;
+  panelLayout: PanelLayout;
   onboarded: boolean;
 };
 
@@ -73,5 +76,6 @@ export const defaultPrefs: Prefs = {
   audioSource: "microphone",
   micDeviceId: "",
   captureMode: "push",
+  panelLayout: "auto",
   onboarded: false,
 };
