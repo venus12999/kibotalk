@@ -524,7 +524,7 @@ export function SessionWorkbench() {
           ) : null}
 
           <VadDiagnostics
-            className="mt-3"
+            className="mt-3 hidden sm:block"
             diagnostics={transcriber.diagnostics}
             mode={prefs.captureMode}
             uiLang={prefs.uiLang}
@@ -534,7 +534,8 @@ export function SessionWorkbench() {
 
         </section>
 
-        <section className="paper-sheet flex min-h-[18rem] flex-col p-3 sm:p-5 lg:min-h-0">
+        <section className="paper-sheet flex max-h-[38dvh] min-h-[10rem] flex-col p-3 sm:max-h-none sm:min-h-[18rem] sm:p-5 lg:min-h-0">
+
           <h2 className="text-sm font-bold">{t("suggestions")}</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">{t("aiSuggestions")}</p>
           <SuggestionStage
