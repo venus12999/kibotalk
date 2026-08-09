@@ -60,7 +60,36 @@ function AuthPage() {
     setMode("verify");
     setError("");
     setNotice(message);
+    setCode("");
     setCooldown(60);
+  };
+
+  const verifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const { error: err } = await supabase.auth.verifyOtp({
+        email,
+        token: code.trim(),
+        type: "signup",
+      });
+      if (err) {
+        setError(
+          /expired/i.test(err.message)
+            ? "That code has expired. Request a new one below."
+            : /invalid|token/i.test(err.message)
+              ? "That code isn't right. Check the email and try again."
+              : err.message,
+        );
+        return;
+      }
+      await navigate({ to: "/" });
+    } finally {
+      setBusy(false);
+    }
   };
 
   const resend = async () => {
@@ -75,19 +104,21 @@ function AuthPage() {
         options: { emailRedirectTo: window.location.origin },
       });
       if (err) throw err;
-      setNotice(`A new confirmation link is on its way to ${email}.`);
+      setNotice(`A new verification code is on its way to ${email}.`);
+      setCode("");
       setCooldown(60);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(
         /rate|too many|seconds/i.test(msg)
-          ? "Too many requests — please wait a moment before asking for another link."
+          ? "Too many requests — please wait a moment before asking for another code."
           : msg,
       );
     } finally {
       setBusy(false);
     }
   };
+
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
