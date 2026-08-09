@@ -286,7 +286,7 @@ export const dict = {
     "errorPrefix": "エラー：",
     "sessionSummary": "会話のまとめ",
     "sessionDetails": "会話の詳細",
-    "voiceprintRequired": "会話を始める前に、設定で声紋を登録してください。",
+    
     "sessionUnavailable": "音声を利用できません。権限または音声設定を確認して、もう一度お試しください。",
     "selectNetworkNode": "このセッションのネットワークノードを選択",
     "networkNodeDescription": "表示される遅延は、この端末から各ノードまでの実測往復時間です。セッション中はノードを切り替えません。",
