@@ -147,11 +147,31 @@ export async function streamSuggestions(
     });
   }
 
-  if (!res.ok || !res.body) {
+  if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new SuggestError(body || `HTTP ${res.status}`, { status: res.status });
   }
 
+  // Some mobile browsers (older iOS Safari, in-app WebViews such as WeChat)
+  // expose no readable body. Fall back to reading the whole answer at once so
+  // suggestions still appear instead of failing outright.
+  if (!res.body || typeof res.body.getReader !== "function") {
+    const raw = await res.text();
+    const whole = raw
+      .split("\n")
+      .filter((l) => l.startsWith("data:"))
+      .map((l) => {
+        try {
+          return (JSON.parse(l.slice(5).trim()) as { delta?: string }).delta ?? "";
+        } catch {
+          return "";
+        }
+      })
+      .join("");
+    const candidates = parseCandidates(whole || raw);
+    if (candidates.length > 0) onUpdate(candidates);
+    return candidates;
+  }
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder();

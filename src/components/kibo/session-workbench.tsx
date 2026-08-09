@@ -394,6 +394,11 @@ export function SessionWorkbench() {
     setAiStatus("idle");
     setAiError("");
     setInterim({ user: "", other: "" });
+    // The finished conversation lives in history now — start from a clean board.
+    turnsRef.current = [];
+    setTurns([]);
+    setRounds([]);
+    lastRequestRef.current = null;
     setConfirmStop(false);
   };
 
