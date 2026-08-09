@@ -241,10 +241,10 @@ export function SessionWorkbench() {
           .catch(() => undefined);
       }
 
-      // Push-to-talk means the user explicitly ended the other person's turn,
-      // so ideas can start right away. In continuous mode nothing marks the end
-      // of a sentence reliably — the user asks for ideas when they want them.
-      if (prefsRef.current.captureMode === "push") runSuggestions(text);
+      // Every finished line from the other person triggers ideas automatically,
+      // in both capture modes. The manual button stays as a way to re-ask.
+      runSuggestions(text);
+
     },
     [cancelSuggestions, runSuggestions],
   );
