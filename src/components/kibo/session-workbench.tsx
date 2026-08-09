@@ -505,14 +505,16 @@ export function SessionWorkbench() {
         )}
       >
 
+        {/* Panel heights are fixed for the whole session: the transcript scrolls
+            inside instead of resizing the layout as the conversation grows. */}
         <section
           className={cn(
-            "glass-transcript flex min-h-[9rem] min-w-0 flex-col p-3 sm:p-5",
+            "glass-transcript flex min-w-0 flex-col overflow-hidden p-3 sm:p-5",
             prefs.panelLayout === "row" &&
-              "panel-compact max-h-[46dvh] min-h-[8rem] p-2.5 sm:max-h-none sm:min-h-[20rem] sm:p-5 lg:min-h-0",
-            prefs.panelLayout === "column" && "max-h-[34dvh] sm:max-h-[40dvh] sm:min-h-[12rem]",
+              "panel-compact h-[46dvh] p-2.5 sm:h-auto sm:min-h-[20rem] sm:p-5 lg:min-h-0",
+            prefs.panelLayout === "column" && "h-[34dvh] sm:h-[40dvh] sm:min-h-[12rem]",
             (!prefs.panelLayout || prefs.panelLayout === "auto") &&
-              "max-h-[34dvh] sm:max-h-none sm:min-h-[20rem] lg:min-h-0",
+              "h-[34dvh] sm:h-auto sm:min-h-[20rem] lg:min-h-0",
           )}
         >
 
