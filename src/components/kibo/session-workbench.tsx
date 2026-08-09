@@ -610,6 +610,13 @@ export function SessionWorkbench() {
             }}
             emptyHint={t("emptySuggestions")}
             previousRoundLabel={t("previousRound")}
+            detailLabels={{
+              show: t("showDetail"),
+              hide: t("hideDetail"),
+              alt: t("altPhrasing"),
+              points: t("keyPoints"),
+            }}
+
           />
         </section>
       </div>
