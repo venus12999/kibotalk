@@ -615,12 +615,12 @@ export function SessionWorkbench() {
 
         <section
           className={cn(
-            "paper-sheet flex min-h-[10rem] min-w-0 flex-col p-3 sm:p-5",
+            "paper-sheet flex min-w-0 flex-col overflow-hidden p-3 sm:p-5",
             prefs.panelLayout === "row" &&
-              "panel-compact max-h-[46dvh] min-h-[8rem] p-2.5 sm:max-h-none sm:min-h-[18rem] sm:p-5 lg:min-h-0",
-            prefs.panelLayout === "column" && "max-h-[38dvh] sm:max-h-[40dvh] sm:min-h-[12rem]",
+              "panel-compact h-[46dvh] p-2.5 sm:h-auto sm:min-h-[18rem] sm:p-5 lg:min-h-0",
+            prefs.panelLayout === "column" && "h-[38dvh] sm:h-[40dvh] sm:min-h-[12rem]",
             (!prefs.panelLayout || prefs.panelLayout === "auto") &&
-              "max-h-[38dvh] sm:max-h-none sm:min-h-[18rem] lg:min-h-0",
+              "h-[38dvh] sm:h-auto sm:min-h-[18rem] lg:min-h-0",
           )}
         >
 
