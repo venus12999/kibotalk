@@ -71,7 +71,7 @@ export function Onboarding({ onContinue }: { onContinue: () => void }) {
         }}
       >
         <ArrowRight className="size-4" />
-        {t("continueVoiceprint")}
+        {t("continueSetup")}
       </Button>
     </div>
   );
