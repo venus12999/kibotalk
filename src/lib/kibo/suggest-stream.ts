@@ -123,6 +123,28 @@ const unschedule = (id: number) => {
 };
 
 /**
+ * Non-streaming fallback: ask the server for the finished answer in one plain
+ * body. Mobile browsers and in-app WebViews that cannot read a live stream
+ * (older iOS Safari, WeChat) end up here instead of showing an empty result.
+ */
+async function fetchWhole(
+  input: SuggestStreamInput,
+  signal?: AbortSignal,
+): Promise<Candidate[]> {
+  const res = await fetch("/api/suggest", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...input, stream: false }),
+    signal: signal ?? null,
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new SuggestError(body || `HTTP ${res.status}`, { status: res.status });
+  }
+  return parseCandidates(await res.text());
+}
+
+/**
  * Streams reply suggestions. Token deltas are accumulated and flushed to
  * `onUpdate` at most once per animation frame (and only when the parsed result
  * actually changed), so a fast token stream cannot outrun the renderer.
@@ -168,10 +190,15 @@ export async function streamSuggestions(
         }
       })
       .join("");
-    const candidates = parseCandidates(whole || raw);
+    let candidates = parseCandidates(whole || raw);
+    // A buffered body that carried nothing usable: retry without streaming.
+    if (candidates.length === 0 && !signal?.aborted) {
+      candidates = await fetchWhole(input, signal);
+    }
     if (candidates.length > 0) onUpdate(candidates);
     return candidates;
   }
+
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
