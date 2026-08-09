@@ -78,6 +78,8 @@ export function SessionWorkbench() {
     "idle" | "connecting" | "retrying" | "streaming" | "done" | "error"
   >("idle");
   const [aiError, setAiError] = React.useState("");
+  const [aiErrorKind, setAiErrorKind] = React.useState<AiErrorKind>("unknown");
+
   const [aiAttempt, setAiAttempt] = React.useState(0);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [historyOpen, setHistoryOpen] = React.useState(false);
