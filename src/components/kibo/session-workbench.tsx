@@ -396,28 +396,6 @@ export function SessionWorkbench() {
       </header>
 
 
-      {user && !voiceprintReady && !enrollDismissed ? (
-        <div className="glass-quiet flex flex-wrap items-start gap-3 rounded-2xl p-4">
-          <Fingerprint className="mt-0.5 size-5 text-primary" />
-          <div className="min-w-48 flex-1">
-            <p className="text-sm font-bold">{words.enrollTitle}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">{words.enrollBody}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="soft" size="sm" onClick={() => setSettingsOpen(true)}>
-              {words.enrollCta}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label={words.dismiss}
-              onClick={() => setEnrollDismissed(true)}
-            >
-              <X className="size-4" />
-            </Button>
-          </div>
-        </div>
-      ) : null}
 
       <div className="grid min-h-0 flex-1 gap-3 sm:gap-4 lg:grid-cols-[1.15fr_1fr]">
         <section className="glass-transcript flex min-h-[20rem] flex-col p-3 sm:p-5 lg:min-h-0">
