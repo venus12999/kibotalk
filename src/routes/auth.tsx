@@ -41,14 +41,30 @@ function AuthPage() {
 
   React.useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) void navigate({ to: "/" });
+      if (data.session) void navigate({ to: "/", replace: true });
     });
-    // The confirmation link signs the user in — leave the verify screen as soon as it lands.
+    // The confirmation link signs the user in — leave the verify screen as soon
+    // as it lands, including when the link was opened in another tab (supabase-js
+    // mirrors the session across tabs and emits SIGNED_IN here).
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session) void navigate({ to: "/" });
+      if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session) {
+        void navigate({ to: "/", replace: true });
+      }
     });
     return () => sub.subscription.unsubscribe();
   }, [navigate]);
+
+  // While waiting on the email, poll gently so a confirmation completed on the
+  // phone still lands the user in the app on this device.
+  React.useEffect(() => {
+    if (mode !== "verify") return;
+    const id = window.setInterval(() => {
+      void supabase.auth.getSession().then(({ data }) => {
+        if (data.session) void navigate({ to: "/", replace: true });
+      });
+    }, 4000);
+    return () => window.clearInterval(id);
+  }, [mode, navigate]);
 
   React.useEffect(() => {
     if (cooldown <= 0) return;
@@ -62,6 +78,37 @@ function AuthPage() {
     setNotice(message);
     setCooldown(60);
   };
+
+  /** Explicit "I clicked the link" path for users who confirmed elsewhere. */
+  const checkNow = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        await navigate({ to: "/", replace: true });
+        return;
+      }
+      if (password) {
+        const { data: signed, error: err } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (signed.session) {
+          await navigate({ to: "/", replace: true });
+          return;
+        }
+        if (err && !/not confirmed|confirm your email/i.test(err.message)) throw err;
+      }
+      setNotice("Still waiting on the confirmation — open the link in the email, then try again.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
 
 
   const resend = async () => {
