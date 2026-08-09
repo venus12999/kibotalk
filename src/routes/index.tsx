@@ -31,7 +31,7 @@ export const Route = createFileRoute("/")({
   component: Page,
 });
 
-type Screen = "onboarding" | "voiceprint" | "session";
+type Screen = "onboarding" | "session";
 
 function App() {
   const { prefs, hydrated } = useKibo();
@@ -46,8 +46,7 @@ function App() {
 
   React.useEffect(() => {
     if (!hydrated || screen) return;
-    if (!prefs.onboarded) setScreen("onboarding");
-    else setScreen(loadVoiceprint() === null ? "voiceprint" : "session");
+    setScreen(prefs.onboarded ? "session" : "onboarding");
   }, [hydrated, prefs.onboarded, screen]);
 
   if (authLoading || !user || !hydrated || !screen) {
@@ -58,7 +57,6 @@ function App() {
       </>
     );
   }
-
 
   if (screen === "session")
     return (
@@ -72,11 +70,7 @@ function App() {
     <>
       <AppBackground />
       <main className="flex min-h-dvh items-center justify-center p-4">
-        {screen === "onboarding" ? (
-          <Onboarding onContinue={() => setScreen("voiceprint")} />
-        ) : (
-          <VoiceprintStep onContinue={() => setScreen("session")} />
-        )}
+        <Onboarding onContinue={() => setScreen("session")} />
       </main>
     </>
   );
