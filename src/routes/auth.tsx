@@ -138,6 +138,34 @@ function AuthPage() {
   };
 
 
+  const sendReset = async () => {
+    if (busy || cooldown > 0) return;
+    if (!email) {
+      setError("Enter your email first.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const { error: err } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (err) throw err;
+      setNotice(`We sent a password reset link to ${email}. Open it to choose a new password.`);
+      setCooldown(60);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(
+        /rate|too many|seconds/i.test(msg)
+          ? "Too many requests — please wait a moment before asking for another email."
+          : msg,
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
