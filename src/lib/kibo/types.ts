@@ -20,7 +20,12 @@ export type Prefs = {
   micDeviceId: string;
   captureMode: CaptureMode;
   panelLayout: PanelLayout;
+  /** Manual typography tuning for the side-by-side (row) layout. 1 = default. */
+  rowFontScale: number;
+  rowLineScale: number;
+  rowGapScale: number;
   onboarded: boolean;
+
 };
 
 export type Turn = {
@@ -77,5 +82,9 @@ export const defaultPrefs: Prefs = {
   micDeviceId: "",
   captureMode: "push",
   panelLayout: "auto",
+  rowFontScale: 1,
+  rowLineScale: 1,
+  rowGapScale: 1,
   onboarded: false,
+
 };

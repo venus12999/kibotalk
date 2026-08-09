@@ -1,5 +1,13 @@
 import * as React from "react";
-import { Sparkles, Clock, AlertCircle, CheckCircle2, Loader2, RotateCw } from "lucide-react";
+import {
+  Sparkles,
+  Clock,
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
+  RotateCw,
+  ChevronDown,
+} from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { Candidate, Round, Segment } from "@/lib/kibo/types";
@@ -58,18 +66,31 @@ const RubyText = React.memo(function RubyText({
  */
 const NOTE_TONES = ["note-glass-1", "note-glass-2", "note-glass-3"] as const;
 
+/** Build a compact detail view from data we already have: reading breakdown. */
+function keyWords(candidate: Candidate) {
+  return (candidate.segments ?? []).filter((s) => s.role !== "punct" && s.t.trim().length > 0);
+}
+
 const NoteCard = React.memo(function NoteCard({
   candidate,
   caret,
   index,
+  expanded,
+  onToggle,
+  labels,
 }: {
   candidate: Candidate;
   caret: boolean;
   index: number;
+  expanded: boolean;
+  onToggle: () => void;
+  labels: { show: string; hide: string; alt: string; points: string };
 }) {
   const total = candidate.segments?.length
     ? candidate.segments.reduce((n, s) => n + s.t.length, 0)
     : candidate.text.length;
+  const words = keyWords(candidate);
+  const hasDetail = words.length > 0 || Boolean(candidate.meaning);
 
   return (
     <li className={cn("relative p-4", NOTE_TONES[index % NOTE_TONES.length])}>
@@ -83,12 +104,52 @@ const NoteCard = React.memo(function NoteCard({
           <span className="ml-0.5 inline-block h-4 w-0.5 translate-y-0.5 animate-pulse bg-current align-middle" />
         ) : null}
       </p>
-      {candidate.meaning ? (
-        <p className="mt-1.5 text-xs opacity-70">{candidate.meaning}</p>
+      {candidate.meaning && !expanded ? (
+        <p className="mt-1.5 line-clamp-1 text-xs opacity-70">{candidate.meaning}</p>
+      ) : null}
+
+      {hasDetail && !caret ? (
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={expanded}
+          className="mt-1.5 flex items-center gap-1 text-[11px] font-bold opacity-70 hover:opacity-100"
+        >
+          <ChevronDown className={cn("size-3 transition-transform", expanded && "rotate-180")} />
+          {expanded ? labels.hide : labels.show}
+        </button>
+      ) : null}
+
+      {expanded ? (
+        <div className="mt-2 space-y-2 border-t border-current/15 pt-2">
+          {candidate.meaning ? (
+            <div>
+              <p className="text-[11px] font-bold opacity-60">{labels.alt}</p>
+              <p className="text-xs opacity-85">{candidate.meaning}</p>
+            </div>
+          ) : null}
+          {words.length ? (
+            <div>
+              <p className="text-[11px] font-bold opacity-60">{labels.points}</p>
+              <ul className="mt-1 flex flex-wrap gap-1">
+                {words.map((w, i) => (
+                  <li
+                    key={i}
+                    className="rounded-md bg-current/10 px-1.5 py-0.5 text-[11px] font-semibold"
+                  >
+                    {w.t}
+                    {w.r ? <span className="ml-1 opacity-60">{w.r}</span> : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
       ) : null}
     </li>
   );
 });
+
 
 
 
@@ -235,6 +296,7 @@ export function SuggestionStage({
   canRetry = true,
   emptyHint,
   previousRoundLabel,
+  detailLabels,
   className,
 }: {
   rounds: Round[];
@@ -247,10 +309,23 @@ export function SuggestionStage({
   canRetry?: boolean;
   emptyHint: string;
   previousRoundLabel: string;
+  detailLabels?: { show: string; hide: string; alt: string; points: string };
   className?: string;
 }) {
   const current = rounds[0];
   const previous = React.useMemo(() => rounds.slice(1, 3), [rounds]);
+  // Accordion: only one note expanded at a time, so the panel height stays put.
+  const [openIndex, setOpenIndex] = React.useState<number | null>(null);
+  const roundId = current?.id;
+  React.useEffect(() => {
+    setOpenIndex(null);
+  }, [roundId]);
+  const labels = detailLabels ?? {
+    show: "Show details",
+    hide: "Hide",
+    alt: "Alternative phrasing",
+    points: "Key words",
+  };
 
   if (!current && status === "idle") {
     return (
@@ -283,10 +358,19 @@ export function SuggestionStage({
         {current ? (
           <ol className="space-y-3">
             {current.candidates.map((c, i) => (
-              <NoteCard key={i} candidate={c} caret={streaming && i === last} index={i} />
+              <NoteCard
+                key={i}
+                candidate={c}
+                caret={streaming && i === last}
+                index={i}
+                expanded={openIndex === i}
+                onToggle={() => setOpenIndex((prev) => (prev === i ? null : i))}
+                labels={labels}
+              />
             ))}
           </ol>
         ) : null}
+
 
         <PreviousRounds rounds={previous} label={previousRoundLabel} />
       </div>

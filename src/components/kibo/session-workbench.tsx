@@ -452,6 +452,15 @@ export function SessionWorkbench() {
 
 
       <div
+        style={
+          prefs.panelLayout === "row"
+            ? ({
+                "--pc-font": String(prefs.rowFontScale ?? 1),
+                "--pc-line": String(prefs.rowLineScale ?? 1),
+                "--pc-gap": String(prefs.rowGapScale ?? 1),
+              } as React.CSSProperties)
+            : undefined
+        }
         className={cn(
           "grid min-h-0 flex-1 gap-3 sm:gap-4",
           prefs.panelLayout === "row" &&
@@ -460,6 +469,7 @@ export function SessionWorkbench() {
           (!prefs.panelLayout || prefs.panelLayout === "auto") && "lg:grid-cols-[1.15fr_1fr]",
         )}
       >
+
         <section
           className={cn(
             "glass-transcript flex min-h-[9rem] min-w-0 flex-col p-3 sm:p-5",
@@ -600,6 +610,13 @@ export function SessionWorkbench() {
             }}
             emptyHint={t("emptySuggestions")}
             previousRoundLabel={t("previousRound")}
+            detailLabels={{
+              show: t("showDetail"),
+              hide: t("hideDetail"),
+              alt: t("altPhrasing"),
+              points: t("keyPoints"),
+            }}
+
           />
         </section>
       </div>
