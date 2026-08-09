@@ -489,6 +489,15 @@ export function SessionWorkbench() {
             </div>
           ) : null}
 
+          <VadDiagnostics
+            className="mt-3"
+            diagnostics={transcriber.diagnostics}
+            mode={prefs.captureMode}
+            uiLang={prefs.uiLang}
+            recording={transcriber.recording}
+          />
+
+
         </section>
 
         <section className="paper-sheet flex min-h-[18rem] flex-col p-3 sm:p-5 lg:min-h-0">
