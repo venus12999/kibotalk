@@ -126,6 +126,7 @@ export function SessionWorkbench() {
 
   type SuggestPayload = {
     turns: { speaker: "user" | "other"; text: string }[];
+    latest: string;
     conversationLang: string;
     uiLang: string;
     level: string;
@@ -146,8 +147,9 @@ export function SessionWorkbench() {
       setAiError("");
       setAiStatus(replay ? "retrying" : "connecting");
       setAiAttempt((n) => (replay ? n + 1 : 0));
-      // Insert an empty round immediately, then fill it in as tokens arrive.
-      setRounds((prev) => [{ id: roundId, prompt: text, candidates: [] }, ...prev]);
+      // Only the round for the newest line stays on screen: suggestions written
+      // for an older message are stale the moment the context moves on.
+      setRounds([{ id: roundId, prompt: text, candidates: [] }]);
 
       const onUpdate = (candidates: Candidate[]) => {
         if (req !== reqRef.current) return;
@@ -165,11 +167,13 @@ export function SessionWorkbench() {
       const payload: SuggestPayload =
         replay ?? {
           turns: turnsRef.current.map((x) => ({ speaker: x.speaker, text: x.text })),
+          latest: text,
           conversationLang: prefsRef.current.conversationLang,
           uiLang: prefsRef.current.uiLang,
           level: prefsRef.current.level,
         };
       lastRequestRef.current = { text, payload };
+
 
       // One transparent retry: a dropped connection mid-turn is common on mobile.
       const run = async () => {
@@ -255,7 +259,17 @@ export function SessionWorkbench() {
     if (last) runSuggestions(last.text);
   }, [runSuggestions]);
 
-
+  // Changing the target language or level invalidates suggestions written for
+  // the old settings — clear them instead of showing stale advice.
+  const contextKey = `${prefs.conversationLang}|${prefs.level}`;
+  const contextKeyRef = React.useRef(contextKey);
+  React.useEffect(() => {
+    if (contextKeyRef.current === contextKey) return;
+    contextKeyRef.current = contextKey;
+    cancelSuggestions();
+    setRounds([]);
+    lastRequestRef.current = null;
+  }, [contextKey, cancelSuggestions]);
 
 
   const handleError = React.useCallback(

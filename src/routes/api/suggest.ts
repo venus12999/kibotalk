@@ -14,6 +14,8 @@ const LEVEL_HINT: Record<string, string> = {
 
 type Body = {
   turns?: { speaker: "user" | "other"; text: string }[];
+  /** The exact line the reply must answer — the message just received. */
+  latest?: string;
   conversationLang?: string;
   uiLang?: string;
   level?: string;
@@ -40,6 +42,9 @@ export const Route = createFileRoute("/api/suggest")({
           .slice(-12)
           .map((t) => `${t.speaker === "user" ? "ME" : "OTHER"}: ${t.text}`)
           .join("\n");
+        const latest = (body.latest ?? "").trim() ||
+          [...body.turns].reverse().find((t) => t.speaker === "other")?.text.trim() ||
+          "";
 
         const upstream = await fetch("https://api.deepseek.com/chat/completions", {
           method: "POST",
@@ -60,7 +65,11 @@ export const Route = createFileRoute("/api/suggest")({
                 role: "system",
                 content: [
                   `You are a real-time conversation coach. The user is speaking ${target} with another person.`,
-                  `Given the transcript, propose exactly 3 short, distinct, natural replies the user could say next, in ${target}.`,
+                  `The transcript is ordered oldest to newest; the LAST "OTHER" line is the message that was just received.`,
+                  latest
+                    ? `Reply directly to this newest line from the other person: "${latest}". Earlier turns are background context only — never answer an older line.`
+                    : ``,
+                  `Propose exactly 3 short, distinct, natural replies the user could say next, in ${target}.`,
                   LEVEL_HINT[body.level ?? "beginner"] ?? "",
                   `Output EXACTLY 3 lines. Each line is one compact JSON object and nothing else — no markdown fence, no numbering, no blank lines.`,
                   `Shape: {"targetText":"<the reply in ${target}>","meaning":"<one-line explanation in ${ui}>","segments":[{"t":"<surface>","r":"<reading>","role":"content|particle|punct"}]}`,
@@ -72,7 +81,12 @@ export const Route = createFileRoute("/api/suggest")({
                       : `"r" is "" for every span in English.`,
                 ].join(" "),
               },
-              { role: "user", content: transcript || "(the conversation just started)" },
+              {
+                role: "user",
+                content: transcript
+                  ? `${transcript}\n\n[Reply to the newest OTHER line: ${latest || "(none)"}]`
+                  : "(the conversation just started)",
+              },
             ],
 
           }),

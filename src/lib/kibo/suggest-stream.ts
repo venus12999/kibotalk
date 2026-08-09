@@ -2,6 +2,8 @@ import type { Candidate, Segment } from "./types";
 
 export type SuggestStreamInput = {
   turns: { speaker: "user" | "other"; text: string }[];
+  /** The line the suggestions must answer. */
+  latest: string;
   conversationLang: string;
   uiLang: string;
   level: string;
