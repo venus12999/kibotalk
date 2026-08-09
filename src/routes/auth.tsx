@@ -1,12 +1,12 @@
 import * as React from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { Mic, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AppBackground } from "@/components/kibo/app-background";
+import logoAsset from "@/assets/kibotalk-logo.png.asset.json";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
