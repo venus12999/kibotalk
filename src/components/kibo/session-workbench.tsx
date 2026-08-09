@@ -193,7 +193,7 @@ export function SessionWorkbench() {
           } else {
             // An empty answer must not vanish silently — offer a retry.
             setAiStatus("error");
-            setAiError(emptyAiMessage[prefsRef.current.uiLang] ?? emptyAiMessage.en);
+            setAiError(emptyAiMessage[prefsRef.current.uiLang] ?? "No suggestions came back.");
             setRounds((prev) => prev.filter((r) => r.id !== roundId));
           }
         })
