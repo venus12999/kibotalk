@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-type Option<T extends string> = { value: T; label: string };
+type Option<T extends string> = { value: T; label: string; description?: string };
 
 export function PillGroup<T extends string>({
   options,
@@ -21,7 +21,7 @@ export function PillGroup<T extends string>({
       <div
         role="radiogroup"
         aria-label={label}
-        className="glass-quiet flex w-full gap-1.5 rounded-full p-1"
+        className="glass-quiet flex w-full gap-2 rounded-2xl p-1.5"
       >
         {options.map((opt) => {
           const active = opt.value === value;
@@ -34,7 +34,7 @@ export function PillGroup<T extends string>({
               disabled={disabled}
               onClick={() => onChange(opt.value)}
               className={cn(
-                "flex-1 cursor-pointer rounded-full px-3 py-2 text-sm font-semibold transition-colors",
+                "flex flex-1 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-2 text-center transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 active
                   ? "gradient-primary glow-sm text-primary-foreground"
@@ -42,7 +42,12 @@ export function PillGroup<T extends string>({
                 disabled && "cursor-not-allowed opacity-60",
               )}
             >
-              {opt.label}
+              <span className="text-sm font-semibold">{opt.label}</span>
+              {opt.description ? (
+                <span className="max-w-[120px] text-[10px] leading-tight opacity-90">
+                  {opt.description}
+                </span>
+              ) : null}
             </button>
           );
         })}
@@ -50,3 +55,4 @@ export function PillGroup<T extends string>({
     </div>
   );
 }
+
