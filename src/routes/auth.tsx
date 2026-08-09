@@ -184,32 +184,52 @@ function AuthPage() {
           </div>
           <h2 className="mt-4 flex items-center gap-2 text-sm font-semibold">
             <MailCheck className="size-4 text-primary" />
-            Confirm your email
+            Enter your verification code
           </h2>
           <p className="mt-2 text-xs text-muted-foreground">
-            Click the link we emailed to <span className="font-medium text-foreground">{email}</span>
-            . This page signs you in automatically once it&apos;s confirmed. Links expire after a
-            while — if yours no longer works, send a fresh one.
+            We emailed a 6-digit code to{" "}
+            <span className="font-medium text-foreground">{email}</span>. Codes expire after a
+            while — if yours no longer works, send a new one.
           </p>
 
-          {error ? (
-            <p className="mt-3 rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
-              {error}
-            </p>
-          ) : null}
-          {notice ? (
-            <p className="mt-3 rounded-xl bg-primary/10 px-3 py-2 text-xs text-foreground">
-              {notice}
-            </p>
-          ) : null}
+          <form className="mt-4 space-y-3" onSubmit={verifyCode}>
+            <div className="space-y-1.5">
+              <Label htmlFor="code">Verification code</Label>
+              <Input
+                id="code"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder="123456"
+                maxLength={6}
+                required
+                className="text-center text-lg tracking-[0.5em]"
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              />
+            </div>
+
+            {error ? (
+              <p className="rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                {error}
+              </p>
+            ) : null}
+            {notice ? (
+              <p className="rounded-xl bg-primary/10 px-3 py-2 text-xs text-foreground">{notice}</p>
+            ) : null}
+
+            <Button type="submit" className="w-full" disabled={busy || code.length !== 6}>
+              {busy ? <Loader2 className="size-4 animate-spin" /> : null}
+              Verify and continue
+            </Button>
+          </form>
 
           <Button
-            className="mt-5 w-full"
+            variant="soft"
+            className="mt-3 w-full"
             disabled={busy || cooldown > 0}
             onClick={() => void resend()}
           >
-            {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-            {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend confirmation email"}
+            {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
           </Button>
 
           <button
