@@ -114,19 +114,33 @@ const PreviousRounds = React.memo(function PreviousRounds({
   );
 });
 
-export type AiStatus = "idle" | "connecting" | "streaming" | "done" | "error";
+export type AiStatus = "idle" | "connecting" | "retrying" | "streaming" | "done" | "error";
+
+type StatusLabels = {
+  connecting: string;
+  retrying: string;
+  streaming: string;
+  done: string;
+  failed: string;
+  retry: string;
+  attempt: string;
+};
 
 /** A persistent banner so the user always knows what the model is doing. */
 const StatusBar = React.memo(function StatusBar({
   status,
   errorMessage,
+  attempt = 0,
   labels,
   onRetry,
+  canRetry = true,
 }: {
   status: AiStatus;
   errorMessage?: string | undefined;
-  labels: { connecting: string; streaming: string; done: string; failed: string; retry: string };
+  attempt?: number;
+  labels: StatusLabels;
   onRetry?: (() => void) | undefined;
+  canRetry?: boolean;
 }) {
   if (status === "idle") return null;
 
@@ -142,7 +156,7 @@ const StatusBar = React.memo(function StatusBar({
       <AlertCircle className="size-4 shrink-0" />
     ) : status === "done" ? (
       <CheckCircle2 className="size-4 shrink-0 text-primary" />
-    ) : status === "connecting" ? (
+    ) : status === "connecting" || status === "retrying" ? (
       <Loader2 className="size-4 shrink-0 animate-spin text-primary" />
     ) : (
       <Sparkles className="size-4 shrink-0 animate-pulse text-primary" />
@@ -155,7 +169,9 @@ const StatusBar = React.memo(function StatusBar({
         ? labels.done
         : status === "connecting"
           ? labels.connecting
-          : labels.streaming;
+          : status === "retrying"
+            ? labels.retrying
+            : labels.streaming;
 
   return (
     <div
@@ -172,6 +188,11 @@ const StatusBar = React.memo(function StatusBar({
         {status === "error" && errorMessage ? (
           <span className="ml-1 font-normal opacity-80">{errorMessage}</span>
         ) : null}
+        {attempt > 0 ? (
+          <span className="ml-1 font-normal opacity-70">
+            {labels.attempt.replace("{n}", String(attempt))}
+          </span>
+        ) : null}
       </span>
       {status === "streaming" ? (
         <span className="flex gap-0.5" aria-hidden>
@@ -180,7 +201,7 @@ const StatusBar = React.memo(function StatusBar({
           <i className="size-1.5 animate-bounce rounded-full bg-primary [animation-delay:240ms]" />
         </span>
       ) : null}
-      {status === "error" && onRetry ? (
+      {status === "error" && onRetry && canRetry ? (
         <button
           type="button"
           onClick={onRetry}
@@ -199,8 +220,10 @@ export function SuggestionStage({
   streaming,
   status = "idle",
   errorMessage,
+  attempt = 0,
   statusLabels,
   onRetry,
+  canRetry = true,
   emptyHint,
   previousRoundLabel,
   className,
@@ -209,14 +232,10 @@ export function SuggestionStage({
   streaming: boolean;
   status?: AiStatus;
   errorMessage?: string | undefined;
-  statusLabels: {
-    connecting: string;
-    streaming: string;
-    done: string;
-    failed: string;
-    retry: string;
-  };
+  attempt?: number;
+  statusLabels: StatusLabels;
   onRetry?: (() => void) | undefined;
+  canRetry?: boolean;
   emptyHint: string;
   previousRoundLabel: string;
   className?: string;
@@ -246,8 +265,10 @@ export function SuggestionStage({
         <StatusBar
           status={status}
           errorMessage={errorMessage}
+          attempt={attempt}
           labels={statusLabels}
           onRetry={onRetry}
+          canRetry={canRetry}
         />
 
         {current ? (
