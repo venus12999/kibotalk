@@ -1,5 +1,5 @@
 import * as React from "react";
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Loader2, MailCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -270,12 +270,10 @@ function AuthPage() {
           {mode === "signin" ? "No account? Create one" : "Already have an account? Sign in"}
         </button>
 
-        <Link
-          to="/"
-          className="mt-3 block text-center text-xs text-muted-foreground underline-offset-4 hover:underline"
-        >
-          Continue without an account
-        </Link>
+        <p className="mt-3 text-center text-[11px] text-muted-foreground">
+          Every account needs a confirmed email before you can start a session.
+        </p>
+
       </div>
     </main>
   );

@@ -146,12 +146,10 @@ function AuthCallback() {
         <Button className="mt-4 w-full" onClick={() => void navigate({ to: "/auth" })}>
           回到登录页重新发送
         </Button>
-        <Link
-          to="/"
-          className="mt-3 block text-center text-xs text-muted-foreground underline-offset-4 hover:underline"
-        >
-          先不登录，继续使用
-        </Link>
+        <p className="mt-3 text-center text-[11px] text-muted-foreground">
+          确认邮箱后才能开始使用。
+        </p>
+
       </div>
     </main>
   );

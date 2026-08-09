@@ -2,16 +2,77 @@ import * as React from "react";
 import { Sparkles, Clock } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import type { Candidate, Round } from "@/lib/kibo/types";
+import type { Candidate, Round, Segment } from "@/lib/kibo/types";
+
+/**
+ * Reveals text character by character, chasing the target length instead of
+ * snapping to it, so a chunky provider stream still reads as live typing.
+ */
+function useTypewriter(total: number, active: boolean) {
+  const [shown, setShown] = React.useState(active ? 0 : total);
+  const shownRef = React.useRef(shown);
+  shownRef.current = shown;
+
+  React.useEffect(() => {
+    if (!active) {
+      setShown(total);
+      return;
+    }
+    if (shownRef.current >= total) return;
+    let raf = 0;
+    let last = performance.now();
+    const tick = (now: number) => {
+      const dt = now - last;
+      last = now;
+      const behind = total - shownRef.current;
+      if (behind <= 0) return;
+      // ~55 chars/s baseline, faster when the buffer runs ahead.
+      const speed = 0.055 * (1 + Math.min(behind / 20, 3));
+      const step = Math.max(1, Math.round(dt * speed));
+      const next = Math.min(total, shownRef.current + step);
+      shownRef.current = next;
+      setShown(next);
+      if (next < total) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [total, active]);
+
+  return active ? Math.min(shown, total) : total;
+}
+
+function clipSegments(segments: Segment[], limit: number): Segment[] {
+  const out: Segment[] = [];
+  let used = 0;
+  for (const seg of segments) {
+    if (used >= limit) break;
+    const room = limit - used;
+    if (seg.t.length <= room) {
+      out.push(seg);
+      used += seg.t.length;
+    } else {
+      out.push({ ...seg, t: seg.t.slice(0, room), r: "" });
+      break;
+    }
+  }
+  return out;
+}
 
 /** Reply text with per-span readings rendered as ruby annotations. */
-const RubyText = React.memo(function RubyText({ candidate }: { candidate: Candidate }) {
+const RubyText = React.memo(function RubyText({
+  candidate,
+  limit,
+}: {
+  candidate: Candidate;
+  limit: number;
+}) {
   if (!candidate.segments || candidate.segments.length === 0) {
-    return <>{candidate.text}</>;
+    return <>{candidate.text.slice(0, limit)}</>;
   }
+  const segments = clipSegments(candidate.segments, limit);
   return (
     <>
-      {candidate.segments.map((seg, i) =>
+      {segments.map((seg, i) =>
         seg.r ? (
           <ruby key={i} className={seg.role === "particle" ? "opacity-80" : undefined}>
             {seg.t}
@@ -35,18 +96,25 @@ const NoteCard = React.memo(function NoteCard({
   candidate: Candidate;
   caret: boolean;
 }) {
+  const total = candidate.segments?.length
+    ? candidate.segments.reduce((n, s) => n + s.t.length, 0)
+    : candidate.text.length;
+  const shown = useTypewriter(total, caret);
+  const meaningShown = useTypewriter(candidate.meaning.length, caret && shown >= total);
+
   return (
     <li className="sticky-note p-4">
       <p className="text-base leading-[2.1] font-semibold">
-        <RubyText candidate={candidate} />
+        <RubyText candidate={candidate} limit={shown} />
         {caret ? (
           <span className="ml-0.5 inline-block h-4 w-0.5 translate-y-0.5 animate-pulse bg-current align-middle" />
         ) : null}
       </p>
-      <p className="mt-1.5 text-xs opacity-70">{candidate.meaning}</p>
+      <p className="mt-1.5 text-xs opacity-70">{candidate.meaning.slice(0, meaningShown)}</p>
     </li>
   );
 });
+
 
 
 /** Past rounds are static; keep them out of the streaming render path. */

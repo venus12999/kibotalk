@@ -1,14 +1,17 @@
 import * as React from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { KiboProvider, useKibo } from "@/lib/kibo/store";
 import { Onboarding } from "@/components/kibo/onboarding";
 import { SessionWorkbench } from "@/components/kibo/session-workbench";
 import { AppBackground } from "@/components/kibo/app-background";
 import { VoiceprintStep } from "@/components/kibo/voiceprint-step";
 import { loadVoiceprint } from "@/lib/kibo/voiceprint";
+import { useSession } from "@/lib/kibo/use-session";
 
 
 export const Route = createFileRoute("/")({
+  ssr: false,
+
   head: () => ({
     meta: [
       { title: "KiboTalk — Real-time conversation coach" },
@@ -34,7 +37,14 @@ type Screen = "onboarding" | "voiceprint" | "session";
 
 function App() {
   const { prefs, hydrated } = useKibo();
+  const { user, loading: authLoading } = useSession();
+  const navigate = useNavigate();
   const [screen, setScreen] = React.useState<Screen | null>(null);
+
+  // Everyone signs in (and confirms their email) before using the app.
+  React.useEffect(() => {
+    if (!authLoading && !user) void navigate({ to: "/auth", replace: true });
+  }, [authLoading, user, navigate]);
 
   React.useEffect(() => {
     if (!hydrated || screen) return;
@@ -42,7 +52,7 @@ function App() {
     else setScreen(loadVoiceprint() === null ? "voiceprint" : "session");
   }, [hydrated, prefs.onboarded, screen]);
 
-  if (!hydrated || !screen) {
+  if (authLoading || !user || !hydrated || !screen) {
     return (
       <>
         <AppBackground />
@@ -50,6 +60,7 @@ function App() {
       </>
     );
   }
+
 
   if (screen === "session")
     return (
