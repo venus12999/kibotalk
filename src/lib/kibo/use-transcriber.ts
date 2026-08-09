@@ -1,5 +1,12 @@
 import * as React from "react";
-import { encodeWav, rms } from "./wav";
+import { encodeWav, rms, toMono16k, TARGET_RATE } from "./wav";
+import {
+  classifySpeaker,
+  embedVoice,
+  loadVoiceprint,
+  updateCentroid,
+  VOICEPRINT_KEY,
+} from "./voiceprint";
 import type { AudioSource } from "./types";
 
 type Speaker = "user" | "other";
@@ -17,15 +24,23 @@ const SILENCE_RMS = 0.012;
 const SILENCE_MS = 700;
 const MIN_SPEECH_MS = 600;
 const MAX_SEGMENT_MS = 12000;
+/** How often an unfinished segment is re-transcribed to show live partials. */
+const PARTIAL_EVERY_MS = 1600;
+const PARTIAL_MIN_SPEECH_MS = 900;
 
 type Pipeline = {
   speaker: Speaker;
+  /** True when this pipe cannot know the speaker from its source alone. */
+  ambiguous: boolean;
   stream: MediaStream;
   source: MediaStreamAudioSourceNode;
   node: ScriptProcessorNode;
   chunks: Float32Array[];
   speechMs: number;
   silenceMs: number;
+  partialAt: number;
+  partialBusy: boolean;
+  segment: number;
 };
 
 export function useTranscriber({
@@ -45,11 +60,50 @@ export function useTranscriber({
   const pausedRef = React.useRef(false);
   const inFlightRef = React.useRef(0);
 
+  // Voiceprint state for the current session.
+  const enrolledRef = React.useRef<Float32Array | null>(null);
+  const otherCentroidRef = React.useRef<Float32Array | null>(null);
+  const lastSpeakerRef = React.useRef<Speaker | null>(null);
+
   const cbRef = React.useRef({ onInterim, onFinal, onError, language });
   cbRef.current = { onInterim, onFinal, onError, language };
 
+  /** Decide who spoke a segment: source routing first, voiceprint when unsure. */
+  const resolveSpeaker = React.useCallback(
+    (pipe: Pipeline, chunks: Float32Array[], sampleRate: number): Speaker => {
+      if (!pipe.ambiguous) return pipe.speaker;
+      const enrolled = enrolledRef.current;
+      if (!enrolled) return pipe.speaker;
+
+      const embedding = embedVoice(toMono16k(chunks, sampleRate));
+      if (!embedding) return lastSpeakerRef.current ?? pipe.speaker;
+
+      const { speaker, confident } = classifySpeaker(
+        embedding,
+        enrolled,
+        otherCentroidRef.current,
+        lastSpeakerRef.current,
+      );
+      if (speaker === "other" && confident) {
+        otherCentroidRef.current = updateCentroid(otherCentroidRef.current, embedding);
+      }
+      lastSpeakerRef.current = speaker;
+      return speaker;
+    },
+    [],
+  );
+
+  /**
+   * Transcribe one buffer. `partial` requests only update the live bubble and
+   * never commit a turn, so the segment can keep growing while it streams.
+   */
   const sendSegment = React.useCallback(
-    async (chunks: Float32Array[], sampleRate: number, speaker: Speaker) => {
+    async (
+      chunks: Float32Array[],
+      sampleRate: number,
+      speaker: Speaker,
+      partial = false,
+    ): Promise<void> => {
       const blob = encodeWav(chunks, sampleRate);
       if (blob.size < 4096) return;
 
@@ -57,8 +111,10 @@ export function useTranscriber({
       form.append("file", blob, "recording.wav");
       form.append("language", cbRef.current.language);
 
-      inFlightRef.current += 1;
-      setTranscribing(true);
+      if (!partial) {
+        inFlightRef.current += 1;
+        setTranscribing(true);
+      }
       try {
         const res = await fetch("/api/transcribe", { method: "POST", body: form });
         if (!res.ok || !res.body) {
@@ -100,14 +156,21 @@ export function useTranscriber({
           }
         }
 
+        if (partial) {
+          if (text.trim()) cbRef.current.onInterim(text.trim(), speaker);
+          return;
+        }
         cbRef.current.onInterim("", speaker);
         if (text.trim()) cbRef.current.onFinal(text.trim(), speaker);
       } catch (error) {
+        if (partial) return; // a dropped partial is harmless; the final still runs
         cbRef.current.onInterim("", speaker);
         cbRef.current.onError(error instanceof Error ? error.message : String(error));
       } finally {
-        inFlightRef.current -= 1;
-        if (inFlightRef.current <= 0) setTranscribing(false);
+        if (!partial) {
+          inFlightRef.current -= 1;
+          if (inFlightRef.current <= 0) setTranscribing(false);
+        }
       }
     },
     [],
@@ -132,11 +195,16 @@ export function useTranscriber({
       pipe.chunks = [];
       pipe.speechMs = 0;
       pipe.silenceMs = 0;
+      pipe.partialAt = 0;
+      pipe.segment += 1;
       if (chunks.length > 0 && speechMs >= MIN_SPEECH_MS) {
-        void sendSegment(chunks, sampleRate, pipe.speaker);
+        const speaker = resolveSpeaker(pipe, chunks, sampleRate);
+        // Clear the live bubble of whichever side owned the partials.
+        cbRef.current.onInterim("", pipe.speaker);
+        void sendSegment(chunks, sampleRate, speaker);
       }
     },
-    [sendSegment],
+    [sendSegment, resolveSpeaker],
   );
 
   const flushAll = React.useCallback(() => {
@@ -194,18 +262,25 @@ export function useTranscriber({
     await ctx.resume().catch(() => undefined);
     ctxRef.current = ctx;
     pausedRef.current = false;
+    enrolledRef.current = loadVoiceprint();
+    otherCentroidRef.current = null;
+    lastSpeakerRef.current = null;
 
-    const attach = (stream: MediaStream, speaker: Speaker) => {
+    const attach = (stream: MediaStream, speaker: Speaker, ambiguous: boolean) => {
       const source = ctx.createMediaStreamSource(stream);
       const node = ctx.createScriptProcessor(4096, 1, 1);
       const pipe: Pipeline = {
         speaker,
+        ambiguous,
         stream,
         source,
         node,
         chunks: [],
         speechMs: 0,
         silenceMs: 0,
+        partialAt: 0,
+        partialBusy: false,
+        segment: 0,
       };
 
       node.onaudioprocess = (event) => {
@@ -229,10 +304,33 @@ export function useTranscriber({
         const endedByPause = pipe.silenceMs >= SILENCE_MS && pipe.speechMs >= MIN_SPEECH_MS;
         if (endedByPause || totalMs >= MAX_SEGMENT_MS) {
           flushPipe(pipe);
-        } else if (pipe.silenceMs >= SILENCE_MS * 3 && pipe.speechMs < MIN_SPEECH_MS) {
+          return;
+        }
+        if (pipe.silenceMs >= SILENCE_MS * 3 && pipe.speechMs < MIN_SPEECH_MS) {
           pipe.chunks = [];
           pipe.speechMs = 0;
           pipe.silenceMs = 0;
+          pipe.partialAt = 0;
+          return;
+        }
+
+        // Live partials: re-transcribe the growing buffer on a slow cadence so
+        // the bubble shows real words instead of a placeholder.
+        const now = event.timeStamp || performance.now();
+        if (
+          !pipe.partialBusy &&
+          pipe.speechMs >= PARTIAL_MIN_SPEECH_MS &&
+          now - pipe.partialAt >= PARTIAL_EVERY_MS
+        ) {
+          pipe.partialAt = now;
+          pipe.partialBusy = true;
+          const snapshot = pipe.chunks.slice();
+          const segmentId = pipe.segment;
+          void sendSegment(snapshot, ctx.sampleRate, pipe.speaker, true).finally(() => {
+            pipe.partialBusy = false;
+            // A finished segment already cleared the bubble — don't resurrect it.
+            if (pipe.segment !== segmentId) cbRef.current.onInterim("", pipe.speaker);
+          });
         }
       };
 
@@ -241,14 +339,14 @@ export function useTranscriber({
       pipesRef.current.push(pipe);
     };
 
-    // With both sources, the microphone is you and the system audio is the
-    // other person; with a single source everything is attributed to them.
-    if (micStream) attach(micStream, sysStream ? "user" : "other");
-    if (sysStream) attach(sysStream, "other");
+    // With both sources the microphone is you and the system audio is the other
+    // person. With a single microphone the voiceprint decides who is speaking.
+    if (micStream) attach(micStream, sysStream ? "user" : "other", !sysStream);
+    if (sysStream) attach(sysStream, "other", false);
 
     setRecording(true);
     return true;
-  }, [audioSource, micDeviceId, flushPipe]);
+  }, [audioSource, micDeviceId, flushPipe, sendSegment]);
 
   const setPaused = React.useCallback(
     (paused: boolean) => {
@@ -269,5 +367,7 @@ export function useTranscriber({
 
   React.useEffect(() => () => teardown(), [teardown]);
 
-  return { start, stop, setPaused, recording, level, transcribing };
+  return { start, stop, setPaused, recording, level, transcribing, sampleRate: TARGET_RATE };
 }
+
+export { VOICEPRINT_KEY };
