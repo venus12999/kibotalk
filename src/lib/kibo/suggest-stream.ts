@@ -1,4 +1,6 @@
+import { SuggestError } from "./ai-error";
 import type { Candidate, Segment } from "./types";
+
 
 export type SuggestStreamInput = {
   turns: { speaker: "user" | "other"; text: string }[];
