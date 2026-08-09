@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 
-const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const GATEWAY = "https://api.deepseek.com/chat/completions";
 // Fastest / cheapest model in the catalog — suggestions must land while the
 // other person is still talking.
 
@@ -27,14 +27,13 @@ export type SuggestInput = {
 };
 
 async function gateway(body: unknown) {
-  const key = process.env["LOVABLE_API_KEY"];
-  if (!key) throw new Error("Missing LOVABLE_API_KEY");
+  const key = process.env["DEEPSEEK_API_KEY"];
+  if (!key) throw new Error("Missing DEEPSEEK_API_KEY");
   const res = await fetch(GATEWAY, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Lovable-API-Key": key,
-      "X-Lovable-AIG-SDK": "fetch",
+      Authorization: `Bearer ${key}`,
     },
     body: JSON.stringify(body),
   });
