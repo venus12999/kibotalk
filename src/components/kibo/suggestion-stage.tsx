@@ -200,6 +200,8 @@ type StatusLabels = {
 const StatusBar = React.memo(function StatusBar({
   status,
   errorMessage,
+  errorTitle,
+  errorAdvice,
   attempt = 0,
   labels,
   onRetry,
@@ -207,6 +209,8 @@ const StatusBar = React.memo(function StatusBar({
 }: {
   status: AiStatus;
   errorMessage?: string | undefined;
+  errorTitle?: string | undefined;
+  errorAdvice?: string | undefined;
   attempt?: number;
   labels: StatusLabels;
   onRetry?: (() => void) | undefined;
@@ -243,6 +247,48 @@ const StatusBar = React.memo(function StatusBar({
             ? labels.retrying
             : labels.streaming;
 
+  // Failures get a taller card: the kind of failure and what to do about it
+  // matter more than the raw message, which is kept as small technical detail.
+  if (status === "error") {
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        className={cn("rounded-lg border px-3 py-2 text-xs", tone)}
+      >
+        <div className="flex items-start gap-2">
+          {icon}
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">
+              {errorTitle || label}
+              {attempt > 0 ? (
+                <span className="ml-1 font-normal opacity-70">
+                  {labels.attempt.replace("{n}", String(attempt))}
+                </span>
+              ) : null}
+            </p>
+            {errorAdvice ? (
+              <p className="mt-0.5 font-normal leading-snug opacity-90">{errorAdvice}</p>
+            ) : null}
+            {errorMessage ? (
+              <p className="mt-0.5 truncate font-normal text-[10px] opacity-60">{errorMessage}</p>
+            ) : null}
+          </div>
+          {onRetry && canRetry ? (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="flex shrink-0 items-center gap-1 rounded-md border border-destructive/30 px-2 py-1 text-[11px] font-bold hover:bg-destructive/10"
+            >
+              <RotateCw className="size-3" />
+              {labels.retry}
+            </button>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       role="status"
@@ -255,9 +301,6 @@ const StatusBar = React.memo(function StatusBar({
       {icon}
       <span className="min-w-0 flex-1 truncate">
         {label}
-        {status === "error" && errorMessage ? (
-          <span className="ml-1 font-normal opacity-80">{errorMessage}</span>
-        ) : null}
         {attempt > 0 ? (
           <span className="ml-1 font-normal opacity-70">
             {labels.attempt.replace("{n}", String(attempt))}
@@ -271,25 +314,18 @@ const StatusBar = React.memo(function StatusBar({
           <i className="size-1.5 animate-bounce rounded-full bg-primary [animation-delay:240ms]" />
         </span>
       ) : null}
-      {status === "error" && onRetry && canRetry ? (
-        <button
-          type="button"
-          onClick={onRetry}
-          className="flex items-center gap-1 rounded-md border border-destructive/30 px-2 py-1 text-[11px] font-bold hover:bg-destructive/10"
-        >
-          <RotateCw className="size-3" />
-          {labels.retry}
-        </button>
-      ) : null}
     </div>
   );
 });
+
 
 export function SuggestionStage({
   rounds,
   streaming,
   status = "idle",
   errorMessage,
+  errorTitle,
+  errorAdvice,
   attempt = 0,
   statusLabels,
   onRetry,
@@ -303,6 +339,8 @@ export function SuggestionStage({
   streaming: boolean;
   status?: AiStatus;
   errorMessage?: string | undefined;
+  errorTitle?: string | undefined;
+  errorAdvice?: string | undefined;
   attempt?: number;
   statusLabels: StatusLabels;
   onRetry?: (() => void) | undefined;
@@ -349,6 +387,8 @@ export function SuggestionStage({
         <StatusBar
           status={status}
           errorMessage={errorMessage}
+          errorTitle={errorTitle}
+          errorAdvice={errorAdvice}
           attempt={attempt}
           labels={statusLabels}
           onRetry={onRetry}

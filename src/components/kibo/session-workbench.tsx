@@ -1,4 +1,10 @@
 import * as React from "react";
+import {
+  classifyAiError,
+  describeAiError,
+  type AiErrorKind,
+} from "@/lib/kibo/ai-error";
+
 import { HelpCircle, History, Lightbulb, Mic, Pause, Play, Settings, Square, User, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -78,6 +84,8 @@ export function SessionWorkbench() {
     "idle" | "connecting" | "retrying" | "streaming" | "done" | "error"
   >("idle");
   const [aiError, setAiError] = React.useState("");
+  const [aiErrorKind, setAiErrorKind] = React.useState<AiErrorKind>("unknown");
+
   const [aiAttempt, setAiAttempt] = React.useState(0);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [historyOpen, setHistoryOpen] = React.useState(false);
@@ -204,7 +212,9 @@ export function SessionWorkbench() {
           } else {
             // An empty answer must not vanish silently — offer a retry.
             setAiStatus("error");
+            setAiErrorKind("empty");
             setAiError(emptyAiMessage[prefsRef.current.uiLang] ?? "No suggestions came back.");
+
             setRounds((prev) => prev.filter((r) => r.id !== roundId));
           }
         })
@@ -224,7 +234,9 @@ export function SessionWorkbench() {
           setRounds((prev) => prev.filter((r) => r.id !== roundId));
           const message = err instanceof Error ? err.message : String(err);
           setAiStatus("error");
+          setAiErrorKind(classifyAiError(err));
           setAiError(message);
+
         });
 
 
@@ -614,6 +626,9 @@ export function SessionWorkbench() {
             streaming={streaming}
             status={aiStatus}
             errorMessage={aiError}
+            errorTitle={describeAiError(aiErrorKind, prefs.uiLang).title}
+            errorAdvice={describeAiError(aiErrorKind, prefs.uiLang).advice}
+
             attempt={aiAttempt}
             onRetry={retrySuggestions}
             canRetry={lastRequestRef.current !== null}
