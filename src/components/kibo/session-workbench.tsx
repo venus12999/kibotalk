@@ -239,10 +239,19 @@ export function SessionWorkbench() {
           .catch(() => undefined);
       }
 
-      runSuggestions(text);
+      // Push-to-talk means the user explicitly ended the other person's turn,
+      // so ideas can start right away. In continuous mode nothing marks the end
+      // of a sentence reliably — the user asks for ideas when they want them.
+      if (prefsRef.current.captureMode === "push") runSuggestions(text);
     },
     [cancelSuggestions, runSuggestions],
   );
+
+  /** Continuous mode: generate ideas for the other person's latest line. */
+  const askForIdeas = React.useCallback(() => {
+    const last = [...turnsRef.current].reverse().find((x) => x.speaker === "other");
+    if (last) runSuggestions(last.text);
+  }, [runSuggestions]);
 
 
 
