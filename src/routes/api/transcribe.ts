@@ -1,11 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+const VOLC_LANG: Record<string, string> = {
+  ja: "ja-JP",
+  en: "en-US",
+  zh: "zh-CN",
+};
+
 export const Route = createFileRoute("/api/transcribe")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apiKey = process.env["LOVABLE_API_KEY"];
-        if (!apiKey) {
+        const appId = process.env["VOLC_ASR_APP_ID"];
+        const accessToken = process.env["VOLC_ASR_ACCESS_TOKEN"];
+        if (!appId || !accessToken) {
           return new Response("Transcription is not configured", { status: 500 });
         }
 
@@ -23,47 +30,15 @@ export const Route = createFileRoute("/api/transcribe")({
         }
 
         const { getAiModels } = await import("@/lib/kibo/model-config.server");
+        const { transcribeWithVolc } = await import("@/lib/kibo/volc-asr.server");
         const aiModels = await getAiModels();
 
-        const upstream = new FormData();
-        upstream.append("model", aiModels.transcribe);
-        upstream.append("file", file, "recording.wav");
-        upstream.append("stream", "true");
-        if (typeof language === "string" && /^[a-z]{2}$/.test(language)) {
-          upstream.append("language", language);
-          // Pin the output language: without this the model sometimes answers
-          // in Korean or emits mojibake on short, noisy segments.
-          const names: Record<string, string> = {
-            ja: "Japanese",
-            en: "English",
-            zh: "Simplified Chinese",
-          };
-          const name = names[language];
-          if (name) {
-            upstream.append(
-              "prompt",
-              `The audio is in ${name}. Transcribe it verbatim in ${name} only. Never translate or transliterate into any other language. If the audio is unintelligible, return an empty string.`,
-            );
-          }
-        }
-
-
-        const res = await fetch("https://ai.gateway.lovable.dev/v1/audio/transcriptions", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${apiKey}` },
-          body: upstream,
-        });
-
-        if (!res.ok || !res.body) {
-          const detail = await res.text().catch(() => "");
-          return new Response(detail || "Transcription failed", { status: res.status || 500 });
-        }
-
-        return new Response(res.body, {
-          headers: {
-            "Content-Type": "text/event-stream",
-            "Cache-Control": "no-cache",
-          },
+        const wav = new Uint8Array(await file.arrayBuffer());
+        return transcribeWithVolc(wav, {
+          appId,
+          accessToken,
+          resourceId: aiModels.transcribe,
+          language: typeof language === "string" ? VOLC_LANG[language] : undefined,
         });
       },
     },
