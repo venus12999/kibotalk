@@ -177,12 +177,17 @@ export function SessionWorkbench() {
         .then((candidates) => {
           if (req !== reqRef.current) return;
           setStreaming(false);
-          setAiStatus(candidates.length > 0 ? "done" : "idle");
-          setRounds((prev) =>
-            candidates.length > 0
-              ? prev.map((r) => (r.id === roundId ? { ...r, candidates } : r))
-              : prev.filter((r) => r.id !== roundId),
-          );
+          if (candidates.length > 0) {
+            setAiStatus("done");
+            setRounds((prev) =>
+              prev.map((r) => (r.id === roundId ? { ...r, candidates } : r)),
+            );
+          } else {
+            // An empty answer must not vanish silently — offer a retry.
+            setAiStatus("error");
+            setAiError(emptyAiMessage[prefsRef.current.uiLang] ?? emptyAiMessage.en);
+            setRounds((prev) => prev.filter((r) => r.id !== roundId));
+          }
         })
         .catch((err: unknown) => {
           if (req !== reqRef.current || controller.signal.aborted) return;
@@ -192,6 +197,7 @@ export function SessionWorkbench() {
           setAiStatus("error");
           setAiError(message);
         });
+
     },
     [],
   );
