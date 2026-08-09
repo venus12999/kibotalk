@@ -109,12 +109,23 @@ export const Route = createFileRoute("/api/suggest")({
 
         const stream = new ReadableStream({
           async pull(controller) {
-            const { done, value } = await reader.read();
+            let done: boolean;
+            let value: Uint8Array | undefined;
+            try {
+              ({ done, value } = await reader.read());
+            } catch {
+              // Upstream dropped mid-answer: end the SSE cleanly so the client
+              // keeps whatever it already rendered instead of seeing a failure.
+              controller.enqueue(encoder.encode("event: done\ndata: {}\n\n"));
+              controller.close();
+              return;
+            }
             if (done) {
               controller.enqueue(encoder.encode("event: done\ndata: {}\n\n"));
               controller.close();
               return;
             }
+
             buffer += decoder.decode(value, { stream: true });
             const lines = buffer.split("\n");
             buffer = lines.pop() ?? "";
