@@ -6,6 +6,7 @@ import type { UiLang } from "./types";
 import { useSession } from "./use-session";
 import {
   clearCloudSessions,
+  deleteCloudSession,
   loadCloudPrefs,
   loadCloudSessions,
   saveCloudPrefs,
@@ -23,6 +24,7 @@ type Ctx = {
   t: (key: TKey) => string;
   history: SessionRecord[];
   addSession: (s: SessionRecord) => void;
+  deleteSession: (id: string) => void;
   clearHistory: () => void;
   reset: () => void;
   hydrated: boolean;
@@ -148,6 +150,11 @@ export function KiboProvider({ children }: { children: React.ReactNode }) {
         setHistory((h) => [s, ...h].slice(0, 50));
         if (userId) void saveCloudSession(userId, s);
       },
+      deleteSession: (id) => {
+        setHistory((h) => h.filter((s) => s.id !== id));
+        if (userId) void deleteCloudSession(userId, id);
+      },
+
       clearHistory: () => {
         setHistory([]);
         if (userId) void clearCloudSessions(userId);

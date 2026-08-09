@@ -54,6 +54,10 @@ export async function saveCloudSession(userId: string, s: SessionRecord) {
   return data?.id ?? s.id;
 }
 
+export async function deleteCloudSession(userId: string, id: string) {
+  await supabase.from("sessions").delete().eq("user_id", userId).eq("id", id);
+}
+
 export async function clearCloudSessions(userId: string) {
   await supabase.from("sessions").delete().eq("user_id", userId);
 }
