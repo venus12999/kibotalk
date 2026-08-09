@@ -23,10 +23,21 @@ export type Turn = {
   sttFailed?: boolean;
 };
 
+/** One word/morpheme span of a suggested reply, with reading for ruby text. */
+export type Segment = {
+  /** Surface form as written. */
+  t: string;
+  /** Reading (furigana / pinyin); empty when the surface needs no gloss. */
+  r?: string;
+  role?: "content" | "particle" | "punct";
+};
+
 export type Candidate = {
   text: string;
   meaning: string;
+  segments?: Segment[];
 };
+
 
 export type Round = {
   id: string;
