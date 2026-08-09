@@ -170,11 +170,19 @@ function AuthPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (mode === "signup") {
+      if (password.length < 6) {
+        setError(`Password too short. ${PASSWORD_HINT}`);
+        return;
+      }
+      if (password !== confirm) {
+        setError("The two passwords don't match.");
+        return;
+      }
+    }
     setBusy(true);
     setError("");
     setNotice("");
-    try {
-      if (mode === "signup") {
         const { data, error: err } = await supabase.auth.signUp({
           email,
           password,
