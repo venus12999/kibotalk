@@ -259,7 +259,17 @@ export function SessionWorkbench() {
     if (last) runSuggestions(last.text);
   }, [runSuggestions]);
 
-
+  // Changing the target language or level invalidates suggestions written for
+  // the old settings — clear them instead of showing stale advice.
+  const contextKey = `${prefs.conversationLang}|${prefs.level}`;
+  const contextKeyRef = React.useRef(contextKey);
+  React.useEffect(() => {
+    if (contextKeyRef.current === contextKey) return;
+    contextKeyRef.current = contextKey;
+    cancelSuggestions();
+    setRounds([]);
+    lastRequestRef.current = null;
+  }, [contextKey, cancelSuggestions]);
 
 
   const handleError = React.useCallback(
