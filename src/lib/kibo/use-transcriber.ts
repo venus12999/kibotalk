@@ -28,6 +28,50 @@ const MAX_SEGMENT_MS = 12000;
 const PARTIAL_EVERY_MS = 1600;
 const PARTIAL_MIN_SPEECH_MS = 900;
 
+/** Why a segment was closed — drives the diagnostics advice. */
+export type FlushReason = "pause" | "max" | "manual" | "discarded";
+
+export type SegmentStat = {
+  id: number;
+  at: number;
+  speaker: Speaker;
+  speechMs: number;
+  silenceMs: number;
+  reason: FlushReason;
+  /** False when the buffer was dropped for being too short to transcribe. */
+  sent: boolean;
+};
+
+export type Diagnostics = {
+  /** Instantaneous RMS of the loudest pipe (0..1-ish, unscaled). */
+  rms: number;
+  voiced: boolean;
+  speechMs: number;
+  silenceMs: number;
+  /** Milliseconds of silence still needed before an auto-cut fires. */
+  silenceToCut: number;
+  silenceThreshold: number;
+  silenceWindowMs: number;
+  minSpeechMs: number;
+  maxSegmentMs: number;
+  sampleRate: number;
+  segments: SegmentStat[];
+};
+
+const EMPTY_DIAG: Diagnostics = {
+  rms: 0,
+  voiced: false,
+  speechMs: 0,
+  silenceMs: 0,
+  silenceToCut: SILENCE_MS,
+  silenceThreshold: SILENCE_RMS,
+  silenceWindowMs: SILENCE_MS,
+  minSpeechMs: MIN_SPEECH_MS,
+  maxSegmentMs: MAX_SEGMENT_MS,
+  sampleRate: 48000,
+  segments: [],
+};
+
 type Pipeline = {
   speaker: Speaker;
   /** True when this pipe cannot know the speaker from its source alone. */
@@ -41,7 +85,9 @@ type Pipeline = {
   partialAt: number;
   partialBusy: boolean;
   segment: number;
+  rms: number;
 };
+
 
 export function useTranscriber({
   language,
