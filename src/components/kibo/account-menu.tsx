@@ -1,6 +1,9 @@
 import * as React from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { LogIn, LogOut, User as UserIcon, Cloud, Loader2 } from "lucide-react";
+import { LogIn, LogOut, User as UserIcon, Cloud, Loader2, Shield } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { checkIsAdmin } from "@/lib/kibo/admin.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +26,14 @@ export function AccountMenu() {
   const { user, prefs, syncing } = useKibo();
   const navigate = useNavigate();
   const words = copy[prefs.uiLang] ?? copy.en;
+  const isAdminFn = useServerFn(checkIsAdmin);
+  const { data: adminInfo } = useQuery({
+    queryKey: ["is-admin", user?.id ?? "anon"],
+    queryFn: () => isAdminFn({}),
+    enabled: Boolean(user),
+    retry: false,
+    staleTime: 5 * 60_000,
+  });
 
   if (!user) {
     return (
@@ -48,6 +59,12 @@ export function AccountMenu() {
           {syncing ? words.syncing : words.synced}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
+        {adminInfo?.isAdmin && (
+          <DropdownMenuItem className="gap-2" onClick={() => void navigate({ to: "/admin" })}>
+            <Shield className="size-3.5" />
+            管理后台
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem
           className="gap-2"
           onClick={async () => {
