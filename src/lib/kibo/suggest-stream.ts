@@ -19,116 +19,73 @@ type RawCandidate = {
 
 const ROLES = new Set(["content", "particle", "punct"]);
 
-function normalize(raw: RawCandidate): Candidate | null {
-  const text = (raw.targetText ?? "").trim();
-  if (!text) return null;
-  const segments = Array.isArray(raw.segments)
-    ? raw.segments
-        .map((s): Segment | null => {
-          const t = (s?.t ?? "").toString();
-          if (!t) return null;
-          const raw = (s?.r ?? "").toString().trim();
-          // A reading identical to the surface adds nothing above the text.
-          const r = raw === t ? "" : raw;
-          const role: Segment["role"] = ROLES.has(s?.role ?? "")
-            ? (s?.role as NonNullable<Segment["role"]>)
-            : "content";
-          return r ? { t, r, role } : { t, role };
 
 
-        })
-        .filter((s): s is Segment => s !== null)
-    : [];
-  return {
-    text,
-    meaning: (raw.meaning ?? "").trim(),
-    ...(segments.length > 0 ? { segments } : {}),
-  };
-}
 
-/**
- * Extract every top-level {...} span from the buffer, ignoring braces inside
- * strings. The last span may still be incomplete while streaming.
- */
-function scanObjects(buffer: string): { body: string; complete: boolean }[] {
-  const out: { body: string; complete: boolean }[] = [];
-  let depth = 0;
-  let start = -1;
-  let inStr = false;
-  let esc = false;
-  for (let i = 0; i < buffer.length; i++) {
-    const ch = buffer[i];
-    if (inStr) {
-      if (esc) esc = false;
-      else if (ch === "\\") esc = true;
-      else if (ch === '"') inStr = false;
-      continue;
-    }
-    if (ch === '"') inStr = true;
-    else if (ch === "{") {
-      if (depth === 0) start = i;
-      depth++;
-    } else if (ch === "}") {
-      depth--;
-      if (depth === 0 && start >= 0) {
-        out.push({ body: buffer.slice(start, i + 1), complete: true });
-        start = -1;
-      }
-      if (depth < 0) depth = 0;
-    }
+const STR = (key: string) => new RegExp(`"${key}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"?`);
+const unquote = (v: string | undefined) => {
+  if (!v) return "";
+  try {
+    return JSON.parse(`"${v}"`) as string;
+  } catch {
+    return ""; // half-written escape — it lands on the next frame
   }
-  if (depth > 0 && start >= 0) out.push({ body: buffer.slice(start), complete: false });
-  return out;
-}
+};
 
 /**
- * Parse the streamed answer. The model is asked for one JSON object per line,
- * but it sometimes wraps them in a markdown fence, pretty-prints them, or emits
- * a JSON array — so objects are recovered by brace scanning instead of by line.
- * The object still being generated is salvaged with a shallow scan so text
- * appears as it streams, and a model that ignores JSON entirely still yields
- * plain-text replies rather than an empty result.
+ * Pull the suggestions out of the streamed answer. Each suggestion starts at a
+ * `"targetText"` key, so the buffer is simply cut on that key and each chunk is
+ * read with a regex — that works for one-object-per-line, code fences, arrays,
+ * pretty-printed JSON and the half-finished object at the end alike.
  */
 export function parseCandidates(buffer: string): Candidate[] {
-  const out: Candidate[] = [];
-  const spans = scanObjects(buffer);
+  const chunks = buffer.split(/(?="targetText"\s*:)/).slice(1);
 
-  for (const span of spans) {
-    if (span.complete) {
-      try {
-        const parsed = normalize(JSON.parse(span.body) as RawCandidate);
-        if (parsed) out.push(parsed);
-        continue;
-      } catch {
-        /* falls through to the partial reader below */
-      }
-    }
-    const text = /"targetText"\s*:\s*"((?:[^"\\]|\\.)*)/.exec(span.body)?.[1];
-    const meaning = /"meaning"\s*:\s*"((?:[^"\\]|\\.)*)/.exec(span.body)?.[1];
-    if (text) {
-      try {
-        out.push({
-          text: JSON.parse(`"${text}"`) as string,
-          meaning: meaning ? (JSON.parse(`"${meaning}"`) as string) : "",
-        });
-      } catch {
-        /* mid-escape sequence — wait for the next frame */
-      }
-    }
-  }
+  const out = chunks
+    .map((chunk): Candidate | null => {
+      const text = unquote(STR("targetText").exec(chunk)?.[1]).trim();
+      if (!text) return null;
+      const meaning = unquote(STR("meaning").exec(chunk)?.[1]).trim();
+      const segments = parseSegments(chunk);
+      return { text, meaning, ...(segments.length > 0 ? { segments } : {}) };
+    })
+    .filter((c): c is Candidate => c !== null);
 
-  if (out.length === 0) {
-    // No JSON at all: fall back to the plain lines the model produced.
-    const plain = buffer
-      .split("\n")
-      .map((l) => l.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim())
-      .map((l) => l.replace(/^(?:[-*]|\d+[.)])\s+/, "").trim())
-      .filter((l) => l.length > 0 && !l.startsWith("{"));
-    for (const line of plain) out.push({ text: line, meaning: "" });
-  }
+  if (out.length > 0) return out.slice(0, 3);
 
-  return out.slice(0, 3);
+  // The model ignored the JSON shape: show its plain lines instead of nothing.
+  return buffer
+    .split("\n")
+    .map((l) => l.replace(/```(?:json)?/gi, "").replace(/^(?:[-*]|\d+[.)])\s+/, "").trim())
+    .filter((l) => l.length > 0 && !l.startsWith("{") && !l.startsWith("["))
+    .slice(0, 3)
+    .map((text) => ({ text, meaning: "" }));
 }
+
+/** Reads the `segments` array of one chunk; missing or unfinished → no ruby. */
+function parseSegments(chunk: string): Segment[] {
+  const raw = /"segments"\s*:\s*(\[[\s\S]*?\])/.exec(chunk)?.[1];
+  if (!raw) return [];
+  let parsed: RawCandidate["segments"];
+  try {
+    parsed = JSON.parse(raw) as RawCandidate["segments"];
+  } catch {
+    return [];
+  }
+  return (parsed ?? [])
+    .map((s): Segment | null => {
+      const t = (s?.t ?? "").toString();
+      if (!t) return null;
+      // A reading identical to the surface adds nothing above the text.
+      const r = (s?.r ?? "").toString().trim();
+      const role: Segment["role"] = ROLES.has(s?.role ?? "")
+        ? (s?.role as NonNullable<Segment["role"]>)
+        : "content";
+      return r && r !== t ? { t, r, role } : { t, role };
+    })
+    .filter((s): s is Segment => s !== null);
+}
+
 
 
 function sameSegments(a?: Segment[], b?: Segment[]) {
