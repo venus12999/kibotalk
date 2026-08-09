@@ -133,7 +133,7 @@ export function embedVoice(samples: Float32Array): Float32Array | null {
   if (frames.length < 24) return null;
 
   const mean = new Float32Array(N_MELS);
-  for (const f of frames) for (let m = 0; m < N_MELS; m += 1) mean[m]! + 0, (mean[m] = mean[m]! + f[m]!);
+  for (const f of frames) for (let m = 0; m < N_MELS; m += 1) mean[m] = mean[m]! + f[m]!;
   for (let m = 0; m < N_MELS; m += 1) mean[m] = mean[m]! / frames.length;
 
   const std = new Float32Array(N_MELS);
