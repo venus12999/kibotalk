@@ -123,3 +123,31 @@ export const summarizeSession = createServerFn({ method: "POST" })
 
     return { summary: summary.trim() };
   });
+
+export type TranslateInput = { text: string; from: string; to: string };
+
+/** Translate one transcript line into the user's chosen translation language. */
+export const translateLine = createServerFn({ method: "POST" })
+  .inputValidator((input: TranslateInput) => input)
+  .handler(async ({ data }) => {
+    const text = data.text.trim().slice(0, 800);
+    if (!text || data.from === data.to) return { translation: "" };
+    const to = LANG_NAME[data.to] ?? "English";
+    const from = LANG_NAME[data.from] ?? "English";
+
+    const { getAiModels } = await import("./model-config.server");
+    const translation = await gateway({
+      model: (await getAiModels()).suggest,
+      messages: [
+        {
+          role: "system",
+          content: `Translate the ${from} sentence into natural ${to}. Reply with the translation only — no quotes, no notes, no romanization.`,
+        },
+        { role: "user", content: text },
+      ],
+      max_tokens: 300,
+      temperature: 0.2,
+    });
+
+    return { translation: translation.trim() };
+  });
