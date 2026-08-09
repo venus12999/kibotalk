@@ -19,7 +19,14 @@ type Body = {
   conversationLang?: string;
   uiLang?: string;
   level?: string;
+  /**
+   * Some mobile browsers / in-app WebViews never surface a readable body for
+   * an event-stream. Those clients ask for `stream: false` and get the whole
+   * answer as one plain-text response instead.
+   */
+  stream?: boolean;
 };
+
 
 export const Route = createFileRoute("/api/suggest")({
   server: {
