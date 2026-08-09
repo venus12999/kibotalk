@@ -23,7 +23,7 @@ export const Route = createFileRoute("/api/suggest")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apiKey = process.env["LOVABLE_API_KEY"];
+        const apiKey = process.env["DEEPSEEK_API_KEY"];
         if (!apiKey) return new Response("AI is not configured", { status: 500 });
 
         const body = (await request.json().catch(() => null)) as Body | null;
@@ -41,16 +41,18 @@ export const Route = createFileRoute("/api/suggest")({
           .map((t) => `${t.speaker === "user" ? "ME" : "OTHER"}: ${t.text}`)
           .join("\n");
 
-        const upstream = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const upstream = await fetch("https://api.deepseek.com/chat/completions", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Lovable-API-Key": apiKey,
-            "X-Lovable-AIG-SDK": "fetch",
+            Authorization: `Bearer ${apiKey}`,
           },
           body: JSON.stringify({
             model: aiModels.suggest,
             stream: true,
+            // DeepSeek v4 flash reasons before answering by default, which
+            // delays the first visible token — the coach must be instant.
+            thinking: { type: "disabled" },
             temperature: 0.7,
             max_tokens: 1200,
             messages: [
