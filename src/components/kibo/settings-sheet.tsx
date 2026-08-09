@@ -184,19 +184,30 @@ export function SettingsSheet({
               ]}
             />
           </Row>
-          <Row title={t("audioSource")} description={t("headphonesHint")}>
+          <div className="flex flex-col gap-2 border-b border-border py-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold">{t("audioSource")}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{t("headphonesHint")}</p>
+              </div>
+            </div>
             <PillGroup<AudioSource>
               label=""
               disabled={locked}
               value={prefs.audioSource}
               onChange={(v) => setPrefs({ audioSource: v })}
               options={[
-                { value: "microphone", label: t("microphone"), description: t("microphoneDescription") },
-                { value: "system", label: t("systemAudio"), description: t("systemAudioDescription") },
-                { value: "both", label: t("bothAudio"), description: t("bothAudioDescription") },
+                { value: "microphone", label: t("microphone") },
+                { value: "system", label: t("systemAudio") },
+                { value: "both", label: t("bothAudio") },
               ]}
             />
-          </Row>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] leading-tight text-muted-foreground">
+              <span><span className="font-medium text-foreground">{t("microphone")}</span> · {t("microphoneDescription")}</span>
+              <span><span className="font-medium text-foreground">{t("systemAudio")}</span> · {t("systemAudioDescription")}</span>
+              <span><span className="font-medium text-foreground">{t("bothAudio")}</span> · {t("bothAudioDescription")}</span>
+            </div>
+          </div>
           <Row title={t("microphoneDevice")}>
             <select
               className="h-9 w-full min-w-0 rounded-md border border-border bg-background px-2 text-sm sm:w-auto sm:min-w-48"
