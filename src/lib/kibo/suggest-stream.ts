@@ -173,10 +173,31 @@ export async function streamSuggestions(
     if (!frame) frame = schedule(flush);
   };
 
+  // A stream that goes quiet is indistinguishable from a hang, so treat a long
+  // silence as an explicit timeout instead of waiting forever.
+  const readWithTimeout = async () => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const ms = text ? 20000 : 30000;
+    try {
+      return await Promise.race([
+        reader.read(),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(
+            () => reject(new SuggestError(`stream timeout after ${ms}ms`, { kind: "timeout" })),
+            ms,
+          );
+        }),
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  };
+
   try {
     while (true) {
-      const { done, value } = await reader.read();
+      const { done, value } = await readWithTimeout();
       if (done) break;
+
       sse += decoder.decode(value, { stream: true });
       const frames = sse.split("\n\n");
       sse = frames.pop() ?? "";
