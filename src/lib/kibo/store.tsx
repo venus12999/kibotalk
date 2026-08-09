@@ -24,6 +24,7 @@ type Ctx = {
   t: (key: TKey) => string;
   history: SessionRecord[];
   addSession: (s: SessionRecord) => void;
+  deleteSession: (id: string) => void;
   clearHistory: () => void;
   reset: () => void;
   hydrated: boolean;
