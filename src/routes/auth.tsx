@@ -270,12 +270,10 @@ function AuthPage() {
           {mode === "signin" ? "No account? Create one" : "Already have an account? Sign in"}
         </button>
 
-        <Link
-          to="/"
-          className="mt-3 block text-center text-xs text-muted-foreground underline-offset-4 hover:underline"
-        >
-          Continue without an account
-        </Link>
+        <p className="mt-3 text-center text-[11px] text-muted-foreground">
+          Every account needs a confirmed email before you can start a session.
+        </p>
+
       </div>
     </main>
   );
