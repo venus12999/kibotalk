@@ -23,11 +23,14 @@ function normalize(raw: RawCandidate): Candidate | null {
         .map((s): Segment | null => {
           const t = (s?.t ?? "").toString();
           if (!t) return null;
-          const r = (s?.r ?? "").toString().trim();
+          const raw = (s?.r ?? "").toString().trim();
+          // A reading identical to the surface adds nothing above the text.
+          const r = raw === t ? "" : raw;
           const role: Segment["role"] = ROLES.has(s?.role ?? "")
             ? (s?.role as NonNullable<Segment["role"]>)
             : "content";
           return r ? { t, r, role } : { t, role };
+
 
         })
         .filter((s): s is Segment => s !== null)
