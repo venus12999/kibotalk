@@ -3,6 +3,7 @@ import { Loader2, Mic, Trash2, Check, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useKibo } from "@/lib/kibo/store";
 import { toMono16k } from "@/lib/kibo/wav";
+import { sampleLines } from "@/lib/kibo/sample-lines";
 import {
   clearVoiceprint,
   embedVoice,
@@ -12,17 +13,48 @@ import {
 } from "@/lib/kibo/voiceprint";
 
 const copy = {
-  zh: { at: "录入时间", unknown: "时间未知", refresh: "刷新状态", refreshed: "状态已刷新" },
-  ja: { at: "登録日時", unknown: "日時不明", refresh: "状態を更新", refreshed: "状態を更新しました" },
-  en: { at: "Enrolled at", unknown: "Time unknown", refresh: "Refresh status", refreshed: "Status refreshed" },
+  zh: {
+    at: "录入时间",
+    unknown: "时间未知",
+    refresh: "刷新状态",
+    refreshed: "状态已刷新",
+    howTo: "点击下面的按钮后，请用平时的语速朗读这几句话，直到倒计时结束。",
+    readNow: "请开始朗读：",
+    reading: "正在录音，请继续朗读…",
+  },
+  ja: {
+    at: "登録日時",
+    unknown: "日時不明",
+    refresh: "状態を更新",
+    refreshed: "状態を更新しました",
+    howTo: "下のボタンを押したら、いつもの速さでこの文を読み上げてください。カウントダウンが終わるまで続けます。",
+    readNow: "読み上げてください：",
+    reading: "録音中です。そのまま読み続けてください…",
+  },
+  en: {
+    at: "Enrolled at",
+    unknown: "Time unknown",
+    refresh: "Refresh status",
+    refreshed: "Status refreshed",
+    howTo: "Tap the button below, then read these lines aloud at your normal pace until the countdown ends.",
+    readNow: "Read this aloud:",
+    reading: "Recording — keep reading…",
+  },
 } as const;
 
-const ENROLL_MS = 6000;
+const ENROLL_MS = 10000;
 
-/** Records a short sample of the user's voice and stores its embedding locally. */
-export function VoiceprintCard({ locked }: { locked: boolean }) {
+/** Records a short read-aloud sample and stores its embedding locally. */
+export function VoiceprintCard({
+  locked,
+  onEnrolled,
+}: {
+  locked: boolean;
+  onEnrolled?: () => void;
+}) {
   const { t, prefs } = useKibo();
   const words = copy[prefs.uiLang] ?? copy.en;
+  const lines = sampleLines[prefs.conversationLang] ?? sampleLines.en;
   const [enrolled, setEnrolled] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const [remaining, setRemaining] = React.useState(0);
@@ -93,10 +125,25 @@ export function VoiceprintCard({ locked }: { locked: boolean }) {
     }
     saveVoiceprint(embedding);
     sync();
+    onEnrolled?.();
   };
 
   return (
-    <div className="space-y-2">
+    <div className="w-full space-y-3">
+      <div className="glass-quiet p-3">
+        <p className="text-xs font-semibold text-muted-foreground">
+          {busy ? words.reading : words.readNow}
+        </p>
+        <ul className="mt-2 space-y-1.5">
+          {lines.map((line) => (
+            <li key={line} className="text-sm leading-relaxed font-medium">
+              {line}
+            </li>
+          ))}
+        </ul>
+        {!busy ? <p className="mt-2 text-xs text-muted-foreground">{words.howTo}</p> : null}
+      </div>
+
       <div className="flex flex-wrap items-center gap-2">
         <span
           className={
@@ -141,8 +188,7 @@ export function VoiceprintCard({ locked }: { locked: boolean }) {
       </div>
       {enrolled ? (
         <p className="text-xs text-muted-foreground">
-          {words.at}:{" "}
-          {enrolledAt ? new Date(enrolledAt).toLocaleString(localeTag) : words.unknown}
+          {words.at}: {enrolledAt ? new Date(enrolledAt).toLocaleString(localeTag) : words.unknown}
         </p>
       ) : null}
       {refreshedAt ? <p className="text-xs text-muted-foreground">{words.refreshed}</p> : null}
