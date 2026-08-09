@@ -23,18 +23,11 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminPage,
 });
 
-const MODEL_OPTIONS = [
-  "google/gemini-2.5-flash-lite",
-  "google/gemini-3.1-flash-lite",
-  "google/gemini-3.6-flash",
-  "google/gemini-2.5-flash",
-  "google/gemini-2.5-pro",
-  "openai/gpt-5.4-nano",
-  "openai/gpt-5.4-mini",
-  "openai/gpt-5.6-luna",
-];
+// DeepSeek official API model ids (see api.deepseek.com).
+const MODEL_OPTIONS = ["deepseek-v4-flash", "deepseek-v4-pro"];
 
-const STT_OPTIONS = ["openai/gpt-4o-mini-transcribe", "openai/gpt-4o-transcribe"];
+// Volcengine speech recognition resource ids.
+const STT_OPTIONS = ["volc.bigasr.sauc.duration", "volc.bigasr.auc_turbo"];
 
 function fmt(d: string | null) {
   if (!d) return "—";
