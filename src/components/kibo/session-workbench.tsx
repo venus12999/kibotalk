@@ -176,6 +176,7 @@ export function SessionWorkbench() {
 
   const startSession = async () => {
     reqRef.current += 1;
+    abortRef.current?.abort();
     turnsRef.current = [];
     setTurns([]);
     setRounds([]);
@@ -196,6 +197,7 @@ export function SessionWorkbench() {
   const finishSession = () => {
     transcriber.stop();
     reqRef.current += 1;
+    abortRef.current?.abort();
     const saved = turnsRef.current;
     const startedTs = startedAt || Date.now();
     if (saved.length > 0) {
