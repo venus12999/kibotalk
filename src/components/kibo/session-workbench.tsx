@@ -1,5 +1,5 @@
 import * as React from "react";
-import { History, Lightbulb, Mic, Pause, Play, Settings, Square, User, Users } from "lucide-react";
+import { HelpCircle, History, Lightbulb, Mic, Pause, Play, Settings, Square, User, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -23,6 +23,7 @@ import { streamSuggestions } from "@/lib/kibo/suggest-stream";
 import { MemoSuggestionStage as SuggestionStage } from "./suggestion-stage";
 import { SettingsSheet } from "./settings-sheet";
 import { HistorySheet } from "./history-sheet";
+import { GuideSheet } from "./guide-sheet";
 import { UiLanguageMenu } from "./ui-language-menu";
 import { AccountMenu } from "./account-menu";
 import { HoldTalkButton } from "./hold-talk-button";
@@ -70,6 +71,7 @@ export function SessionWorkbench() {
   const [aiAttempt, setAiAttempt] = React.useState(0);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [historyOpen, setHistoryOpen] = React.useState(false);
+  const [guideOpen, setGuideOpen] = React.useState(false);
   const [confirmStop, setConfirmStop] = React.useState(false);
   const [startedAt, setStartedAt] = React.useState(0);
   const [interim, setInterim] = React.useState<{ user: string; other: string }>({
@@ -80,6 +82,8 @@ export function SessionWorkbench() {
 
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const words = copy[prefs.uiLang] ?? copy.en;
+  const guideLabel =
+    prefs.uiLang === "zh" ? "使用指南" : prefs.uiLang === "ja" ? "使い方ガイド" : "How to use";
 
   const turnsRef = React.useRef<Turn[]>([]);
   turnsRef.current = turns;
@@ -374,6 +378,15 @@ export function SessionWorkbench() {
           <UiLanguageMenu />
           <AccountMenu />
 
+          <Button
+            variant="soft"
+            size="icon"
+            aria-label={guideLabel}
+            title={guideLabel}
+            onClick={() => setGuideOpen(true)}
+          >
+            <HelpCircle className="size-4" />
+          </Button>
           <Button variant="soft" size="icon" aria-label={t("history")} onClick={() => setHistoryOpen(true)}>
             <History className="size-4" />
           </Button>
@@ -605,6 +618,7 @@ export function SessionWorkbench() {
       </AlertDialog>
 
       <SettingsSheet open={settingsOpen} onOpenChange={setSettingsOpen} locked={active} />
+      <GuideSheet open={guideOpen} onOpenChange={setGuideOpen} />
       <HistorySheet open={historyOpen} onOpenChange={setHistoryOpen} />
     </div>
   );
