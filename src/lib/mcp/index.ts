@@ -18,5 +18,8 @@ export default defineMcp({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
   }),
-  tools: [listSessions, getSession, deleteSession, searchEmotions],
+  // Cast: tools without an outputSchema widen to `undefined`, which trips
+  // exactOptionalPropertyTypes even though the runtime shape is correct.
+  tools: [listSessions, getSession, deleteSession, searchEmotions] as never,
+
 });
