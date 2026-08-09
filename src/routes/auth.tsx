@@ -461,6 +461,7 @@ function AuthPage() {
           className="mt-4 w-full text-xs text-muted-foreground underline-offset-4 hover:underline"
           onClick={() => {
             setMode(mode === "signin" ? "signup" : "signin");
+            setConfirm("");
             setError("");
             setNotice("");
           }}
