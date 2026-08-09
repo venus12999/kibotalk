@@ -3,7 +3,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button";
 import { PillGroup } from "./pill-group";
 import { useKibo, langLabel, levelLabel } from "@/lib/kibo/store";
-import type { AudioSource, CaptureMode, ConvLang, Level, Theme, UiLang } from "@/lib/kibo/types";
+import type { AudioSource, CaptureMode, ConvLang, Level, PanelLayout, Theme, UiLang } from "@/lib/kibo/types";
 
 const translateCopy = {
   zh: { label: "翻译语言", hint: "把对方说的话翻译成这个语言显示" },
