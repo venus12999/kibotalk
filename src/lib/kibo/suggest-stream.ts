@@ -125,16 +125,26 @@ export async function streamSuggestions(
   onUpdate: (candidates: Candidate[]) => void,
   signal?: AbortSignal,
 ): Promise<Candidate[]> {
-  const res = await fetch("/api/suggest", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-    signal: signal ?? null,
-  });
+  let res: Response;
+  try {
+    res = await fetch("/api/suggest", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+      signal: signal ?? null,
+    });
+  } catch (err) {
+    if (signal?.aborted) throw err;
+    throw new SuggestError(err instanceof Error ? err.message : "network error", {
+      kind: typeof navigator !== "undefined" && navigator.onLine === false ? "offline" : "network",
+    });
+  }
 
   if (!res.ok || !res.body) {
-    throw new Error((await res.text().catch(() => "")) || `HTTP ${res.status}`);
+    const body = await res.text().catch(() => "");
+    throw new SuggestError(body || `HTTP ${res.status}`, { status: res.status });
   }
+
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
