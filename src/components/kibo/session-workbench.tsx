@@ -151,8 +151,12 @@ export function SessionWorkbench() {
       // for an older message are stale the moment the context moves on.
       setRounds([{ id: roundId, prompt: text, candidates: [] }]);
 
+      // Whatever the stream managed to produce, so a late failure never wipes
+      // suggestions the user is already reading.
+      let partial: Candidate[] = [];
       const onUpdate = (candidates: Candidate[]) => {
         if (req !== reqRef.current) return;
+        partial = candidates;
         setAiStatus((s) => (s === "connecting" || s === "retrying" ? "streaming" : s));
         setRounds((prev) => {
           // The streaming round is always the head; patch it in place.
@@ -175,12 +179,13 @@ export function SessionWorkbench() {
       lastRequestRef.current = { text, payload };
 
 
-      // One transparent retry: a dropped connection mid-turn is common on mobile.
+      // One transparent retry, but only while nothing has been shown yet:
+      // re-running after tokens landed would restart the answer from scratch.
       const run = async () => {
         try {
           return await streamSuggestions(payload, onUpdate, controller.signal);
         } catch (err) {
-          if (controller.signal.aborted) throw err;
+          if (controller.signal.aborted || partial.length > 0) throw err;
           return await streamSuggestions(payload, onUpdate, controller.signal);
         }
       };
@@ -189,10 +194,12 @@ export function SessionWorkbench() {
         .then((candidates) => {
           if (req !== reqRef.current) return;
           setStreaming(false);
-          if (candidates.length > 0) {
+          const final = candidates.length > 0 ? candidates : partial;
+          if (final.length > 0) {
             setAiStatus("done");
+            setAiError("");
             setRounds((prev) =>
-              prev.map((r) => (r.id === roundId ? { ...r, candidates } : r)),
+              prev.map((r) => (r.id === roundId ? { ...r, candidates: final } : r)),
             );
           } else {
             // An empty answer must not vanish silently — offer a retry.
@@ -204,11 +211,22 @@ export function SessionWorkbench() {
         .catch((err: unknown) => {
           if (req !== reqRef.current || controller.signal.aborted) return;
           setStreaming(false);
+          // A connection that dropped after some text still gave usable ideas:
+          // keep them on screen and finish quietly instead of showing a failure.
+          if (partial.length > 0) {
+            setAiStatus("done");
+            setAiError("");
+            setRounds((prev) =>
+              prev.map((r) => (r.id === roundId ? { ...r, candidates: partial } : r)),
+            );
+            return;
+          }
           setRounds((prev) => prev.filter((r) => r.id !== roundId));
           const message = err instanceof Error ? err.message : String(err);
           setAiStatus("error");
           setAiError(message);
         });
+
 
     },
     [],
