@@ -49,7 +49,7 @@ export const Route = createFileRoute("/api/suggest")({
             model: "google/gemini-2.5-flash-lite",
             stream: true,
             temperature: 0.7,
-            max_tokens: 500,
+            max_tokens: 1200,
             messages: [
               {
                 role: "system",
