@@ -514,27 +514,25 @@ export function SessionWorkbench() {
             <>
               <div className="flex gap-2">
                 {(["other", "user"] as const).map((who) => (
-                  <Button
+                  <HoldTalkButton
                     key={who}
-                    variant={transcriber.holding === who ? "default" : "soft"}
-                    className={cn("h-14 flex-1 touch-none select-none", transcriber.holding === who && "glow-sm")}
+                    active={transcriber.holding === who}
+                    blocked={transcriber.holding !== null && transcriber.holding !== who}
                     disabled={life === "paused"}
-                    onPointerDown={(e) => {
-                      e.currentTarget.setPointerCapture(e.pointerId);
-                      navigator.vibrate?.(8);
-                      transcriber.beginTurn(who);
-                    }}
-                    onPointerUp={() => transcriber.endTurn()}
-                    onPointerCancel={() => transcriber.endTurn()}
-                    onContextMenu={(e) => e.preventDefault()}
-                  >
-                    {who === "other" ? <Users className="size-4" /> : <User className="size-4" />}
-                    {who === "other" ? t("holdOther") : t("holdMe")}
-                  </Button>
+                    label={who === "other" ? t("holdOther") : t("holdMe")}
+                    activeLabel={who === "other" ? t("holdingOther") : t("holdingMe")}
+                    icon={who === "other" ? <Users className="size-4" /> : <User className="size-4" />}
+                    level={transcriber.level}
+                    onBegin={() => transcriber.beginTurn(who)}
+                    onEnd={() => transcriber.endTurn()}
+                  />
                 ))}
               </div>
-              <p className="text-center text-[11px] text-muted-foreground">{t("holdHint")}</p>
+              <p className="text-center text-[11px] text-muted-foreground">
+                {transcriber.holding ? t("releaseToSend") : t("holdHint")}
+              </p>
             </>
+
           ) : (
             <div className="flex gap-2">
               <div className="flex flex-1 gap-1 rounded-full bg-muted/60 p-1">
