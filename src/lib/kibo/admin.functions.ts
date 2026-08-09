@@ -109,7 +109,17 @@ export const getAdminOverview = createServerFn({ method: "GET" })
     const value = (settings?.value ?? {}) as Partial<AiModels>;
     const models: AiModels = { ...DEFAULT_MODELS, ...value };
 
-    return { stats, users, sessions: sessionRows, models };
+    const { getCoachPrompt, DEFAULT_COACH_PROMPT } = await import("./coach-prompt.server");
+    const coachPrompt = await getCoachPrompt();
+
+    return {
+      stats,
+      users,
+      sessions: sessionRows,
+      models,
+      coachPrompt,
+      defaultCoachPrompt: DEFAULT_COACH_PROMPT,
+    };
   });
 
 export const updateAiModels = createServerFn({ method: "POST" })
@@ -134,6 +144,27 @@ export const updateAiModels = createServerFn({ method: "POST" })
       .upsert({ key: "ai_models", value: data, updated_by: context.userId, updated_at: new Date().toISOString() });
     if (error) throw new Error(error.message);
     return { ok: true, models: data };
+  });
+
+export const updateCoachPrompt = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { prompt: string }) => {
+    const prompt = String(input?.prompt ?? "").trim();
+    if (!prompt) throw new Error("提示词不能为空");
+    if (prompt.length > 8000) throw new Error("提示词过长（上限 8000 字）");
+    return { prompt };
+  })
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context as any);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("app_settings").upsert({
+      key: "coach_prompt",
+      value: { prompt: data.prompt },
+      updated_by: context.userId,
+      updated_at: new Date().toISOString(),
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true, prompt: data.prompt };
   });
 
 export const setUserAdmin = createServerFn({ method: "POST" })
