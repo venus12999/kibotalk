@@ -254,7 +254,7 @@ export const dict = {
     "activeSessionRecovered": "前回の会話が中断されたため、一時停止状態で復元しました。",
     "selectLanguage": "会話言語を選択",
     "onboardingDescription": "二人が使う言語と、あなたの現在のレベルを選んでください。",
-    "continueVoiceprint": "確認して続ける",
+    "continueSetup": "確認して続ける",
     "languageJapanese": "日本語",
     "languageEnglish": "英語",
     "languageChinese": "中国語",
