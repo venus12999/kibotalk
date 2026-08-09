@@ -56,19 +56,27 @@ const RubyText = React.memo(function RubyText({
  * it — no client-side replay buffer — so characters appear the moment their
  * tokens land.
  */
+const NOTE_TONES = ["note-glass-1", "note-glass-2", "note-glass-3"] as const;
+
 const NoteCard = React.memo(function NoteCard({
   candidate,
   caret,
+  index,
 }: {
   candidate: Candidate;
   caret: boolean;
+  index: number;
 }) {
   const total = candidate.segments?.length
     ? candidate.segments.reduce((n, s) => n + s.t.length, 0)
     : candidate.text.length;
 
   return (
-    <li className="sticky-note p-4">
+    <li className={cn("relative p-4", NOTE_TONES[index % NOTE_TONES.length])}>
+      <span
+        aria-hidden
+        className="absolute left-0 top-3 bottom-3 w-1 rounded-full bg-current opacity-25"
+      />
       <p className="text-base leading-[2.1] font-semibold">
         <RubyText candidate={candidate} limit={total} />
         {caret ? (
@@ -81,6 +89,7 @@ const NoteCard = React.memo(function NoteCard({
     </li>
   );
 });
+
 
 
 
