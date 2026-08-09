@@ -17,6 +17,7 @@ const VOICED_RMS = 0.015;
 
 export const EMBEDDING_DIM = N_MELS * 2;
 export const VOICEPRINT_KEY = "kibo.voiceprint.v1";
+export const VOICEPRINT_TS_KEY = "kibo.voiceprint.enrolledAt.v1";
 
 /** Iterative radix-2 FFT, in place on the given real/imag buffers. */
 function fft(re: Float32Array, im: Float32Array) {
@@ -193,15 +194,25 @@ export function loadVoiceprint(): Float32Array | null {
   }
 }
 
+/** Timestamp (ms) of when the current voiceprint was enrolled, if known. */
+export function voiceprintEnrolledAt(): number | null {
+  if (typeof localStorage === "undefined") return null;
+  const raw = localStorage.getItem(VOICEPRINT_TS_KEY);
+  const ts = raw ? Number(raw) : NaN;
+  return Number.isFinite(ts) ? ts : null;
+}
+
 export function saveVoiceprint(vec: Float32Array) {
   if (typeof localStorage === "undefined") return;
   localStorage.setItem(VOICEPRINT_KEY, JSON.stringify(Array.from(vec)));
+  localStorage.setItem(VOICEPRINT_TS_KEY, String(Date.now()));
   window.dispatchEvent(new Event("kibo:voiceprint"));
 }
 
 export function clearVoiceprint() {
   if (typeof localStorage === "undefined") return;
   localStorage.removeItem(VOICEPRINT_KEY);
+  localStorage.removeItem(VOICEPRINT_TS_KEY);
   window.dispatchEvent(new Event("kibo:voiceprint"));
 }
 
