@@ -446,7 +446,7 @@ export function SessionWorkbench() {
 
         </section>
 
-        <section className="paper-sheet flex min-h-0 flex-col p-4 sm:p-5">
+        <section className="paper-sheet flex min-h-[18rem] flex-col p-3 sm:p-5 lg:min-h-0">
           <h2 className="text-sm font-bold">{t("suggestions")}</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">{t("aiSuggestions")}</p>
           <SuggestionStage
