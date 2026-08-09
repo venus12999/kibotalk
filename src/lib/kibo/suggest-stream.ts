@@ -276,6 +276,16 @@ export async function streamSuggestions(
     }
   }
 
-  return reconcile(emitted, parseCandidates(text)) ?? emitted;
+  const final = reconcile(emitted, parseCandidates(text)) ?? emitted;
+  // The stream ended without a single usable suggestion (some mobile networks
+  // and WebViews silently swallow event-stream frames): ask again without
+  // streaming so the user still gets ideas instead of an empty card.
+  if (final.length === 0 && !signal?.aborted) {
+    const whole = await fetchWhole(input, signal);
+    if (whole.length > 0) onUpdate(whole);
+    return whole;
+  }
+  return final;
 }
+
 
