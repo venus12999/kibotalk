@@ -151,63 +151,11 @@ export function SessionWorkbench() {
           .catch(() => undefined);
       }
 
-      const req = ++reqRef.current;
-      const roundId = uid();
-      // A new turn makes the in-flight suggestion obsolete — cancel it.
-      abortRef.current?.abort();
-      const controller = new AbortController();
-      abortRef.current = controller;
-      setStreaming(true);
-      // Insert an empty round immediately, then fill it in as tokens arrive.
-      setRounds((prev) => [{ id: roundId, prompt: text, candidates: [] }, ...prev]);
-
-      const onUpdate = (candidates: Candidate[]) => {
-        if (req !== reqRef.current) return;
-        setRounds((prev) => {
-          // The streaming round is always the head; patch it in place.
-          if (prev[0]?.id !== roundId) return prev;
-          const next = prev.slice();
-          next[0] = { ...prev[0], candidates };
-          return next;
-        });
-      };
-
-      const payload = {
-        turns: turnsRef.current.map((x) => ({ speaker: x.speaker, text: x.text })),
-        conversationLang: prefsRef.current.conversationLang,
-        uiLang: prefsRef.current.uiLang,
-        level: prefsRef.current.level,
-      };
-
-      // One transparent retry: a dropped connection mid-turn is common on mobile.
-      const run = async () => {
-        try {
-          return await streamSuggestions(payload, onUpdate, controller.signal);
-        } catch (err) {
-          if (controller.signal.aborted) throw err;
-          return await streamSuggestions(payload, onUpdate, controller.signal);
-        }
-      };
-
-      void run()
-        .then((candidates) => {
-          if (req !== reqRef.current) return;
-          setStreaming(false);
-          setRounds((prev) =>
-            candidates.length > 0
-              ? prev.map((r) => (r.id === roundId ? { ...r, candidates } : r))
-              : prev.filter((r) => r.id !== roundId),
-          );
-        })
-        .catch((err: unknown) => {
-          if (req !== reqRef.current || controller.signal.aborted) return;
-          setStreaming(false);
-          setRounds((prev) => prev.filter((r) => r.id !== roundId));
-          setError(`${words.failed}${err instanceof Error ? err.message : String(err)}`);
-        });
+      runSuggestions(text);
     },
-    [words, cancelSuggestions],
+    [cancelSuggestions, runSuggestions],
   );
+
 
 
 
