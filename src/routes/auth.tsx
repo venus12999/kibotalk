@@ -214,6 +214,75 @@ function AuthPage() {
     }
   };
 
+  if (mode === "forgot") {
+    return (
+      <main className="flex min-h-dvh items-center justify-center p-4">
+        <AppBackground />
+        <div className="paper-sheet w-full max-w-sm p-6 sm:p-8">
+          <div className="flex items-center">
+            <img
+              src={logoAsset.url}
+              alt="KiboTalk"
+              className="h-8 w-auto select-none"
+              draggable={false}
+            />
+          </div>
+          <h2 className="mt-4 flex items-center gap-2 text-sm font-semibold">
+            <KeyRound className="size-4 text-primary" />
+            Reset your password
+          </h2>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Enter your account email and we'll send you a link to set a new password.
+          </p>
+
+          <form
+            className="mt-4 space-y-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void sendReset();
+            }}
+          >
+            <div className="space-y-1.5">
+              <Label htmlFor="reset-email">Email</Label>
+              <Input
+                id="reset-email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            {error ? (
+              <p className="rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                {error}
+              </p>
+            ) : null}
+            {notice ? (
+              <p className="rounded-xl bg-primary/10 px-3 py-2 text-xs text-foreground">{notice}</p>
+            ) : null}
+            <Button type="submit" className="w-full" disabled={busy || cooldown > 0}>
+              {busy ? <Loader2 className="size-4 animate-spin" /> : null}
+              {cooldown > 0 ? `Resend link in ${cooldown}s` : "Send reset link"}
+            </Button>
+          </form>
+
+          <button
+            type="button"
+            className="mt-4 w-full text-xs text-muted-foreground underline-offset-4 hover:underline"
+            onClick={() => {
+              setMode("signin");
+              setError("");
+              setNotice("");
+            }}
+          >
+            Back to sign in
+          </button>
+        </div>
+      </main>
+    );
+  }
+
   if (mode === "verify") {
     return (
       <main className="flex min-h-dvh items-center justify-center p-4">
