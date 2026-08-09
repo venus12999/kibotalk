@@ -415,35 +415,45 @@
 }
 
 
-/* Compact typography/spacing for two-column (row) layout on narrow screens */
+/* Compact typography/spacing for two-column (row) layout on narrow screens.
+   Scales are user-tunable via --pc-font / --pc-line / --pc-gap. */
 @media (max-width: 640px) {
+  .panel-compact {
+    font-size: calc(0.8125rem * var(--pc-font, 1));
+  }
   .panel-compact :is(.text-base) {
-    font-size: 0.8125rem;
-    line-height: 1.15rem;
+    font-size: calc(0.8125rem * var(--pc-font, 1));
+    line-height: calc(1.15rem * var(--pc-font, 1) * var(--pc-line, 1));
   }
   .panel-compact :is(.text-sm) {
-    font-size: 0.75rem;
-    line-height: 1.05rem;
+    font-size: calc(0.75rem * var(--pc-font, 1));
+    line-height: calc(1.05rem * var(--pc-font, 1) * var(--pc-line, 1));
   }
   .panel-compact :is(.text-xs) {
-    font-size: 0.6563rem;
-    line-height: 0.95rem;
+    font-size: calc(0.6563rem * var(--pc-font, 1));
+    line-height: calc(0.95rem * var(--pc-font, 1) * var(--pc-line, 1));
   }
   .panel-compact :is(.text-\[11px\]) {
-    font-size: 0.625rem;
-    line-height: 0.9rem;
+    font-size: calc(0.625rem * var(--pc-font, 1));
+    line-height: calc(0.9rem * var(--pc-font, 1) * var(--pc-line, 1));
   }
   .panel-compact :is(.gap-3) {
-    gap: 0.5rem;
+    gap: calc(0.5rem * var(--pc-gap, 1));
   }
-  .panel-compact :is(.p-3) {
-    padding: 0.5rem;
+  .panel-compact :is(.space-y-3) > * + * {
+    margin-top: calc(0.5rem * var(--pc-gap, 1));
+  }
+  .panel-compact :is(.space-y-4) > * + * {
+    margin-top: calc(0.65rem * var(--pc-gap, 1));
+  }
+  .panel-compact :is(.p-3, .p-4) {
+    padding: calc(0.5rem * var(--pc-gap, 1));
   }
   .panel-compact :is(.px-3) {
-    padding-inline: 0.5rem;
+    padding-inline: calc(0.5rem * var(--pc-gap, 1));
   }
   .panel-compact :is(.py-2) {
-    padding-block: 0.3rem;
+    padding-block: calc(0.3rem * var(--pc-gap, 1));
   }
   .panel-compact :is(button) {
     min-height: 1.9rem;
