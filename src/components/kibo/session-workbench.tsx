@@ -549,7 +549,15 @@ export function SessionWorkbench() {
 
         </section>
 
-        <section className="paper-sheet flex max-h-[38dvh] min-h-[10rem] flex-col p-3 sm:max-h-none sm:min-h-[18rem] sm:p-5 lg:min-h-0">
+        <section
+          className={cn(
+            "paper-sheet flex min-h-[10rem] flex-col p-3 sm:p-5",
+            prefs.panelLayout === "row" && "max-h-[52dvh] sm:max-h-none sm:min-h-[18rem] lg:min-h-0",
+            prefs.panelLayout === "column" && "max-h-[38dvh] sm:max-h-[40dvh] sm:min-h-[12rem]",
+            (!prefs.panelLayout || prefs.panelLayout === "auto") &&
+              "max-h-[38dvh] sm:max-h-none sm:min-h-[18rem] lg:min-h-0",
+          )}
+        >
 
           <h2 className="text-sm font-bold">{t("suggestions")}</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">{t("aiSuggestions")}</p>
