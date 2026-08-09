@@ -64,7 +64,7 @@ export function HoldTalkButton({
       aria-label={label}
       disabled={disabled}
       className={cn(
-        "relative flex h-16 flex-1 select-none touch-none flex-col items-center justify-center gap-0.5 overflow-hidden rounded-2xl",
+        "relative flex h-20 flex-1 select-none touch-none flex-col items-center justify-center gap-0.5 overflow-hidden rounded-2xl sm:h-16",
         "text-sm font-semibold transition-transform duration-100 ease-out will-change-transform",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         active

@@ -342,6 +342,24 @@ export function SessionWorkbench() {
 
 
   const active = life === "running" || life === "paused" || life === "preparing";
+
+  // The floating phone dock is position:fixed, so the scroll container needs a
+  // spacer that always matches its real height (it grows with the hold row).
+  const dockRef = React.useRef<HTMLDivElement | null>(null);
+  const [dockHeight, setDockHeight] = React.useState(140);
+  React.useEffect(() => {
+    const el = dockRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver((entries) => {
+      const h = entries[0]?.contentRect.height;
+      if (h) setDockHeight(h);
+    });
+
+    ro.observe(el);
+    setDockHeight(el.getBoundingClientRect().height);
+    return () => ro.disconnect();
+  }, []);
+
   const statusLabel =
     life === "running"
       ? t("listening")
@@ -529,15 +547,27 @@ export function SessionWorkbench() {
         </section>
       </div>
 
-      {/* Kept in the viewport on phones, where the panels scroll past the fold. */}
+      {/* Spacer so the floating phone dock never covers the last panel. */}
+      <div aria-hidden className="shrink-0 sm:hidden" style={{ height: dockHeight + 16 }} />
+
+      {/* Phone: floating thumb-reach dock. Tablet/desktop: inline sticky bar. */}
       <div
-        className="glass-bar sticky bottom-0 z-20 flex flex-col gap-2 px-3 py-2.5 sm:px-4"
-        style={{ marginBottom: "calc(env(safe-area-inset-bottom) * -1)", paddingBottom: "max(0.625rem, env(safe-area-inset-bottom))" }}
+        ref={dockRef}
+        className={cn(
+          "glass-bar z-30 flex flex-col gap-2.5 px-3 py-3",
+          "fixed inset-x-2 bottom-2 shadow-lg",
+          "sm:sticky sm:inset-x-auto sm:bottom-0 sm:gap-2 sm:px-4 sm:py-2.5 sm:shadow-none",
+
+        )}
+        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
       >
+
+
         {active && life !== "preparing" ? (
           prefs.captureMode === "push" ? (
             <>
-              <div className="flex gap-2">
+              <div className="flex gap-3 sm:gap-2">
+
                 {(["other", "user"] as const).map((who) => (
                   <HoldTalkButton
                     key={who}
@@ -588,7 +618,15 @@ export function SessionWorkbench() {
           )
         ) : null}
 
-        <div className="flex gap-2">
+        <div
+          className={cn(
+            "flex gap-2 border-t border-border/60 pt-2.5 transition-opacity sm:border-0 sm:pt-0",
+            // While a turn is held, the secondary row is inert so a stray thumb
+            // can't pause or stop the session mid-sentence.
+            transcriber.holding && "pointer-events-none opacity-40",
+          )}
+        >
+
           {!active ? (
             <Button className="flex-1" onClick={() => void startSession()}>
               <Play className="size-4" />
