@@ -247,12 +247,16 @@ export function SessionWorkbench() {
 
   const handleError = React.useCallback(
     (message: string) => {
-      if (message === "microphone") setError(words.micDenied);
-      else if (message === "screen" || message === "system-audio") setError(words.screenDenied);
+      const soft = message.endsWith(":soft");
+      const kind = soft ? message.slice(0, -5) : message;
+      if (kind === "microphone") setError(words.micDenied);
+      else if (kind === "screen" || kind === "system-audio")
+        setError(soft ? words.screenSkipped : words.screenDenied);
       else setError(`${words.failed}${message}`);
     },
     [words],
   );
+
 
 
   const transcriber = useTranscriber({
