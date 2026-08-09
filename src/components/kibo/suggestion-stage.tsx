@@ -1,5 +1,13 @@
 import * as React from "react";
-import { Sparkles, Clock, AlertCircle, CheckCircle2, Loader2, RotateCw } from "lucide-react";
+import {
+  Sparkles,
+  Clock,
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
+  RotateCw,
+  ChevronDown,
+} from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { Candidate, Round, Segment } from "@/lib/kibo/types";
