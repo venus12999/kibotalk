@@ -131,6 +131,9 @@ function ResetPasswordPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+              <p className="text-[11px] text-muted-foreground">
+                At least 6 characters — letters, numbers or symbols.
+              </p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="confirm-password">Confirm password</Label>

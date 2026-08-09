@@ -34,10 +34,12 @@ function AuthPage() {
   const [mode, setMode] = React.useState<"signin" | "signup" | "verify" | "forgot">("signin");
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const [confirm, setConfirm] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState("");
   const [notice, setNotice] = React.useState("");
   const [cooldown, setCooldown] = React.useState(0);
+  const PASSWORD_HINT = "At least 6 characters — letters, numbers or symbols.";
 
   React.useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -168,6 +170,16 @@ function AuthPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (mode === "signup") {
+      if (password.length < 6) {
+        setError(`Password too short. ${PASSWORD_HINT}`);
+        return;
+      }
+      if (password !== confirm) {
+        setError("The two passwords don't match.");
+        return;
+      }
+    }
     setBusy(true);
     setError("");
     setNotice("");
@@ -392,7 +404,27 @@ function AuthPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            {mode === "signup" ? (
+              <p className="text-[11px] text-muted-foreground">{PASSWORD_HINT}</p>
+            ) : null}
           </div>
+          {mode === "signup" ? (
+            <div className="space-y-1.5">
+              <Label htmlFor="confirm-password">Confirm password</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                autoComplete="new-password"
+                required
+                minLength={6}
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+              />
+              {confirm && confirm !== password ? (
+                <p className="text-[11px] text-destructive">The two passwords don't match.</p>
+              ) : null}
+            </div>
+          ) : null}
           {error ? (
             <p className="rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
               {error}
@@ -429,6 +461,7 @@ function AuthPage() {
           className="mt-4 w-full text-xs text-muted-foreground underline-offset-4 hover:underline"
           onClick={() => {
             setMode(mode === "signin" ? "signup" : "signin");
+            setConfirm("");
             setError("");
             setNotice("");
           }}
