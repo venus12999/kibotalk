@@ -338,6 +338,23 @@ function AuthPage() {
           </Button>
         </form>
 
+        {mode === "signin" ? (
+          <button
+            type="button"
+            className="mt-3 w-full text-xs text-primary underline-offset-4 hover:underline"
+            onClick={() => {
+              setMode("forgot");
+              setError("");
+              setNotice("");
+              setCooldown(0);
+            }}
+          >
+            Forgot your password?
+          </button>
+        ) : null}
+
+
+
         <button
           type="button"
           className="mt-4 w-full text-xs text-muted-foreground underline-offset-4 hover:underline"
