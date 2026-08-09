@@ -47,27 +47,64 @@ function normalize(raw: RawCandidate): Candidate | null {
 }
 
 /**
- * Parse the NDJSON answer. Complete lines parse strictly; the line still being
- * generated is salvaged with a shallow scan so text appears as it streams.
+ * Extract every top-level {...} span from the buffer, ignoring braces inside
+ * strings. The last span may still be incomplete while streaming.
+ */
+function scanObjects(buffer: string): { body: string; complete: boolean }[] {
+  const out: { body: string; complete: boolean }[] = [];
+  let depth = 0;
+  let start = -1;
+  let inStr = false;
+  let esc = false;
+  for (let i = 0; i < buffer.length; i++) {
+    const ch = buffer[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (ch === "\\") esc = true;
+      else if (ch === '"') inStr = false;
+      continue;
+    }
+    if (ch === '"') inStr = true;
+    else if (ch === "{") {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (ch === "}") {
+      depth--;
+      if (depth === 0 && start >= 0) {
+        out.push({ body: buffer.slice(start, i + 1), complete: true });
+        start = -1;
+      }
+      if (depth < 0) depth = 0;
+    }
+  }
+  if (depth > 0 && start >= 0) out.push({ body: buffer.slice(start), complete: false });
+  return out;
+}
+
+/**
+ * Parse the streamed answer. The model is asked for one JSON object per line,
+ * but it sometimes wraps them in a markdown fence, pretty-prints them, or emits
+ * a JSON array — so objects are recovered by brace scanning instead of by line.
+ * The object still being generated is salvaged with a shallow scan so text
+ * appears as it streams, and a model that ignores JSON entirely still yields
+ * plain-text replies rather than an empty result.
  */
 export function parseCandidates(buffer: string): Candidate[] {
-  const lines = buffer.split("\n");
   const out: Candidate[] = [];
+  const spans = scanObjects(buffer);
 
-  lines.forEach((line, index) => {
-    const trimmed = line.trim().replace(/^```(?:json)?$/i, "");
-    if (!trimmed || trimmed.startsWith("```")) return;
-    try {
-      const parsed = normalize(JSON.parse(trimmed) as RawCandidate);
-      if (parsed) out.push(parsed);
-      return;
-    } catch {
-      /* falls through to the partial reader below */
+  for (const span of spans) {
+    if (span.complete) {
+      try {
+        const parsed = normalize(JSON.parse(span.body) as RawCandidate);
+        if (parsed) out.push(parsed);
+        continue;
+      } catch {
+        /* falls through to the partial reader below */
+      }
     }
-    // Only the final line may legitimately be incomplete.
-    if (index !== lines.length - 1) return;
-    const text = /"targetText"\s*:\s*"((?:[^"\\]|\\.)*)/.exec(trimmed)?.[1];
-    const meaning = /"meaning"\s*:\s*"((?:[^"\\]|\\.)*)/.exec(trimmed)?.[1];
+    const text = /"targetText"\s*:\s*"((?:[^"\\]|\\.)*)/.exec(span.body)?.[1];
+    const meaning = /"meaning"\s*:\s*"((?:[^"\\]|\\.)*)/.exec(span.body)?.[1];
     if (text) {
       try {
         out.push({
@@ -78,10 +115,21 @@ export function parseCandidates(buffer: string): Candidate[] {
         /* mid-escape sequence — wait for the next frame */
       }
     }
-  });
+  }
+
+  if (out.length === 0) {
+    // No JSON at all: fall back to the plain lines the model produced.
+    const plain = buffer
+      .split("\n")
+      .map((l) => l.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim())
+      .map((l) => l.replace(/^(?:[-*]|\d+[.)])\s+/, "").trim())
+      .filter((l) => l.length > 0 && !l.startsWith("{"));
+    for (const line of plain) out.push({ text: line, meaning: "" });
+  }
 
   return out.slice(0, 3);
 }
+
 
 function sameSegments(a?: Segment[], b?: Segment[]) {
   if (a === b) return true;
