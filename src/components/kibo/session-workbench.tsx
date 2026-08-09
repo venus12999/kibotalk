@@ -32,6 +32,14 @@ import { VadDiagnostics } from "./vad-diagnostics";
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
+/** Shown when the model returns nothing usable, so the panel is never blank. */
+const emptyAiMessage: Record<string, string> = {
+  zh: "这次没有生成建议，点重试再来一次。",
+  ja: "候補が生成されませんでした。再試行してください。",
+  en: "No suggestions came back — tap retry.",
+};
+
+
 
 const copy = {
   zh: {
@@ -177,12 +185,17 @@ export function SessionWorkbench() {
         .then((candidates) => {
           if (req !== reqRef.current) return;
           setStreaming(false);
-          setAiStatus(candidates.length > 0 ? "done" : "idle");
-          setRounds((prev) =>
-            candidates.length > 0
-              ? prev.map((r) => (r.id === roundId ? { ...r, candidates } : r))
-              : prev.filter((r) => r.id !== roundId),
-          );
+          if (candidates.length > 0) {
+            setAiStatus("done");
+            setRounds((prev) =>
+              prev.map((r) => (r.id === roundId ? { ...r, candidates } : r)),
+            );
+          } else {
+            // An empty answer must not vanish silently — offer a retry.
+            setAiStatus("error");
+            setAiError(emptyAiMessage[prefsRef.current.uiLang] ?? "No suggestions came back.");
+            setRounds((prev) => prev.filter((r) => r.id !== roundId));
+          }
         })
         .catch((err: unknown) => {
           if (req !== reqRef.current || controller.signal.aborted) return;
@@ -192,6 +205,7 @@ export function SessionWorkbench() {
           setAiStatus("error");
           setAiError(message);
         });
+
     },
     [],
   );
@@ -424,7 +438,7 @@ export function SessionWorkbench() {
 
 
       <div className="grid min-h-0 flex-1 gap-3 sm:gap-4 lg:grid-cols-[1.15fr_1fr]">
-        <section className="glass-transcript flex min-h-[20rem] flex-col p-3 sm:p-5 lg:min-h-0">
+        <section className="glass-transcript flex max-h-[34dvh] min-h-[9rem] flex-col p-3 sm:max-h-none sm:min-h-[20rem] sm:p-5 lg:min-h-0">
 
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold">{t("conversation")}</h2>
@@ -510,7 +524,7 @@ export function SessionWorkbench() {
           ) : null}
 
           <VadDiagnostics
-            className="mt-3"
+            className="mt-3 hidden sm:block"
             diagnostics={transcriber.diagnostics}
             mode={prefs.captureMode}
             uiLang={prefs.uiLang}
@@ -520,7 +534,8 @@ export function SessionWorkbench() {
 
         </section>
 
-        <section className="paper-sheet flex min-h-[18rem] flex-col p-3 sm:p-5 lg:min-h-0">
+        <section className="paper-sheet flex max-h-[38dvh] min-h-[10rem] flex-col p-3 sm:max-h-none sm:min-h-[18rem] sm:p-5 lg:min-h-0">
+
           <h2 className="text-sm font-bold">{t("suggestions")}</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">{t("aiSuggestions")}</p>
           <SuggestionStage
@@ -583,10 +598,23 @@ export function SessionWorkbench() {
                   />
                 ))}
               </div>
-              <p className="text-center text-[11px] text-muted-foreground">
-                {transcriber.holding ? t("releaseToSend") : t("holdHint")}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="min-w-0 flex-1 text-[11px] text-muted-foreground">
+                  {transcriber.holding ? t("releaseToSend") : t("holdHint")}
+                </p>
+                <Button
+                  variant="soft"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={askForIdeas}
+                  disabled={streaming || !turns.some((x) => x.speaker === "other")}
+                >
+                  <Lightbulb className="size-4" />
+                  {t("askIdeas")}
+                </Button>
+              </div>
             </>
+
 
           ) : (
             <div className="flex gap-2">
