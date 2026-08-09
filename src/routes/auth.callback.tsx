@@ -54,6 +54,13 @@ function friendlyError(errorCode: string | null, description: string | null) {
 
 function AuthCallback() {
   const navigate = useNavigate();
+  // Preserve a same-origin return path (e.g. the OAuth consent page).
+  const goNext = React.useCallback(() => {
+    const raw = new URLSearchParams(window.location.search).get("next") ?? "";
+    return raw.startsWith("/") && !raw.startsWith("//")
+      ? navigate({ href: raw, replace: true })
+      : navigate({ to: "/", replace: true });
+  }, [navigate]);
   const [error, setError] = React.useState("");
 
   React.useEffect(() => {
@@ -81,7 +88,7 @@ function AuthCallback() {
       const { data } = await supabase.auth.getSession();
       if (cancelled) return;
       if (data.session) {
-        await navigate({ to: "/", replace: true });
+        await goNext();
         return;
       }
 
@@ -90,7 +97,7 @@ function AuthCallback() {
         const { data: retry } = await supabase.auth.getSession();
         if (cancelled) return;
         if (retry.session) {
-          await navigate({ to: "/", replace: true });
+          await goNext();
           return;
         }
       }
@@ -101,14 +108,14 @@ function AuthCallback() {
     void finish();
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session) void navigate({ to: "/", replace: true });
+      if (event === "SIGNED_IN" && session) void goNext();
     });
 
     return () => {
       cancelled = true;
       sub.subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, goNext]);
 
   if (!error) {
     return (
