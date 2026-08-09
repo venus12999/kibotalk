@@ -191,9 +191,14 @@ export function SettingsSheet({
               ))}
             </select>
           </Row>
-          <Row title={t("voiceprint")} description={t("voiceprintSavedLocal")}>
+          <div className="flex flex-col gap-3 border-b border-border py-4">
+            <div>
+              <p className="text-sm font-semibold">{t("voiceprint")}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t("voiceprintSavedLocal")}</p>
+            </div>
             <VoiceprintCard locked={locked} />
-          </Row>
+          </div>
+
 
 
           <p className="pt-6 text-xs font-bold tracking-wide text-muted-foreground uppercase">
