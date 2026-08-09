@@ -7,7 +7,8 @@ import { toast } from "sonner";
 import { AppBackground } from "@/components/kibo/app-background";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getAdminOverview, updateAiModels, setUserAdmin } from "@/lib/kibo/admin.functions";
+import { getAdminOverview, updateAiModels, updateCoachPrompt, setUserAdmin } from "@/lib/kibo/admin.functions";
+import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -49,6 +50,7 @@ function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; va
 function AdminPage() {
   const overview = useServerFn(getAdminOverview);
   const saveModels = useServerFn(updateAiModels);
+  const savePrompt = useServerFn(updateCoachPrompt);
   const toggleAdmin = useServerFn(setUserAdmin);
   const qc = useQueryClient();
 
@@ -62,6 +64,20 @@ function AdminPage() {
   React.useEffect(() => {
     if (data?.models) setModels(data.models);
   }, [data?.models]);
+
+  const [prompt, setPrompt] = React.useState("");
+  React.useEffect(() => {
+    if (data?.coachPrompt) setPrompt(data.coachPrompt);
+  }, [data?.coachPrompt]);
+
+  const promptMutation = useMutation({
+    mutationFn: () => savePrompt({ data: { prompt } }),
+    onSuccess: () => {
+      toast.success("思路提示词已更新");
+      void qc.invalidateQueries({ queryKey: ["admin-overview"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const [openSession, setOpenSession] = React.useState<string | null>(null);
 
@@ -179,6 +195,36 @@ function AdminPage() {
             {saveMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
             保存配置
           </Button>
+        </section>
+
+        <section className="paper-sheet mt-5 rounded-3xl p-5">
+          <h2 className="text-sm font-semibold">思路提示词</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            生成回复建议时附加的表达教练规则（结论先行、听众视角、举例比喻、画面感、前后一致、时间感知、金句捕捉、不跑题、立场清晰）。修改后约 30 秒内对所有用户生效。
+          </p>
+          <Textarea
+            className="mt-3 min-h-64 font-mono text-xs leading-relaxed"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="输入教练提示词…"
+          />
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button
+              className="gap-2"
+              disabled={promptMutation.isPending}
+              onClick={() => promptMutation.mutate()}
+            >
+              {promptMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+              保存提示词
+            </Button>
+            <Button
+              variant="soft"
+              onClick={() => setPrompt(d.defaultCoachPrompt)}
+              disabled={prompt === d.defaultCoachPrompt}
+            >
+              恢复默认
+            </Button>
+          </div>
         </section>
 
         <section className="paper-sheet mt-5 rounded-3xl p-5">
