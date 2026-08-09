@@ -123,6 +123,28 @@ const unschedule = (id: number) => {
 };
 
 /**
+ * Non-streaming fallback: ask the server for the finished answer in one plain
+ * body. Mobile browsers and in-app WebViews that cannot read a live stream
+ * (older iOS Safari, WeChat) end up here instead of showing an empty result.
+ */
+async function fetchWhole(
+  input: SuggestStreamInput,
+  signal?: AbortSignal,
+): Promise<Candidate[]> {
+  const res = await fetch("/api/suggest", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...input, stream: false }),
+    signal: signal ?? null,
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new SuggestError(body || `HTTP ${res.status}`, { status: res.status });
+  }
+  return parseCandidates(await res.text());
+}
+
+/**
  * Streams reply suggestions. Token deltas are accumulated and flushed to
  * `onUpdate` at most once per animation frame (and only when the parsed result
  * actually changed), so a fast token stream cannot outrun the renderer.
@@ -168,10 +190,15 @@ export async function streamSuggestions(
         }
       })
       .join("");
-    const candidates = parseCandidates(whole || raw);
+    let candidates = parseCandidates(whole || raw);
+    // A buffered body that carried nothing usable: retry without streaming.
+    if (candidates.length === 0 && !signal?.aborted) {
+      candidates = await fetchWhole(input, signal);
+    }
     if (candidates.length > 0) onUpdate(candidates);
     return candidates;
   }
+
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
@@ -249,6 +276,16 @@ export async function streamSuggestions(
     }
   }
 
-  return reconcile(emitted, parseCandidates(text)) ?? emitted;
+  const final = reconcile(emitted, parseCandidates(text)) ?? emitted;
+  // The stream ended without a single usable suggestion (some mobile networks
+  // and WebViews silently swallow event-stream frames): ask again without
+  // streaming so the user still gets ideas instead of an empty card.
+  if (final.length === 0 && !signal?.aborted) {
+    const whole = await fetchWhole(input, signal);
+    if (whole.length > 0) onUpdate(whole);
+    return whole;
+  }
+  return final;
 }
+
 

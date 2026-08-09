@@ -19,7 +19,14 @@ type Body = {
   conversationLang?: string;
   uiLang?: string;
   level?: string;
+  /**
+   * Some mobile browsers / in-app WebViews never surface a readable body for
+   * an event-stream. Those clients ask for `stream: false` and get the whole
+   * answer as one plain-text response instead.
+   */
+  stream?: boolean;
 };
+
 
 export const Route = createFileRoute("/api/suggest")({
   server: {
@@ -64,6 +71,8 @@ export const Route = createFileRoute("/api/suggest")({
         }
 
 
+        const wantsStream = body.stream !== false;
+
         const upstream = await fetch("https://api.deepseek.com/chat/completions", {
           method: "POST",
           headers: {
@@ -72,7 +81,8 @@ export const Route = createFileRoute("/api/suggest")({
           },
           body: JSON.stringify({
             model: aiModels.suggest,
-            stream: true,
+            stream: wantsStream,
+
             // DeepSeek v4 flash reasons before answering by default, which
             // delays the first visible token — the coach must be instant.
             thinking: { type: "disabled" },
@@ -123,9 +133,24 @@ export const Route = createFileRoute("/api/suggest")({
           });
         }
 
+        // Non-streaming clients get the finished answer in one plain-text body.
+        if (!wantsStream) {
+          const json = (await upstream.json().catch(() => null)) as {
+            choices?: { message?: { content?: string } }[];
+          } | null;
+          const content = json?.choices?.[0]?.message?.content ?? "";
+          return new Response(content, {
+            headers: {
+              "Content-Type": "text/plain; charset=utf-8",
+              "Cache-Control": "no-store",
+            },
+          });
+        }
+
         // Re-emit only the text deltas as SSE so the client can render token by token.
         const reader = upstream.body.getReader();
         const decoder = new TextDecoder();
+
         const encoder = new TextEncoder();
         let buffer = "";
 
