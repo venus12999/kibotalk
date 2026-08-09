@@ -1,10 +1,9 @@
-import { VoiceprintCard } from "@/components/kibo/voiceprint-card";
 import * as React from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { PillGroup } from "./pill-group";
 import { useKibo, langLabel, levelLabel } from "@/lib/kibo/store";
-import type { AudioSource, ConvLang, Level, Theme, UiLang } from "@/lib/kibo/types";
+import type { AudioSource, CaptureMode, ConvLang, Level, Theme, UiLang } from "@/lib/kibo/types";
 
 const translateCopy = {
   zh: { label: "翻译语言", hint: "把对方说的话翻译成这个语言显示" },
