@@ -338,8 +338,9 @@ export function SessionWorkbench() {
         </div>
       ) : null}
 
-      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[1.15fr_1fr]">
-        <section className="glass-transcript flex min-h-0 flex-col p-4 sm:p-5">
+      <div className="grid min-h-0 flex-1 gap-3 sm:gap-4 lg:grid-cols-[1.15fr_1fr]">
+        <section className="glass-transcript flex min-h-[20rem] flex-col p-3 sm:p-5 lg:min-h-0">
+
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold">{t("conversation")}</h2>
             <span
