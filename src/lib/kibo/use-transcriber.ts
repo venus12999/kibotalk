@@ -118,6 +118,56 @@ export function useTranscriber({
   const cbRef = React.useRef({ onInterim, onFinal, onError, language });
   cbRef.current = { onInterim, onFinal, onError, language };
 
+  // Diagnostics are sampled on a timer instead of on every audio callback, so
+  // the panel stays live without re-rendering the workbench ~10x per second.
+  const [diagnostics, setDiagnostics] = React.useState<Diagnostics>(EMPTY_DIAG);
+  const segmentsRef = React.useRef<SegmentStat[]>([]);
+  const segmentSeq = React.useRef(0);
+
+  const recordSegment = React.useCallback(
+    (stat: Omit<SegmentStat, "id" | "at">) => {
+      segmentSeq.current += 1;
+      segmentsRef.current = [
+        { ...stat, id: segmentSeq.current, at: Date.now() },
+        ...segmentsRef.current,
+      ].slice(0, 8);
+    },
+    [],
+  );
+
+  React.useEffect(() => {
+    const id = window.setInterval(() => {
+      const pipes = pipesRef.current;
+      if (pipes.length === 0) {
+        setDiagnostics((prev) =>
+          prev.rms === 0 && prev.speechMs === 0 && prev.segments === segmentsRef.current
+            ? prev
+            : { ...EMPTY_DIAG, segments: segmentsRef.current },
+        );
+        return;
+      }
+      // The pipe with the most speech in its buffer is the interesting one.
+      const pipe = pipes.reduce((a, b) => (b.speechMs >= a.speechMs ? b : a));
+      const rate = ctxRef.current?.sampleRate ?? 48000;
+      setDiagnostics({
+        rms: pipe.rms,
+        voiced: pipe.rms > SILENCE_RMS,
+        speechMs: pipe.speechMs,
+        silenceMs: pipe.silenceMs,
+        silenceToCut: Math.max(0, SILENCE_MS - pipe.silenceMs),
+        silenceThreshold: SILENCE_RMS,
+        silenceWindowMs: SILENCE_MS,
+        minSpeechMs: modeRef.current === "push" ? MIN_PUSH_SPEECH_MS : MIN_SPEECH_MS,
+        maxSegmentMs: MAX_SEGMENT_MS,
+        sampleRate: rate,
+        segments: segmentsRef.current,
+      });
+    }, 120);
+    return () => window.clearInterval(id);
+  }, []);
+
+
+
   /** Source routing decides the speaker; a lone microphone follows the buttons. */
   const speakerOf = React.useCallback(
     (pipe: Pipeline): Speaker => (pipe.ambiguous ? speakerRef.current : pipe.speaker),
