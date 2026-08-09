@@ -230,3 +230,89 @@ export async function transcribeWithVolc(
     },
   });
 }
+
+const FLASH_ENDPOINT =
+  "https://openspeech.bytedance.com/api/v3/auc/bigmodel/recognize/flash";
+const FLASH_RESOURCE = "volc.bigasr.auc_turbo";
+
+function base64(bytes: Uint8Array) {
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(binary);
+}
+
+/** One-shot 极速版 recognizer, streamed back to the client in small deltas. */
+async function transcribeWithVolcFlash(
+  wav: Uint8Array,
+  options: VolcOptions,
+  requestId: string,
+): Promise<Response> {
+  const res = await fetch(FLASH_ENDPOINT, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Api-App-Key": options.appId,
+      "X-Api-Access-Key": options.accessToken,
+      "X-Api-Resource-Id": FLASH_RESOURCE,
+      "X-Api-Request-Id": requestId,
+      "X-Api-Sequence": "-1",
+    },
+    body: JSON.stringify({
+      user: { uid: requestId },
+      audio: { format: "wav", data: base64(wav) },
+      request: {
+        model_name: "bigmodel",
+        enable_itn: true,
+        enable_punc: true,
+        ...(options.language ? { language: options.language } : {}),
+      },
+    }),
+  });
+
+  const status = res.headers.get("X-Api-Status-Code") ?? "";
+  const raw = await res.text().catch(() => "");
+  if (!res.ok || (status && !status.startsWith("2"))) {
+    const message = res.headers.get("X-Api-Message") || raw.slice(0, 200);
+    return new Response(message || "ASR failed", { status: 502 });
+  }
+
+  let text = "";
+  try {
+    const json = JSON.parse(raw) as { result?: { text?: string } };
+    text = (json.result?.text ?? "").trim();
+  } catch {
+    text = "";
+  }
+
+  const encoder = new TextEncoder();
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      const step = 6;
+      for (let i = 0; i < text.length; i += step) {
+        controller.enqueue(
+          encoder.encode(
+            `data: ${JSON.stringify({
+              type: "transcript.text.delta",
+              delta: text.slice(i, i + step),
+            })}\n\n`,
+          ),
+        );
+      }
+      controller.enqueue(
+        encoder.encode(`data: ${JSON.stringify({ type: "transcript.text.done", text })}\n\n`),
+      );
+      controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+      controller.close();
+    },
+  });
+
+  return new Response(body, {
+    headers: {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      "X-Accel-Buffering": "no",
+    },
+  });
+}
