@@ -42,7 +42,7 @@ function safeNext(next: string) {
 function AuthPage() {
   const navigate = useNavigate();
   const { next } = Route.useSearch();
-  const nextPath = safeNext(next);
+  const nextPath = safeNext(next ?? "");
   const goHome = React.useCallback(
     (replace = false) =>
       nextPath
