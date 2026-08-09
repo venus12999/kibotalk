@@ -6,6 +6,7 @@ import type { UiLang } from "./types";
 import { useSession } from "./use-session";
 import {
   clearCloudSessions,
+  deleteCloudSession,
   loadCloudPrefs,
   loadCloudSessions,
   saveCloudPrefs,
