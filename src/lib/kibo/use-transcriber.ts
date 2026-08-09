@@ -282,17 +282,22 @@ export function useTranscriber({
   }, []);
 
   const flushPipe = React.useCallback(
-    (pipe: Pipeline, minSpeechMs = MIN_SPEECH_MS) => {
+    (pipe: Pipeline, minSpeechMs = MIN_SPEECH_MS, reason: FlushReason = "manual") => {
       const sampleRate = ctxRef.current?.sampleRate ?? 48000;
       const chunks = pipe.chunks;
       const speechMs = pipe.speechMs;
+      const silenceMs = pipe.silenceMs;
       const speaker = speakerOf(pipe);
       pipe.chunks = [];
       pipe.speechMs = 0;
       pipe.silenceMs = 0;
       pipe.partialAt = 0;
       pipe.segment += 1;
-      if (chunks.length > 0 && speechMs >= minSpeechMs) {
+      const sent = chunks.length > 0 && speechMs >= minSpeechMs;
+      if (speechMs > 0 || sent) {
+        recordSegment({ speaker, speechMs, silenceMs, reason, sent });
+      }
+      if (sent) {
         // Clear the live bubble of whichever side owned the partials.
         cbRef.current.onInterim("", speaker);
         void sendSegment(chunks, sampleRate, speaker);
@@ -300,14 +305,15 @@ export function useTranscriber({
         cbRef.current.onInterim("", speaker);
       }
     },
-    [sendSegment, speakerOf],
+    [recordSegment, sendSegment, speakerOf],
   );
 
   const flushAll = React.useCallback(
-    (minSpeechMs?: number) => {
-      pipesRef.current.forEach((pipe) => flushPipe(pipe, minSpeechMs));
+    (minSpeechMs?: number, reason: FlushReason = "manual") => {
+      pipesRef.current.forEach((pipe) => flushPipe(pipe, minSpeechMs, reason));
     },
     [flushPipe],
+
   );
 
   const start = React.useCallback(async () => {
