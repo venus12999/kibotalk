@@ -626,6 +626,9 @@ export function SessionWorkbench() {
             streaming={streaming}
             status={aiStatus}
             errorMessage={aiError}
+            errorTitle={describeAiError(aiErrorKind, prefs.uiLang).title}
+            errorAdvice={describeAiError(aiErrorKind, prefs.uiLang).advice}
+
             attempt={aiAttempt}
             onRetry={retrySuggestions}
             canRetry={lastRequestRef.current !== null}
