@@ -516,6 +516,7 @@ export function SessionWorkbench() {
             statusLabels={{
               connecting: t("aiConnecting"),
               retrying: t("aiRetrying"),
+              attempt: t("aiAttempt"),
               streaming: t("aiStreaming"),
               done: t("aiDone"),
               failed: t("aiFailed"),
