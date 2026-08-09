@@ -34,10 +34,12 @@ function AuthPage() {
   const [mode, setMode] = React.useState<"signin" | "signup" | "verify" | "forgot">("signin");
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const [confirm, setConfirm] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState("");
   const [notice, setNotice] = React.useState("");
   const [cooldown, setCooldown] = React.useState(0);
+  const PASSWORD_HINT = "At least 6 characters — letters, numbers or symbols.";
 
   React.useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
