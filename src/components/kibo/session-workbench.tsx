@@ -34,6 +34,7 @@ const copy = {
   zh: {
     micDenied: "无法访问麦克风，请在浏览器中允许麦克风权限后重试。",
     screenDenied: "未能获取系统音频，请在共享对话框中勾选“分享标签页/系统音频”。",
+    screenSkipped: "已跳过系统音频（未选择共享），本次只采集麦克风。想采集线上通话声音时，请在设置里选择“系统音频”并在弹窗中勾选“同时分享音频”。",
     failed: "语音转写失败：",
     live: "正在听写…",
     enrollTitle: "先录入你的声纹",
@@ -44,6 +45,7 @@ const copy = {
   ja: {
     micDenied: "マイクにアクセスできません。ブラウザでマイクを許可してからもう一度お試しください。",
     screenDenied: "システム音声を取得できませんでした。共有ダイアログで「音声を共有」を有効にしてください。",
+    screenSkipped: "システム音声はスキップされました。今回はマイクのみで進みます。",
     failed: "文字起こしに失敗しました：",
     live: "書き起こし中…",
     enrollTitle: "まず声紋を登録しましょう",
@@ -54,6 +56,7 @@ const copy = {
   en: {
     micDenied: "Microphone access failed. Allow microphone permission and try again.",
     screenDenied: "System audio was not shared. Enable “share audio” in the sharing dialog.",
+    screenSkipped: "System audio skipped — continuing with the microphone only.",
     failed: "Transcription failed: ",
     live: "Transcribing…",
     enrollTitle: "Enroll your voiceprint first",
