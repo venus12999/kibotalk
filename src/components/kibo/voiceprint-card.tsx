@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useKibo } from "@/lib/kibo/store";
 import { toMono16k } from "@/lib/kibo/wav";
 import { sampleLines } from "@/lib/kibo/sample-lines";
+import type { ConvLang } from "@/lib/kibo/types";
 import {
   clearVoiceprint,
   embedVoice,
@@ -20,6 +21,7 @@ const copy = {
     refreshed: "状态已刷新",
     howTo: "点击下面的按钮后，请用平时的语速朗读这几句话，直到倒计时结束。",
     readNow: "请开始朗读：",
+    lineLang: "例句语言",
     reading: "正在录音，请继续朗读…",
   },
   ja: {
@@ -29,6 +31,7 @@ const copy = {
     refreshed: "状態を更新しました",
     howTo: "下のボタンを押したら、いつもの速さでこの文を読み上げてください。カウントダウンが終わるまで続けます。",
     readNow: "読み上げてください：",
+    lineLang: "例文の言語",
     reading: "録音中です。そのまま読み続けてください…",
   },
   en: {
@@ -38,6 +41,7 @@ const copy = {
     refreshed: "Status refreshed",
     howTo: "Tap the button below, then read these lines aloud at your normal pace until the countdown ends.",
     readNow: "Read this aloud:",
+    lineLang: "Sample language",
     reading: "Recording — keep reading…",
   },
 } as const;
@@ -133,11 +137,31 @@ export function VoiceprintCard({
   return (
     <div className="w-full space-y-3">
       <div className="glass-quiet p-3">
-        <p className="text-xs font-semibold text-muted-foreground">
-          {busy ? words.reading : words.readNow}
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-semibold text-muted-foreground">
+            {busy ? words.reading : words.readNow}
+          </p>
+          <div className="flex items-center gap-1" aria-label={words.lineLang}>
+            {(["ja", "en", "zh"] as ConvLang[]).map((lang) => (
+              <button
+                key={lang}
+                type="button"
+                disabled={busy}
+                aria-pressed={lineLang === lang}
+                onClick={() => setLineLang(lang)}
+                className={
+                  lineLang === lang
+                    ? "gradient-primary glow-sm cursor-pointer rounded-full px-2.5 py-1 text-[11px] font-semibold text-primary-foreground"
+                    : "cursor-pointer rounded-full px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:bg-muted disabled:opacity-50"
+                }
+              >
+                {lang === "ja" ? "日本語" : lang === "en" ? "EN" : "中文"}
+              </button>
+            ))}
+          </div>
+        </div>
         <ul className="mt-2 space-y-1.5">
-          {lines.map((line) => (
+          {lines.map((line: string) => (
             <li key={line} className="text-sm leading-relaxed font-medium">
               {line}
             </li>
