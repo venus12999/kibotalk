@@ -38,6 +38,7 @@ function AuthPage() {
   const [error, setError] = React.useState("");
   const [notice, setNotice] = React.useState("");
   const [cooldown, setCooldown] = React.useState(0);
+  const [code, setCode] = React.useState("");
 
   React.useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
