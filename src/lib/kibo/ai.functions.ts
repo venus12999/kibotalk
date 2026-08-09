@@ -8,26 +8,6 @@ export type SuggestInput = {
   level: string;
 };
 
-async function gateway(body: unknown) {
-  const key = process.env["DEEPSEEK_API_KEY"];
-  if (!key) throw new Error("Missing DEEPSEEK_API_KEY");
-  const res = await fetch(GATEWAY, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${key}`,
-    },
-    body: JSON.stringify(body),
-  });
-  if (res.status === 429) throw new Error("rate_limited");
-  if (res.status === 402) throw new Error("credits_exhausted");
-  if (!res.ok) throw new Error(`ai_error_${res.status}: ${(await res.text()).slice(0, 300)}`);
-  const json = (await res.json()) as {
-    choices?: { message?: { content?: string } }[];
-  };
-  return json.choices?.[0]?.message?.content ?? "";
-}
-
 export const suggestReplies = createServerFn({ method: "POST" })
   .inputValidator((input: SuggestInput) => input)
   .handler(async ({ data }) => {
