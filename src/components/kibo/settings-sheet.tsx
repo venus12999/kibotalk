@@ -176,6 +176,10 @@ export function SettingsSheet({
               ))}
             </select>
           </Row>
+          <Row title={t("voiceprint")} description={t("voiceprintSavedLocal")}>
+            <VoiceprintCard locked={locked} />
+          </Row>
+
           <p className="pt-6 text-xs font-bold tracking-wide text-muted-foreground uppercase">
             {t("permissions")}
           </p>
