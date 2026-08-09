@@ -1,14 +1,17 @@
 import * as React from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { KiboProvider, useKibo } from "@/lib/kibo/store";
 import { Onboarding } from "@/components/kibo/onboarding";
 import { SessionWorkbench } from "@/components/kibo/session-workbench";
 import { AppBackground } from "@/components/kibo/app-background";
 import { VoiceprintStep } from "@/components/kibo/voiceprint-step";
 import { loadVoiceprint } from "@/lib/kibo/voiceprint";
+import { useSession } from "@/lib/kibo/use-session";
 
 
 export const Route = createFileRoute("/")({
+  ssr: false,
+
   head: () => ({
     meta: [
       { title: "KiboTalk — Real-time conversation coach" },
