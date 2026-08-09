@@ -1,23 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-
-const GATEWAY = "https://api.deepseek.com/chat/completions";
-// Fastest / cheapest model in the catalog — suggestions must land while the
-// other person is still talking.
-
-
-const LANG_NAME: Record<string, string> = {
-  ja: "Japanese",
-  en: "English",
-  zh: "Simplified Chinese",
-};
-
-const LEVEL_HINT: Record<string, string> = {
-  beginner: "Use short, simple, very common sentences.",
-  intermediate: "Use natural everyday sentences of moderate length.",
-  advanced: "Use fluent, nuanced, idiomatic sentences.",
-};
-
-type Turn = { speaker: "user" | "other"; text: string };
+import { LANG_NAME, LEVEL_HINT, gateway, type Turn } from "./ai-core.server";
 
 export type SuggestInput = {
   turns: Turn[];
@@ -59,7 +41,6 @@ export const suggestReplies = createServerFn({ method: "POST" })
     const { getAiModels } = await import("./model-config.server");
     const content = await gateway({
       model: (await getAiModels()).suggest,
-      thinking: { type: "disabled" },
       messages: [
         {
           role: "system",
@@ -138,7 +119,6 @@ export const translateLine = createServerFn({ method: "POST" })
     const { getAiModels } = await import("./model-config.server");
     const translation = await gateway({
       model: (await getAiModels()).suggest,
-      thinking: { type: "disabled" },
       messages: [
         {
           role: "system",
