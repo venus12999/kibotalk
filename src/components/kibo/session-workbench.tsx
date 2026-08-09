@@ -1,5 +1,5 @@
 import * as React from "react";
-import { History, Mic, Pause, Play, Settings, Square, X, Fingerprint } from "lucide-react";
+import { History, Lightbulb, Mic, Pause, Play, Settings, Square, User, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -19,7 +19,6 @@ import type { Candidate, Lifecycle, Round, Turn } from "@/lib/kibo/types";
 import { useTranscriber } from "@/lib/kibo/use-transcriber";
 import { summarizeSession, translateLine } from "@/lib/kibo/ai.functions";
 import { streamSuggestions } from "@/lib/kibo/suggest-stream";
-import { loadVoiceprint } from "@/lib/kibo/voiceprint";
 
 import { MemoSuggestionStage as SuggestionStage } from "./suggestion-stage";
 import { SettingsSheet } from "./settings-sheet";
