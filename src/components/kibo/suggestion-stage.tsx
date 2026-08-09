@@ -283,7 +283,7 @@ export function SuggestionStage({
         {current ? (
           <ol className="space-y-3">
             {current.candidates.map((c, i) => (
-              <NoteCard key={i} candidate={c} caret={streaming && i === last} />
+              <NoteCard key={i} candidate={c} caret={streaming && i === last} index={i} />
             ))}
           </ol>
         ) : null}
