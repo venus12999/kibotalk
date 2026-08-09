@@ -9,6 +9,9 @@ import { AppBackground } from "@/components/kibo/app-background";
 import logoAsset from "@/assets/kibotalk-logo.png.asset.json";
 
 export const Route = createFileRoute("/auth")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    next: typeof search['next'] === "string" ? (search['next'] as string) : "",
+  }),
   head: () => ({
     meta: [
       { title: "登录 — KiboTalk 语言陪练" },
@@ -28,8 +31,22 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+/** Only same-origin relative paths may be used as a post-login destination. */
+function safeNext(next: string) {
+  return next.startsWith("/") && !next.startsWith("//") ? next : "";
+}
+
 function AuthPage() {
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
+  const nextPath = safeNext(next);
+  const goHome = React.useCallback(
+    (replace = false) =>
+      nextPath
+        ? navigate({ href: nextPath, replace })
+        : navigate({ to: "/", replace }),
+    [navigate, nextPath],
+  );
   const [mode, setMode] = React.useState<"signin" | "signup" | "verify" | "forgot">("signin");
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
@@ -57,25 +74,25 @@ function AuthPage() {
 
   React.useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) void navigate({ to: "/", replace: true });
+      if (data.session) void goHome(true);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session) {
-        void navigate({ to: "/", replace: true });
+        void goHome(true);
       }
     });
     return () => sub.subscription.unsubscribe();
-  }, [navigate]);
+  }, [goHome]);
 
   React.useEffect(() => {
     if (mode !== "verify") return;
     const id = window.setInterval(() => {
       void supabase.auth.getSession().then(({ data }) => {
-        if (data.session) void navigate({ to: "/", replace: true });
+        if (data.session) void goHome(true);
       });
     }, 4000);
     return () => window.clearInterval(id);
-  }, [mode, navigate]);
+  }, [mode, goHome]);
 
   React.useEffect(() => {
     if (cooldown <= 0) return;
@@ -97,7 +114,7 @@ function AuthPage() {
     try {
       const { data } = await supabase.auth.getSession();
       if (data.session) {
-        await navigate({ to: "/", replace: true });
+        await goHome(true);
         return;
       }
       if (cleanPassword) {
@@ -106,7 +123,7 @@ function AuthPage() {
           password: cleanPassword,
         });
         if (signed.session) {
-          await navigate({ to: "/", replace: true });
+          await goHome(true);
           return;
         }
         if (err && !/not confirmed|confirm your email/i.test(err.message)) throw err;
@@ -128,7 +145,7 @@ function AuthPage() {
       const { error: err } = await supabase.auth.resend({
         type: "signup",
         email: cleanEmail,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ""}` },
       });
       if (err) throw err;
       setNotice(`新的验证链接已发送至 ${cleanEmail}。`);
@@ -183,7 +200,7 @@ function AuthPage() {
         const { data, error: err } = await supabase.auth.signUp({
           email: cleanEmail,
           password: cleanPassword,
-          options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+          options: { emailRedirectTo: `${window.location.origin}/auth/callback${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ""}` },
         });
         if (err) {
           if (/already registered|already exists|User already/i.test(err.message)) {
@@ -215,7 +232,7 @@ function AuthPage() {
           throw err;
         }
       }
-      await navigate({ to: "/" });
+      await goHome();
     } catch (err) {
       setError(describeError(err instanceof Error ? err.message : String(err)));
     } finally {
