@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Sparkles, Clock } from "lucide-react";
+import { Sparkles, Clock, AlertCircle, CheckCircle2, Loader2, RotateCw } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { Candidate, Round, Segment } from "@/lib/kibo/types";
@@ -124,9 +124,9 @@ const StatusBar = React.memo(function StatusBar({
   onRetry,
 }: {
   status: AiStatus;
-  errorMessage?: string;
+  errorMessage?: string | undefined;
   labels: { connecting: string; streaming: string; done: string; failed: string; retry: string };
-  onRetry?: () => void;
+  onRetry?: (() => void) | undefined;
 }) {
   if (status === "idle") return null;
 
@@ -208,7 +208,7 @@ export function SuggestionStage({
   rounds: Round[];
   streaming: boolean;
   status?: AiStatus;
-  errorMessage?: string;
+  errorMessage?: string | undefined;
   statusLabels: {
     connecting: string;
     streaming: string;
@@ -216,7 +216,7 @@ export function SuggestionStage({
     failed: string;
     retry: string;
   };
-  onRetry?: () => void;
+  onRetry?: (() => void) | undefined;
   emptyHint: string;
   previousRoundLabel: string;
   className?: string;

@@ -494,8 +494,17 @@ export function SessionWorkbench() {
             className="mt-3 min-h-0 flex-1"
             rounds={rounds}
             streaming={streaming}
+            status={aiStatus}
+            errorMessage={aiError}
+            onRetry={retrySuggestions}
+            statusLabels={{
+              connecting: t("aiConnecting"),
+              streaming: t("aiStreaming"),
+              done: t("aiDone"),
+              failed: t("aiFailed"),
+              retry: t("aiRetry"),
+            }}
             emptyHint={t("emptySuggestions")}
-            generatingLabel={t("generatingSuggestions")}
             previousRoundLabel={t("previousRound")}
           />
         </section>
