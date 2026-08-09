@@ -1,6 +1,6 @@
 import * as React from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Loader2, MailCheck } from "lucide-react";
+import { KeyRound, Loader2, MailCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +31,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = React.useState<"signin" | "signup" | "verify">("signin");
+  const [mode, setMode] = React.useState<"signin" | "signup" | "verify" | "forgot">("signin");
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [busy, setBusy] = React.useState(false);
@@ -138,6 +138,34 @@ function AuthPage() {
   };
 
 
+  const sendReset = async () => {
+    if (busy || cooldown > 0) return;
+    if (!email) {
+      setError("Enter your email first.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const { error: err } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (err) throw err;
+      setNotice(`We sent a password reset link to ${email}. Open it to choose a new password.`);
+      setCooldown(60);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(
+        /rate|too many|seconds/i.test(msg)
+          ? "Too many requests — please wait a moment before asking for another email."
+          : msg,
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
@@ -185,6 +213,75 @@ function AuthPage() {
       setBusy(false);
     }
   };
+
+  if (mode === "forgot") {
+    return (
+      <main className="flex min-h-dvh items-center justify-center p-4">
+        <AppBackground />
+        <div className="paper-sheet w-full max-w-sm p-6 sm:p-8">
+          <div className="flex items-center">
+            <img
+              src={logoAsset.url}
+              alt="KiboTalk"
+              className="h-8 w-auto select-none"
+              draggable={false}
+            />
+          </div>
+          <h2 className="mt-4 flex items-center gap-2 text-sm font-semibold">
+            <KeyRound className="size-4 text-primary" />
+            Reset your password
+          </h2>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Enter your account email and we'll send you a link to set a new password.
+          </p>
+
+          <form
+            className="mt-4 space-y-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void sendReset();
+            }}
+          >
+            <div className="space-y-1.5">
+              <Label htmlFor="reset-email">Email</Label>
+              <Input
+                id="reset-email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            {error ? (
+              <p className="rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                {error}
+              </p>
+            ) : null}
+            {notice ? (
+              <p className="rounded-xl bg-primary/10 px-3 py-2 text-xs text-foreground">{notice}</p>
+            ) : null}
+            <Button type="submit" className="w-full" disabled={busy || cooldown > 0}>
+              {busy ? <Loader2 className="size-4 animate-spin" /> : null}
+              {cooldown > 0 ? `Resend link in ${cooldown}s` : "Send reset link"}
+            </Button>
+          </form>
+
+          <button
+            type="button"
+            className="mt-4 w-full text-xs text-muted-foreground underline-offset-4 hover:underline"
+            onClick={() => {
+              setMode("signin");
+              setError("");
+              setNotice("");
+            }}
+          >
+            Back to sign in
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   if (mode === "verify") {
     return (
@@ -309,6 +406,23 @@ function AuthPage() {
             {mode === "signin" ? "Sign in" : "Create account"}
           </Button>
         </form>
+
+        {mode === "signin" ? (
+          <button
+            type="button"
+            className="mt-3 w-full text-xs text-primary underline-offset-4 hover:underline"
+            onClick={() => {
+              setMode("forgot");
+              setError("");
+              setNotice("");
+              setCooldown(0);
+            }}
+          >
+            Forgot your password?
+          </button>
+        ) : null}
+
+
 
         <button
           type="button"
