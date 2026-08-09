@@ -106,7 +106,10 @@ export function SessionWorkbench() {
     abortRef.current.abort();
     abortRef.current = null;
     setStreaming(false);
+    // A round that never produced text would linger as an empty card.
+    setRounds((prev) => (prev[0] && prev[0].candidates.length === 0 ? prev.slice(1) : prev));
   }, []);
+
 
   const handleInterim = React.useCallback(
     (text: string, speaker: "user" | "other") => {
