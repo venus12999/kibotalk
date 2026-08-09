@@ -5,9 +5,11 @@ export type AiModels = {
 };
 
 export const DEFAULT_MODELS: AiModels = {
-  suggest: "google/gemini-2.5-flash-lite",
-  summary: "google/gemini-2.5-flash-lite",
-  transcribe: "openai/gpt-4o-mini-transcribe",
+  // DeepSeek official API model ids.
+  suggest: "deepseek-chat",
+  summary: "deepseek-chat",
+  // Volcengine streaming ASR resource id.
+  transcribe: "volc.bigasr.sauc.duration",
 };
 
 let cache: { at: number; models: AiModels } | null = null;
