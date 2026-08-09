@@ -28,6 +28,50 @@ const MAX_SEGMENT_MS = 12000;
 const PARTIAL_EVERY_MS = 1600;
 const PARTIAL_MIN_SPEECH_MS = 900;
 
+/** Why a segment was closed — drives the diagnostics advice. */
+export type FlushReason = "pause" | "max" | "manual" | "discarded";
+
+export type SegmentStat = {
+  id: number;
+  at: number;
+  speaker: Speaker;
+  speechMs: number;
+  silenceMs: number;
+  reason: FlushReason;
+  /** False when the buffer was dropped for being too short to transcribe. */
+  sent: boolean;
+};
+
+export type Diagnostics = {
+  /** Instantaneous RMS of the loudest pipe (0..1-ish, unscaled). */
+  rms: number;
+  voiced: boolean;
+  speechMs: number;
+  silenceMs: number;
+  /** Milliseconds of silence still needed before an auto-cut fires. */
+  silenceToCut: number;
+  silenceThreshold: number;
+  silenceWindowMs: number;
+  minSpeechMs: number;
+  maxSegmentMs: number;
+  sampleRate: number;
+  segments: SegmentStat[];
+};
+
+const EMPTY_DIAG: Diagnostics = {
+  rms: 0,
+  voiced: false,
+  speechMs: 0,
+  silenceMs: 0,
+  silenceToCut: SILENCE_MS,
+  silenceThreshold: SILENCE_RMS,
+  silenceWindowMs: SILENCE_MS,
+  minSpeechMs: MIN_SPEECH_MS,
+  maxSegmentMs: MAX_SEGMENT_MS,
+  sampleRate: 48000,
+  segments: [],
+};
+
 type Pipeline = {
   speaker: Speaker;
   /** True when this pipe cannot know the speaker from its source alone. */
@@ -41,7 +85,9 @@ type Pipeline = {
   partialAt: number;
   partialBusy: boolean;
   segment: number;
+  rms: number;
 };
+
 
 export function useTranscriber({
   language,
@@ -71,6 +117,56 @@ export function useTranscriber({
 
   const cbRef = React.useRef({ onInterim, onFinal, onError, language });
   cbRef.current = { onInterim, onFinal, onError, language };
+
+  // Diagnostics are sampled on a timer instead of on every audio callback, so
+  // the panel stays live without re-rendering the workbench ~10x per second.
+  const [diagnostics, setDiagnostics] = React.useState<Diagnostics>(EMPTY_DIAG);
+  const segmentsRef = React.useRef<SegmentStat[]>([]);
+  const segmentSeq = React.useRef(0);
+
+  const recordSegment = React.useCallback(
+    (stat: Omit<SegmentStat, "id" | "at">) => {
+      segmentSeq.current += 1;
+      segmentsRef.current = [
+        { ...stat, id: segmentSeq.current, at: Date.now() },
+        ...segmentsRef.current,
+      ].slice(0, 8);
+    },
+    [],
+  );
+
+  React.useEffect(() => {
+    const id = window.setInterval(() => {
+      const pipes = pipesRef.current;
+      if (pipes.length === 0) {
+        setDiagnostics((prev) =>
+          prev.rms === 0 && prev.speechMs === 0 && prev.segments === segmentsRef.current
+            ? prev
+            : { ...EMPTY_DIAG, segments: segmentsRef.current },
+        );
+        return;
+      }
+      // The pipe with the most speech in its buffer is the interesting one.
+      const pipe = pipes.reduce((a, b) => (b.speechMs >= a.speechMs ? b : a));
+      const rate = ctxRef.current?.sampleRate ?? 48000;
+      setDiagnostics({
+        rms: pipe.rms,
+        voiced: pipe.rms > SILENCE_RMS,
+        speechMs: pipe.speechMs,
+        silenceMs: pipe.silenceMs,
+        silenceToCut: Math.max(0, SILENCE_MS - pipe.silenceMs),
+        silenceThreshold: SILENCE_RMS,
+        silenceWindowMs: SILENCE_MS,
+        minSpeechMs: modeRef.current === "push" ? MIN_PUSH_SPEECH_MS : MIN_SPEECH_MS,
+        maxSegmentMs: MAX_SEGMENT_MS,
+        sampleRate: rate,
+        segments: segmentsRef.current,
+      });
+    }, 120);
+    return () => window.clearInterval(id);
+  }, []);
+
+
 
   /** Source routing decides the speaker; a lone microphone follows the buttons. */
   const speakerOf = React.useCallback(
@@ -186,17 +282,22 @@ export function useTranscriber({
   }, []);
 
   const flushPipe = React.useCallback(
-    (pipe: Pipeline, minSpeechMs = MIN_SPEECH_MS) => {
+    (pipe: Pipeline, minSpeechMs = MIN_SPEECH_MS, reason: FlushReason = "manual") => {
       const sampleRate = ctxRef.current?.sampleRate ?? 48000;
       const chunks = pipe.chunks;
       const speechMs = pipe.speechMs;
+      const silenceMs = pipe.silenceMs;
       const speaker = speakerOf(pipe);
       pipe.chunks = [];
       pipe.speechMs = 0;
       pipe.silenceMs = 0;
       pipe.partialAt = 0;
       pipe.segment += 1;
-      if (chunks.length > 0 && speechMs >= minSpeechMs) {
+      const sent = chunks.length > 0 && speechMs >= minSpeechMs;
+      if (speechMs > 0 || sent) {
+        recordSegment({ speaker, speechMs, silenceMs, reason, sent });
+      }
+      if (sent) {
         // Clear the live bubble of whichever side owned the partials.
         cbRef.current.onInterim("", speaker);
         void sendSegment(chunks, sampleRate, speaker);
@@ -204,14 +305,15 @@ export function useTranscriber({
         cbRef.current.onInterim("", speaker);
       }
     },
-    [sendSegment, speakerOf],
+    [recordSegment, sendSegment, speakerOf],
   );
 
   const flushAll = React.useCallback(
-    (minSpeechMs?: number) => {
-      pipesRef.current.forEach((pipe) => flushPipe(pipe, minSpeechMs));
+    (minSpeechMs?: number, reason: FlushReason = "manual") => {
+      pipesRef.current.forEach((pipe) => flushPipe(pipe, minSpeechMs, reason));
     },
     [flushPipe],
+
   );
 
   const start = React.useCallback(async () => {
@@ -303,6 +405,7 @@ export function useTranscriber({
         partialAt: 0,
         partialBusy: false,
         segment: 0,
+        rms: 0,
       };
 
       node.onaudioprocess = (event) => {
@@ -310,6 +413,7 @@ export function useTranscriber({
         const input = new Float32Array(event.inputBuffer.getChannelData(0));
         const chunkMs = (input.length / ctx.sampleRate) * 1000;
         const power = rms(input);
+        pipe.rms = power;
         if (speaker === "user" || pipesRef.current.length === 1) {
           setLevel(Math.min(1, power * 12));
         }
@@ -328,10 +432,19 @@ export function useTranscriber({
           // Continuous mode still segments on a pause so text keeps flowing.
           const endedByPause = pipe.silenceMs >= SILENCE_MS && pipe.speechMs >= MIN_SPEECH_MS;
           if (endedByPause || totalMs >= MAX_SEGMENT_MS) {
-            flushPipe(pipe);
+            flushPipe(pipe, MIN_SPEECH_MS, endedByPause ? "pause" : "max");
             return;
           }
           if (pipe.silenceMs >= SILENCE_MS * 3 && pipe.speechMs < MIN_SPEECH_MS) {
+            if (pipe.speechMs > 0) {
+              recordSegment({
+                speaker: speakerOf(pipe),
+                speechMs: pipe.speechMs,
+                silenceMs: pipe.silenceMs,
+                reason: "discarded",
+                sent: false,
+              });
+            }
             pipe.chunks = [];
             pipe.speechMs = 0;
             pipe.silenceMs = 0;
@@ -340,9 +453,10 @@ export function useTranscriber({
           }
         } else if (totalMs >= MAX_SEGMENT_MS) {
           // A very long hold is split so transcription stays responsive.
-          flushPipe(pipe, MIN_PUSH_SPEECH_MS);
+          flushPipe(pipe, MIN_PUSH_SPEECH_MS, "max");
           return;
         }
+
 
         // Live partials: re-transcribe the growing buffer on a slow cadence so
         // the bubble shows real words instead of a placeholder.
@@ -400,7 +514,7 @@ export function useTranscriber({
     pausedRef.current = true;
     setHolding(null);
     setLevel(0);
-    flushAll(MIN_PUSH_SPEECH_MS);
+    flushAll(MIN_PUSH_SPEECH_MS, "manual");
   }, [flushAll]);
 
   const setPaused = React.useCallback(
@@ -409,7 +523,7 @@ export function useTranscriber({
       pausedRef.current = paused || modeRef.current === "push";
       if (paused) {
         setHolding(null);
-        flushAll();
+        flushAll(undefined, "manual");
       }
       setLevel(0);
     },
@@ -417,7 +531,7 @@ export function useTranscriber({
   );
 
   const stop = React.useCallback(() => {
-    flushAll();
+    flushAll(undefined, "manual");
     teardown();
     pausedRef.current = false;
     userPausedRef.current = false;
@@ -438,6 +552,8 @@ export function useTranscriber({
     recording,
     level,
     transcribing,
+    diagnostics,
     sampleRate: TARGET_RATE,
   };
+
 }

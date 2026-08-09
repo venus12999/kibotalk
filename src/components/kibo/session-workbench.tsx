@@ -27,6 +27,8 @@ import { GuideSheet } from "./guide-sheet";
 import { UiLanguageMenu } from "./ui-language-menu";
 import { AccountMenu } from "./account-menu";
 import { HoldTalkButton } from "./hold-talk-button";
+import { VadDiagnostics } from "./vad-diagnostics";
+
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -488,6 +490,15 @@ export function SessionWorkbench() {
               />
             </div>
           ) : null}
+
+          <VadDiagnostics
+            className="mt-3"
+            diagnostics={transcriber.diagnostics}
+            mode={prefs.captureMode}
+            uiLang={prefs.uiLang}
+            recording={transcriber.recording}
+          />
+
 
         </section>
 
