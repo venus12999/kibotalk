@@ -8,6 +8,8 @@ export type Lifecycle = "idle" | "preparing" | "running" | "paused" | "stopped";
 export type Prefs = {
   uiLang: UiLang;
   conversationLang: ConvLang;
+  /** Language the other person's lines are translated into for the user. */
+  translateLang: ConvLang;
   level: Level;
   theme: Theme;
   audioSource: AudioSource;
@@ -21,7 +23,10 @@ export type Turn = {
   text: string;
   at: number;
   sttFailed?: boolean;
+  /** Translation of `text` into the user's chosen translation language. */
+  translation?: string;
 };
+
 
 /** One word/morpheme span of a suggested reply, with reading for ruby text. */
 export type Segment = {
@@ -58,7 +63,9 @@ export type SessionRecord = {
 export const defaultPrefs: Prefs = {
   uiLang: "en",
   conversationLang: "ja",
+  translateLang: "en",
   level: "beginner",
+
   theme: "system",
   audioSource: "microphone",
   micDeviceId: "",

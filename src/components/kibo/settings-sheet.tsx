@@ -6,6 +6,15 @@ import { PillGroup } from "./pill-group";
 import { useKibo, langLabel, levelLabel } from "@/lib/kibo/store";
 import type { AudioSource, ConvLang, Level, Theme, UiLang } from "@/lib/kibo/types";
 
+const translateCopy = {
+  zh: { label: "翻译语言", hint: "把对方说的话翻译成这个语言显示" },
+  ja: { label: "翻訳言語", hint: "相手の発話をこの言語に翻訳して表示します" },
+  en: {
+    label: "Translation language",
+    hint: "Show the other person's lines translated into this language",
+  },
+} as const;
+
 function Row({
   title,
   description,
@@ -143,6 +152,18 @@ export function SettingsSheet({
               disabled={locked}
               value={prefs.conversationLang}
               onChange={(v) => setPrefs({ conversationLang: v })}
+              options={[
+                { value: "ja", label: langLabel("ja", ui) },
+                { value: "en", label: langLabel("en", ui) },
+                { value: "zh", label: langLabel("zh", ui) },
+              ]}
+            />
+          </Row>
+          <Row title={translateCopy[ui].label} description={translateCopy[ui].hint}>
+            <PillGroup<ConvLang>
+              label=""
+              value={prefs.translateLang}
+              onChange={(v) => setPrefs({ translateLang: v })}
               options={[
                 { value: "ja", label: langLabel("ja", ui) },
                 { value: "en", label: langLabel("en", ui) },

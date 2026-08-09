@@ -17,7 +17,7 @@ import { useKibo, langLabel, levelLabel } from "@/lib/kibo/store";
 import { makeTurn } from "@/lib/kibo/mock";
 import type { Candidate, Lifecycle, Round, Turn } from "@/lib/kibo/types";
 import { useTranscriber } from "@/lib/kibo/use-transcriber";
-import { summarizeSession } from "@/lib/kibo/ai.functions";
+import { summarizeSession, translateLine } from "@/lib/kibo/ai.functions";
 import { streamSuggestions } from "@/lib/kibo/suggest-stream";
 import { loadVoiceprint } from "@/lib/kibo/voiceprint";
 
@@ -99,9 +99,25 @@ export function SessionWorkbench() {
   const reqRef = React.useRef(0);
   const abortRef = React.useRef<AbortController | null>(null);
 
-  const handleInterim = React.useCallback((text: string, speaker: "user" | "other") => {
-    setInterim((prev) => ({ ...prev, [speaker]: text }));
+  /** The user talking over the coach makes the in-flight suggestion stale. */
+  const cancelSuggestions = React.useCallback(() => {
+    if (!abortRef.current) return;
+    reqRef.current += 1;
+    abortRef.current.abort();
+    abortRef.current = null;
+    setStreaming(false);
+    // A round that never produced text would linger as an empty card.
+    setRounds((prev) => (prev[0] && prev[0].candidates.length === 0 ? prev.slice(1) : prev));
   }, []);
+
+
+  const handleInterim = React.useCallback(
+    (text: string, speaker: "user" | "other") => {
+      if (speaker === "user" && text.trim().length > 1) cancelSuggestions();
+      setInterim((prev) => ({ ...prev, [speaker]: text }));
+    },
+    [cancelSuggestions],
+  );
 
   const handleFinal = React.useCallback(
     (text: string, speaker: "user" | "other") => {
@@ -109,8 +125,25 @@ export function SessionWorkbench() {
       turnsRef.current = [...turnsRef.current, turn];
       setTurns(turnsRef.current);
 
-      // Only the other person's line calls for a reply suggestion.
-      if (speaker === "user") return;
+      // The user answered on their own — drop whatever was still generating.
+      if (speaker === "user") {
+        cancelSuggestions();
+        return;
+      }
+
+      // Show the line in the user's chosen translation language.
+      const { conversationLang, translateLang } = prefsRef.current;
+      if (translateLang !== conversationLang) {
+        void translateLine({ data: { text, from: conversationLang, to: translateLang } })
+          .then(({ translation }) => {
+            if (!translation) return;
+            turnsRef.current = turnsRef.current.map((x) =>
+              x.id === turn.id ? { ...x, translation } : x,
+            );
+            setTurns(turnsRef.current);
+          })
+          .catch(() => undefined);
+      }
 
       const req = ++reqRef.current;
       const roundId = uid();
@@ -167,7 +200,7 @@ export function SessionWorkbench() {
           setError(`${words.failed}${err instanceof Error ? err.message : String(err)}`);
         });
     },
-    [words],
+    [words, cancelSuggestions],
   );
 
 
@@ -380,6 +413,11 @@ export function SessionWorkbench() {
                         {turn.speaker === "user" ? t("me") : t("other")}
                       </p>
                       <p className="mt-0.5 text-sm leading-relaxed">{turn.text}</p>
+                      {turn.translation ? (
+                        <p className="mt-1 border-t border-current/15 pt-1 text-xs leading-relaxed opacity-75">
+                          {turn.translation}
+                        </p>
+                      ) : null}
                     </div>
                   </li>
                 ))}
@@ -419,31 +457,6 @@ export function SessionWorkbench() {
             </div>
           ) : null}
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            {!active ? (
-              <Button className="flex-1" onClick={() => void startSession()}>
-                <Play className="size-4" />
-                {t("start")}
-              </Button>
-            ) : (
-              <>
-                <Button
-                  variant="soft"
-                  className="flex-1"
-                  disabled={life === "preparing"}
-                  onClick={togglePause}
-                >
-                  {life === "paused" ? <Play className="size-4" /> : <Pause className="size-4" />}
-                  {life === "paused" ? t("resume") : t("pause")}
-                </Button>
-                <Button variant="destructive" className="flex-1" onClick={() => setConfirmStop(true)}>
-                  <Square className="size-4" />
-                  {t("stop")}
-                </Button>
-              </>
-            )}
-          </div>
-
         </section>
 
         <section className="paper-sheet flex min-h-[18rem] flex-col p-3 sm:p-5 lg:min-h-0">
@@ -458,6 +471,35 @@ export function SessionWorkbench() {
             previousRoundLabel={t("previousRound")}
           />
         </section>
+      </div>
+
+      {/* Kept in the viewport on phones, where the panels scroll past the fold. */}
+      <div
+        className="glass-bar sticky bottom-0 z-20 flex gap-2 px-3 py-2.5 sm:px-4"
+        style={{ marginBottom: "calc(env(safe-area-inset-bottom) * -1)", paddingBottom: "max(0.625rem, env(safe-area-inset-bottom))" }}
+      >
+        {!active ? (
+          <Button className="flex-1" onClick={() => void startSession()}>
+            <Play className="size-4" />
+            {t("start")}
+          </Button>
+        ) : (
+          <>
+            <Button
+              variant="soft"
+              className="flex-1"
+              disabled={life === "preparing"}
+              onClick={togglePause}
+            >
+              {life === "paused" ? <Play className="size-4" /> : <Pause className="size-4" />}
+              {life === "paused" ? t("resume") : t("pause")}
+            </Button>
+            <Button variant="destructive" className="flex-1" onClick={() => setConfirmStop(true)}>
+              <Square className="size-4" />
+              {t("stop")}
+            </Button>
+          </>
+        )}
       </div>
 
       <AlertDialog open={confirmStop} onOpenChange={setConfirmStop}>

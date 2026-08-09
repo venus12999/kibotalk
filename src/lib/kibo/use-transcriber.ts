@@ -7,7 +7,8 @@ import {
   updateCentroid,
   VOICEPRINT_KEY,
 } from "./voiceprint";
-import type { AudioSource } from "./types";
+import { matchesLanguage } from "./lang-guard";
+import type { AudioSource, ConvLang } from "./types";
 
 type Speaker = "user" | "other";
 
@@ -146,7 +147,9 @@ export function useTranscriber({
               };
               if (event.type === "transcript.text.delta" && event.delta) {
                 text += event.delta;
-                cbRef.current.onInterim(text, speaker);
+                if (matchesLanguage(text, cbRef.current.language as ConvLang)) {
+                  cbRef.current.onInterim(text, speaker);
+                }
               } else if (event.type === "transcript.text.done") {
                 text = event.text ?? text;
               }
@@ -156,12 +159,17 @@ export function useTranscriber({
           }
         }
 
+        const clean = text.trim();
+        // Anything that is not the chosen conversation language is a
+        // hallucination — drop it instead of polluting the transcript.
+        const ok = clean ? matchesLanguage(clean, cbRef.current.language as ConvLang) : false;
+
         if (partial) {
-          if (text.trim()) cbRef.current.onInterim(text.trim(), speaker);
+          if (ok) cbRef.current.onInterim(clean, speaker);
           return;
         }
         cbRef.current.onInterim("", speaker);
-        if (text.trim()) cbRef.current.onFinal(text.trim(), speaker);
+        if (ok) cbRef.current.onFinal(clean, speaker);
       } catch (error) {
         if (partial) return; // a dropped partial is harmless; the final still runs
         cbRef.current.onInterim("", speaker);

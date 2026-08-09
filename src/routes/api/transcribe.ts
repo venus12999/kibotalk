@@ -31,7 +31,22 @@ export const Route = createFileRoute("/api/transcribe")({
         upstream.append("stream", "true");
         if (typeof language === "string" && /^[a-z]{2}$/.test(language)) {
           upstream.append("language", language);
+          // Pin the output language: without this the model sometimes answers
+          // in Korean or emits mojibake on short, noisy segments.
+          const names: Record<string, string> = {
+            ja: "Japanese",
+            en: "English",
+            zh: "Simplified Chinese",
+          };
+          const name = names[language];
+          if (name) {
+            upstream.append(
+              "prompt",
+              `The audio is in ${name}. Transcribe it verbatim in ${name} only. Never translate or transliterate into any other language. If the audio is unintelligible, return an empty string.`,
+            );
+          }
         }
+
 
         const res = await fetch("https://ai.gateway.lovable.dev/v1/audio/transcriptions", {
           method: "POST",
