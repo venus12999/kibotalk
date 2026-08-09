@@ -105,23 +105,27 @@ export async function transcribeWithVolc(
   if (pcm.length < 3200) return new Response("Empty audio", { status: 400 });
 
   const connectId = crypto.randomUUID();
-  const upstream = await fetch(ENDPOINT, {
-    headers: {
-      Upgrade: "websocket",
-      "X-Api-App-Key": options.appId,
-      "X-Api-Access-Key": options.accessToken,
-      "X-Api-Resource-Id": options.resourceId || DEFAULT_RESOURCE,
-      "X-Api-Connect-Id": connectId,
-    },
-  });
-
-  const ws = (upstream as unknown as { webSocket?: WebSocket & { accept: () => void } })
-    .webSocket;
-  if (!ws) {
-    const detail = await upstream.text().catch(() => "");
-    return new Response(detail.slice(0, 300) || "ASR handshake failed", {
-      status: upstream.status || 502,
+  let upstream: Response | null = null;
+  try {
+    upstream = await fetch(ENDPOINT, {
+      headers: {
+        Upgrade: "websocket",
+        "X-Api-App-Key": options.appId,
+        "X-Api-Access-Key": options.accessToken,
+        "X-Api-Resource-Id": options.resourceId || DEFAULT_RESOURCE,
+        "X-Api-Connect-Id": connectId,
+      },
     });
+  } catch {
+    upstream = null; // runtime without outbound WebSocket support
+  }
+
+  const ws = (upstream as unknown as { webSocket?: WebSocket & { accept: () => void } } | null)
+    ?.webSocket;
+  if (!ws) {
+    // Fall back to the one-shot flash recognizer so transcription keeps
+    // working on runtimes that cannot open an outbound WebSocket.
+    return transcribeWithVolcFlash(wav, options, connectId);
   }
   ws.accept();
 
