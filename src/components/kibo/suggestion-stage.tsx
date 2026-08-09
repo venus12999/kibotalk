@@ -324,6 +324,8 @@ export function SuggestionStage({
   streaming,
   status = "idle",
   errorMessage,
+  errorTitle,
+  errorAdvice,
   attempt = 0,
   statusLabels,
   onRetry,
@@ -337,6 +339,8 @@ export function SuggestionStage({
   streaming: boolean;
   status?: AiStatus;
   errorMessage?: string | undefined;
+  errorTitle?: string | undefined;
+  errorAdvice?: string | undefined;
   attempt?: number;
   statusLabels: StatusLabels;
   onRetry?: (() => void) | undefined;
@@ -383,6 +387,8 @@ export function SuggestionStage({
         <StatusBar
           status={status}
           errorMessage={errorMessage}
+          errorTitle={errorTitle}
+          errorAdvice={errorAdvice}
           attempt={attempt}
           labels={statusLabels}
           onRetry={onRetry}
