@@ -550,7 +550,8 @@ export function SessionWorkbench() {
         {active && life !== "preparing" ? (
           prefs.captureMode === "push" ? (
             <>
-              <div className="flex gap-2">
+              <div className="flex gap-3 sm:gap-2">
+
                 {(["other", "user"] as const).map((who) => (
                   <HoldTalkButton
                     key={who}
@@ -601,7 +602,15 @@ export function SessionWorkbench() {
           )
         ) : null}
 
-        <div className="flex gap-2">
+        <div
+          className={cn(
+            "flex gap-2 border-t border-border/60 pt-2.5 transition-opacity sm:border-0 sm:pt-0",
+            // While a turn is held, the secondary row is inert so a stray thumb
+            // can't pause or stop the session mid-sentence.
+            transcriber.holding && "pointer-events-none opacity-40",
+          )}
+        >
+
           {!active ? (
             <Button className="flex-1" onClick={() => void startSession()}>
               <Play className="size-4" />
