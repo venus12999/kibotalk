@@ -1,5 +1,5 @@
 import * as React from "react";
-import { History, Mic, Pause, Play, Settings, Square, X, Fingerprint } from "lucide-react";
+import { History, Lightbulb, Mic, Pause, Play, Settings, Square, User, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -19,7 +19,6 @@ import type { Candidate, Lifecycle, Round, Turn } from "@/lib/kibo/types";
 import { useTranscriber } from "@/lib/kibo/use-transcriber";
 import { summarizeSession, translateLine } from "@/lib/kibo/ai.functions";
 import { streamSuggestions } from "@/lib/kibo/suggest-stream";
-import { loadVoiceprint } from "@/lib/kibo/voiceprint";
 
 import { MemoSuggestionStage as SuggestionStage } from "./suggestion-stage";
 import { SettingsSheet } from "./settings-sheet";
@@ -37,10 +36,6 @@ const copy = {
     screenSkipped: "已跳过系统音频（未选择共享），本次只采集麦克风。想采集线上通话声音时，请在设置里选择“系统音频”并在弹窗中勾选“同时分享音频”。",
     failed: "语音转写失败：",
     live: "正在听写…",
-    enrollTitle: "先录入你的声纹",
-    enrollBody: "录入后系统才能在对话中分清哪句是你说的。只需 6 秒，数据只保存在本机。",
-    enrollCta: "去录入",
-    dismiss: "稍后再说",
   },
   ja: {
     micDenied: "マイクにアクセスできません。ブラウザでマイクを許可してからもう一度お試しください。",
@@ -48,10 +43,6 @@ const copy = {
     screenSkipped: "システム音声はスキップされました。今回はマイクのみで進みます。",
     failed: "文字起こしに失敗しました：",
     live: "書き起こし中…",
-    enrollTitle: "まず声紋を登録しましょう",
-    enrollBody: "登録すると会話中にあなたの発言を判別できます。約6秒、データは端末内のみに保存されます。",
-    enrollCta: "登録する",
-    dismiss: "あとで",
   },
   en: {
     micDenied: "Microphone access failed. Allow microphone permission and try again.",
@@ -59,25 +50,14 @@ const copy = {
     screenSkipped: "System audio skipped — continuing with the microphone only.",
     failed: "Transcription failed: ",
     live: "Transcribing…",
-    enrollTitle: "Enroll your voiceprint first",
-    enrollBody: "It lets the app tell your speech apart during a conversation. Takes 6 seconds and stays on this device.",
-    enrollCta: "Enroll now",
-    dismiss: "Later",
   },
 } as const;
 
 
 export function SessionWorkbench() {
-  const { prefs, t, addSession, user } = useKibo();
-  const [voiceprintReady, setVoiceprintReady] = React.useState(true);
-  const [enrollDismissed, setEnrollDismissed] = React.useState(false);
-
-  React.useEffect(() => {
-    const sync = () => setVoiceprintReady(loadVoiceprint() !== null);
-    sync();
-    window.addEventListener("kibo:voiceprint", sync);
-    return () => window.removeEventListener("kibo:voiceprint", sync);
-  }, []);
+  const { prefs, t, addSession } = useKibo();
+  /** Continuous mode: who the microphone is currently attributed to. */
+  const [speaker, setSpeaker] = React.useState<"user" | "other">("other");
   const [life, setLife] = React.useState<Lifecycle>("idle");
   const [turns, setTurns] = React.useState<Turn[]>([]);
   const [rounds, setRounds] = React.useState<Round[]>([]);
@@ -240,10 +220,19 @@ export function SessionWorkbench() {
           .catch(() => undefined);
       }
 
-      runSuggestions(text);
+      // Push-to-talk means the user explicitly ended the other person's turn,
+      // so ideas can start right away. In continuous mode nothing marks the end
+      // of a sentence reliably — the user asks for ideas when they want them.
+      if (prefsRef.current.captureMode === "push") runSuggestions(text);
     },
     [cancelSuggestions, runSuggestions],
   );
+
+  /** Continuous mode: generate ideas for the other person's latest line. */
+  const askForIdeas = React.useCallback(() => {
+    const last = [...turnsRef.current].reverse().find((x) => x.speaker === "other");
+    if (last) runSuggestions(last.text);
+  }, [runSuggestions]);
 
 
 
@@ -266,6 +255,8 @@ export function SessionWorkbench() {
     language: prefs.conversationLang,
     audioSource: prefs.audioSource,
     micDeviceId: prefs.micDeviceId,
+    mode: prefs.captureMode,
+    activeSpeaker: speaker,
     onInterim: handleInterim,
     onFinal: handleFinal,
     onError: handleError,
@@ -397,28 +388,6 @@ export function SessionWorkbench() {
       </header>
 
 
-      {user && !voiceprintReady && !enrollDismissed ? (
-        <div className="glass-quiet flex flex-wrap items-start gap-3 rounded-2xl p-4">
-          <Fingerprint className="mt-0.5 size-5 text-primary" />
-          <div className="min-w-48 flex-1">
-            <p className="text-sm font-bold">{words.enrollTitle}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">{words.enrollBody}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="soft" size="sm" onClick={() => setSettingsOpen(true)}>
-              {words.enrollCta}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label={words.dismiss}
-              onClick={() => setEnrollDismissed(true)}
-            >
-              <X className="size-4" />
-            </Button>
-          </div>
-        </div>
-      ) : null}
 
       <div className="grid min-h-0 flex-1 gap-3 sm:gap-4 lg:grid-cols-[1.15fr_1fr]">
         <section className="glass-transcript flex min-h-[20rem] flex-col p-3 sm:p-5 lg:min-h-0">
@@ -537,32 +506,91 @@ export function SessionWorkbench() {
 
       {/* Kept in the viewport on phones, where the panels scroll past the fold. */}
       <div
-        className="glass-bar sticky bottom-0 z-20 flex gap-2 px-3 py-2.5 sm:px-4"
+        className="glass-bar sticky bottom-0 z-20 flex flex-col gap-2 px-3 py-2.5 sm:px-4"
         style={{ marginBottom: "calc(env(safe-area-inset-bottom) * -1)", paddingBottom: "max(0.625rem, env(safe-area-inset-bottom))" }}
       >
-        {!active ? (
-          <Button className="flex-1" onClick={() => void startSession()}>
-            <Play className="size-4" />
-            {t("start")}
-          </Button>
-        ) : (
-          <>
-            <Button
-              variant="soft"
-              className="flex-1"
-              disabled={life === "preparing"}
-              onClick={togglePause}
-            >
-              {life === "paused" ? <Play className="size-4" /> : <Pause className="size-4" />}
-              {life === "paused" ? t("resume") : t("pause")}
+        {active && life !== "preparing" ? (
+          prefs.captureMode === "push" ? (
+            <>
+              <div className="flex gap-2">
+                {(["other", "user"] as const).map((who) => (
+                  <Button
+                    key={who}
+                    variant={transcriber.holding === who ? "default" : "soft"}
+                    className={cn("h-14 flex-1 touch-none select-none", transcriber.holding === who && "glow-sm")}
+                    disabled={life === "paused"}
+                    onPointerDown={(e) => {
+                      e.currentTarget.setPointerCapture(e.pointerId);
+                      navigator.vibrate?.(8);
+                      transcriber.beginTurn(who);
+                    }}
+                    onPointerUp={() => transcriber.endTurn()}
+                    onPointerCancel={() => transcriber.endTurn()}
+                    onContextMenu={(e) => e.preventDefault()}
+                  >
+                    {who === "other" ? <Users className="size-4" /> : <User className="size-4" />}
+                    {who === "other" ? t("holdOther") : t("holdMe")}
+                  </Button>
+                ))}
+              </div>
+              <p className="text-center text-[11px] text-muted-foreground">{t("holdHint")}</p>
+            </>
+          ) : (
+            <div className="flex gap-2">
+              <div className="flex flex-1 gap-1 rounded-full bg-muted/60 p-1">
+                {(["other", "user"] as const).map((who) => (
+                  <button
+                    key={who}
+                    type="button"
+                    onClick={() => {
+                      navigator.vibrate?.(6);
+                      setSpeaker(who);
+                    }}
+                    className={cn(
+                      "flex-1 rounded-full px-3 py-2 text-xs font-semibold transition",
+                      speaker === who
+                        ? "gradient-primary text-primary-foreground"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    {who === "other" ? t("other") : t("me")}
+                  </button>
+                ))}
+              </div>
+              <Button className="flex-1" onClick={askForIdeas} disabled={streaming}>
+                <Lightbulb className="size-4" />
+                {t("askIdeas")}
+              </Button>
+            </div>
+          )
+        ) : null}
+
+        <div className="flex gap-2">
+          {!active ? (
+            <Button className="flex-1" onClick={() => void startSession()}>
+              <Play className="size-4" />
+              {t("start")}
             </Button>
-            <Button variant="destructive" className="flex-1" onClick={() => setConfirmStop(true)}>
-              <Square className="size-4" />
-              {t("stop")}
-            </Button>
-          </>
-        )}
+          ) : (
+            <>
+              <Button
+                variant="soft"
+                className="flex-1"
+                disabled={life === "preparing"}
+                onClick={togglePause}
+              >
+                {life === "paused" ? <Play className="size-4" /> : <Pause className="size-4" />}
+                {life === "paused" ? t("resume") : t("pause")}
+              </Button>
+              <Button variant="destructive" className="flex-1" onClick={() => setConfirmStop(true)}>
+                <Square className="size-4" />
+                {t("stop")}
+              </Button>
+            </>
+          )}
+        </div>
       </div>
+
 
       <AlertDialog open={confirmStop} onOpenChange={setConfirmStop}>
         <AlertDialogContent>

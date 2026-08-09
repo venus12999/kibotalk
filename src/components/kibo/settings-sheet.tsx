@@ -1,10 +1,9 @@
-import { VoiceprintCard } from "@/components/kibo/voiceprint-card";
 import * as React from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { PillGroup } from "./pill-group";
 import { useKibo, langLabel, levelLabel } from "@/lib/kibo/store";
-import type { AudioSource, ConvLang, Level, Theme, UiLang } from "@/lib/kibo/types";
+import type { AudioSource, CaptureMode, ConvLang, Level, Theme, UiLang } from "@/lib/kibo/types";
 
 const translateCopy = {
   zh: { label: "翻译语言", hint: "把对方说的话翻译成这个语言显示" },
@@ -218,12 +217,25 @@ export function SettingsSheet({
               ))}
             </select>
           </Row>
-          <div className="flex flex-col gap-3 border-b border-border py-4">
-            <div>
-              <p className="text-sm font-semibold">{t("voiceprint")}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{t("voiceprintSavedLocal")}</p>
+          <div className="flex flex-col gap-2 border-b border-border py-4">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">{t("captureMode")}</p>
+              <p className="mt-0.5 text-xs text-foreground/70">{t("captureModeDescription")}</p>
             </div>
-            <VoiceprintCard locked={locked} />
+            <PillGroup<CaptureMode>
+              label=""
+              disabled={locked}
+              value={prefs.captureMode}
+              onChange={(v) => setPrefs({ captureMode: v })}
+              options={[
+                { value: "push", label: t("pushMode"), description: t("pushModeDescription") },
+                {
+                  value: "continuous",
+                  label: t("continuousMode"),
+                  description: t("continuousModeDescription"),
+                },
+              ]}
+            />
           </div>
 
 
