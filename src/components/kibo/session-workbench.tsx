@@ -226,7 +226,9 @@ export function SessionWorkbench() {
           setRounds((prev) => prev.filter((r) => r.id !== roundId));
           const message = err instanceof Error ? err.message : String(err);
           setAiStatus("error");
+          setAiErrorKind(classifyAiError(err));
           setAiError(message);
+
         });
 
 
