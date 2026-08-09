@@ -115,7 +115,8 @@ export async function transcribeWithVolc(
     },
   });
 
-  const ws = (upstream as unknown as { webSocket?: WebSocket }).webSocket;
+  const ws = (upstream as unknown as { webSocket?: WebSocket & { accept: () => void } })
+    .webSocket;
   if (!ws) {
     const detail = await upstream.text().catch(() => "");
     return new Response(detail.slice(0, 300) || "ASR handshake failed", {
