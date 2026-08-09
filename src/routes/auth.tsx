@@ -76,8 +76,7 @@ function AuthPage() {
         options: { emailRedirectTo: window.location.origin },
       });
       if (err) throw err;
-      setNotice(`A new verification code is on its way to ${email}.`);
-      setCode("");
+      setNotice(`A new confirmation link is on its way to ${email}.`);
       setCooldown(60);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -119,14 +118,14 @@ function AuthPage() {
           return;
         }
         if (!data.session) {
-          goVerify(`We sent a 6-digit verification code to ${email}.`);
+          goVerify(`We sent a confirmation link to ${email}. Open it to activate your account.`);
           return;
         }
       } else {
         const { error: err } = await supabase.auth.signInWithPassword({ email, password });
         if (err) {
           if (/not confirmed|confirm your email/i.test(err.message)) {
-            goVerify("Your email isn't verified yet. Enter the code we emailed you.");
+            goVerify("Your email isn't verified yet. Open the confirmation link we emailed you.");
             return;
           }
           throw err;
@@ -155,44 +154,26 @@ function AuthPage() {
           </div>
           <h2 className="mt-4 flex items-center gap-2 text-sm font-semibold">
             <MailCheck className="size-4 text-primary" />
-            Enter your verification code
+            Confirm your email
           </h2>
           <p className="mt-2 text-xs text-muted-foreground">
-            We emailed a 6-digit code to{" "}
-            <span className="font-medium text-foreground">{email}</span>. Codes expire after a
-            while — if yours no longer works, send a new one.
+            We sent a confirmation link to{" "}
+            <span className="font-medium text-foreground">{email}</span>. Click it and you'll be
+            signed in automatically. Links expire after a while — if yours no longer works, send a
+            new one.
           </p>
 
-          <form className="mt-4 space-y-3" onSubmit={verifyCode}>
-            <div className="space-y-1.5">
-              <Label htmlFor="code">Verification code</Label>
-              <Input
-                id="code"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                placeholder="123456"
-                maxLength={6}
-                required
-                className="text-center text-lg tracking-[0.5em]"
-                value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              />
-            </div>
+          {error ? (
+            <p className="mt-3 rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              {error}
+            </p>
+          ) : null}
+          {notice ? (
+            <p className="mt-3 rounded-xl bg-primary/10 px-3 py-2 text-xs text-foreground">
+              {notice}
+            </p>
+          ) : null}
 
-            {error ? (
-              <p className="rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
-                {error}
-              </p>
-            ) : null}
-            {notice ? (
-              <p className="rounded-xl bg-primary/10 px-3 py-2 text-xs text-foreground">{notice}</p>
-            ) : null}
-
-            <Button type="submit" className="w-full" disabled={busy || code.length !== 6}>
-              {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-              Verify and continue
-            </Button>
-          </form>
 
           <Button
             variant="soft"
