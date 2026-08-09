@@ -329,7 +329,11 @@ export function SessionWorkbench() {
 
   React.useEffect(() => {
     const el = scrollRef.current?.querySelector("[data-radix-scroll-area-viewport]");
-    if (el) el.scrollTop = el.scrollHeight;
+    if (!(el instanceof HTMLElement)) return;
+    // Follow the conversation only while the user is already at the bottom, so
+    // scrolling up to re-read an earlier line is never yanked back down.
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    if (atBottom) el.scrollTop = el.scrollHeight;
   }, [turns.length, life, interim]);
 
   const startSession = async () => {
