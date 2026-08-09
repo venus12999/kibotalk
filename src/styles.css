@@ -306,6 +306,53 @@
   box-shadow: var(--shadow-glow-lg);
 }
 
+/*
+ * Suggestion notes: three depth steps of the same yellow so adjacent ideas are
+ * never mistaken for one another, each kept translucent + blurred.
+ */
+@utility note-glass-1 {
+  background-image: linear-gradient(
+      160deg,
+      color-mix(in oklab, var(--primary-soft) 82%, transparent) 0%,
+      color-mix(in oklab, var(--primary-soft-strong) 70%, transparent) 100%
+    ),
+    var(--gradient-sheen);
+  color: var(--foreground);
+  border: 1px solid var(--glass-border-vivid);
+  border-radius: var(--glass-radius-sm);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-filter-md);
+}
+
+@utility note-glass-2 {
+  background-image: linear-gradient(
+      160deg,
+      color-mix(in oklab, var(--primary-soft-strong) 85%, transparent) 0%,
+      color-mix(in oklab, var(--primary) 55%, transparent) 100%
+    ),
+    var(--gradient-sheen);
+  color: var(--foreground);
+  border: 1px solid var(--glass-border-vivid);
+  border-radius: var(--glass-radius-sm);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-filter-md);
+}
+
+@utility note-glass-3 {
+  background-image: linear-gradient(
+      160deg,
+      color-mix(in oklab, var(--primary) 72%, transparent) 0%,
+      color-mix(in oklab, var(--primary) 92%, transparent) 100%
+    ),
+    var(--gradient-sheen);
+  color: var(--primary-foreground);
+  border: 1px solid var(--glass-border-vivid);
+  border-radius: var(--glass-radius-sm);
+  box-shadow: var(--shadow-glow-lg);
+  backdrop-filter: var(--glass-filter-md);
+}
+
+
 
 
 @keyframes kibo-bar {
