@@ -4,6 +4,29 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { Candidate, Round } from "@/lib/kibo/types";
 
+/** Reply text with per-span readings rendered as ruby annotations. */
+const RubyText = React.memo(function RubyText({ candidate }: { candidate: Candidate }) {
+  if (!candidate.segments || candidate.segments.length === 0) {
+    return <>{candidate.text}</>;
+  }
+  return (
+    <>
+      {candidate.segments.map((seg, i) =>
+        seg.r ? (
+          <ruby key={i} className={seg.role === "particle" ? "opacity-80" : undefined}>
+            {seg.t}
+            <rt className="text-[0.6em] font-medium opacity-70">{seg.r}</rt>
+          </ruby>
+        ) : (
+          <span key={i} className={seg.role === "particle" ? "opacity-80" : undefined}>
+            {seg.t}
+          </span>
+        ),
+      )}
+    </>
+  );
+});
+
 /** One sticky note. Memoized on candidate identity so untouched notes never re-render. */
 const NoteCard = React.memo(function NoteCard({
   candidate,
@@ -14,8 +37,8 @@ const NoteCard = React.memo(function NoteCard({
 }) {
   return (
     <li className="sticky-note p-4">
-      <p className="text-base leading-relaxed font-semibold">
-        {candidate.text}
+      <p className="text-base leading-[2.1] font-semibold">
+        <RubyText candidate={candidate} />
         {caret ? (
           <span className="ml-0.5 inline-block h-4 w-0.5 translate-y-0.5 animate-pulse bg-current align-middle" />
         ) : null}
@@ -24,6 +47,7 @@ const NoteCard = React.memo(function NoteCard({
     </li>
   );
 });
+
 
 /** Past rounds are static; keep them out of the streaming render path. */
 const PreviousRounds = React.memo(function PreviousRounds({
