@@ -438,7 +438,7 @@ export const dict = {
     "errorPrefix": "Error:",
     "sessionSummary": "Session summary",
     "sessionDetails": "Session details",
-    "voiceprintRequired": "Enroll your voiceprint in Settings before starting a session.",
+    
     "sessionUnavailable": "Speech is unavailable. Check permissions or audio settings and try again.",
     "selectNetworkNode": "Choose a network node for this session",
     "networkNodeDescription": "Latency is the measured round trip from this device to each node. The node will not change during the session.",
