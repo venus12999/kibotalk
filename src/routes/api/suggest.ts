@@ -133,9 +133,24 @@ export const Route = createFileRoute("/api/suggest")({
           });
         }
 
+        // Non-streaming clients get the finished answer in one plain-text body.
+        if (!wantsStream) {
+          const json = (await upstream.json().catch(() => null)) as {
+            choices?: { message?: { content?: string } }[];
+          } | null;
+          const content = json?.choices?.[0]?.message?.content ?? "";
+          return new Response(content, {
+            headers: {
+              "Content-Type": "text/plain; charset=utf-8",
+              "Cache-Control": "no-store",
+            },
+          });
+        }
+
         // Re-emit only the text deltas as SSE so the client can render token by token.
         const reader = upstream.body.getReader();
         const decoder = new TextDecoder();
+
         const encoder = new TextEncoder();
         let buffer = "";
 
