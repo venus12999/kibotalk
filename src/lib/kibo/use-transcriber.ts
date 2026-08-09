@@ -405,6 +405,7 @@ export function useTranscriber({
         partialAt: 0,
         partialBusy: false,
         segment: 0,
+        rms: 0,
       };
 
       node.onaudioprocess = (event) => {
@@ -412,6 +413,7 @@ export function useTranscriber({
         const input = new Float32Array(event.inputBuffer.getChannelData(0));
         const chunkMs = (input.length / ctx.sampleRate) * 1000;
         const power = rms(input);
+        pipe.rms = power;
         if (speaker === "user" || pipesRef.current.length === 1) {
           setLevel(Math.min(1, power * 12));
         }
@@ -430,10 +432,19 @@ export function useTranscriber({
           // Continuous mode still segments on a pause so text keeps flowing.
           const endedByPause = pipe.silenceMs >= SILENCE_MS && pipe.speechMs >= MIN_SPEECH_MS;
           if (endedByPause || totalMs >= MAX_SEGMENT_MS) {
-            flushPipe(pipe);
+            flushPipe(pipe, MIN_SPEECH_MS, endedByPause ? "pause" : "max");
             return;
           }
           if (pipe.silenceMs >= SILENCE_MS * 3 && pipe.speechMs < MIN_SPEECH_MS) {
+            if (pipe.speechMs > 0) {
+              recordSegment({
+                speaker: speakerOf(pipe),
+                speechMs: pipe.speechMs,
+                silenceMs: pipe.silenceMs,
+                reason: "discarded",
+                sent: false,
+              });
+            }
             pipe.chunks = [];
             pipe.speechMs = 0;
             pipe.silenceMs = 0;
@@ -442,9 +453,10 @@ export function useTranscriber({
           }
         } else if (totalMs >= MAX_SEGMENT_MS) {
           // A very long hold is split so transcription stays responsive.
-          flushPipe(pipe, MIN_PUSH_SPEECH_MS);
+          flushPipe(pipe, MIN_PUSH_SPEECH_MS, "max");
           return;
         }
+
 
         // Live partials: re-transcribe the growing buffer on a slow cadence so
         // the bubble shows real words instead of a placeholder.
