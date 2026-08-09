@@ -406,7 +406,7 @@ export const dict = {
     "activeSessionRecovered": "The previous session was interrupted and restored as paused.",
     "selectLanguage": "Choose conversation language",
     "onboardingDescription": "Confirm the language both people will use and your current level.",
-    "continueVoiceprint": "Confirm and continue",
+    "continueSetup": "Confirm and continue",
     "languageJapanese": "Japanese",
     "languageEnglish": "English",
     "languageChinese": "Chinese",
