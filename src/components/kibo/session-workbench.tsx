@@ -1,4 +1,10 @@
 import * as React from "react";
+import {
+  classifyAiError,
+  describeAiError,
+  type AiErrorKind,
+} from "@/lib/kibo/ai-error";
+
 import { HelpCircle, History, Lightbulb, Mic, Pause, Play, Settings, Square, User, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
