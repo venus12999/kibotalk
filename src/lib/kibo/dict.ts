@@ -72,6 +72,8 @@ export const dict = {
     "holdMe": "按住：我说",
     "holdOther": "按住：对方说",
     "holdHint": "对方说话时按住，松手即结束这句话。",
+    "holdingMe": "录音中·我",
+    "holdingOther": "录音中·对方",
     "askIdeas": "给我思路",
     "permissions": "权限",
     "microphonePermission": "麦克风权限",
