@@ -209,6 +209,8 @@ export const dict = {
     "holdMe": "長押し：自分",
     "holdOther": "長押し：相手",
     "holdHint": "話している間は長押し、離すと1文が確定します。",
+    "holdingMe": "録音中・自分",
+    "holdingOther": "録音中・相手",
     "askIdeas": "候補を出す",
     "permissions": "権限",
     "microphonePermission": "マイク権限",
