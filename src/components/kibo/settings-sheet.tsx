@@ -178,15 +178,15 @@ export function SettingsSheet({
           </Row>
           <Row title={t("microphoneDevice")}>
             <select
-              className="h-9 min-w-48 rounded-md border border-border bg-background px-2 text-sm"
+              className="h-9 w-full min-w-0 rounded-md border border-border bg-background px-2 text-sm sm:w-auto sm:min-w-48"
               disabled={locked}
               value={prefs.micDeviceId}
               onChange={(e) => setPrefs({ micDeviceId: e.target.value })}
             >
               <option value="">{t("systemDefault")}</option>
-              {mics.map((d, i) => (
+              {mics.map((d) => (
                 <option key={d.deviceId} value={d.deviceId}>
-                  {d.label || `${t("microphone")} ${i + 1}`}
+                  {d.label}
                 </option>
               ))}
             </select>
@@ -194,6 +194,7 @@ export function SettingsSheet({
           <Row title={t("voiceprint")} description={t("voiceprintSavedLocal")}>
             <VoiceprintCard locked={locked} />
           </Row>
+
 
           <p className="pt-6 text-xs font-bold tracking-wide text-muted-foreground uppercase">
             {t("permissions")}
