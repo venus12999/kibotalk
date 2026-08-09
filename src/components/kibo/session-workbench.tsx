@@ -79,6 +79,10 @@ export function SessionWorkbench() {
   const [turns, setTurns] = React.useState<Turn[]>([]);
   const [rounds, setRounds] = React.useState<Round[]>([]);
   const [streaming, setStreaming] = React.useState(false);
+  const [aiStatus, setAiStatus] = React.useState<
+    "idle" | "connecting" | "streaming" | "done" | "error"
+  >("idle");
+  const [aiError, setAiError] = React.useState("");
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [historyOpen, setHistoryOpen] = React.useState(false);
   const [confirmStop, setConfirmStop] = React.useState(false);
@@ -106,6 +110,8 @@ export function SessionWorkbench() {
     abortRef.current.abort();
     abortRef.current = null;
     setStreaming(false);
+    setAiStatus("idle");
+    setAiError("");
     // A round that never produced text would linger as an empty card.
     setRounds((prev) => (prev[0] && prev[0].candidates.length === 0 ? prev.slice(1) : prev));
   }, []);
@@ -119,32 +125,12 @@ export function SessionWorkbench() {
     [cancelSuggestions],
   );
 
-  const handleFinal = React.useCallback(
-    (text: string, speaker: "user" | "other") => {
-      const turn = makeTurn(speaker, text);
-      turnsRef.current = [...turnsRef.current, turn];
-      setTurns(turnsRef.current);
+  const lastPromptRef = React.useRef("");
 
-      // The user answered on their own — drop whatever was still generating.
-      if (speaker === "user") {
-        cancelSuggestions();
-        return;
-      }
-
-      // Show the line in the user's chosen translation language.
-      const { conversationLang, translateLang } = prefsRef.current;
-      if (translateLang !== conversationLang) {
-        void translateLine({ data: { text, from: conversationLang, to: translateLang } })
-          .then(({ translation }) => {
-            if (!translation) return;
-            turnsRef.current = turnsRef.current.map((x) =>
-              x.id === turn.id ? { ...x, translation } : x,
-            );
-            setTurns(turnsRef.current);
-          })
-          .catch(() => undefined);
-      }
-
+  /** Kick off a suggestion stream for one incoming line, tracking its status. */
+  const runSuggestions = React.useCallback(
+    (text: string) => {
+      lastPromptRef.current = text;
       const req = ++reqRef.current;
       const roundId = uid();
       // A new turn makes the in-flight suggestion obsolete — cancel it.
@@ -152,11 +138,14 @@ export function SessionWorkbench() {
       const controller = new AbortController();
       abortRef.current = controller;
       setStreaming(true);
+      setAiError("");
+      setAiStatus("connecting");
       // Insert an empty round immediately, then fill it in as tokens arrive.
       setRounds((prev) => [{ id: roundId, prompt: text, candidates: [] }, ...prev]);
 
       const onUpdate = (candidates: Candidate[]) => {
         if (req !== reqRef.current) return;
+        setAiStatus((s) => (s === "connecting" ? "streaming" : s));
         setRounds((prev) => {
           // The streaming round is always the head; patch it in place.
           if (prev[0]?.id !== roundId) return prev;
@@ -187,6 +176,7 @@ export function SessionWorkbench() {
         .then((candidates) => {
           if (req !== reqRef.current) return;
           setStreaming(false);
+          setAiStatus(candidates.length > 0 ? "done" : "idle");
           setRounds((prev) =>
             candidates.length > 0
               ? prev.map((r) => (r.id === roundId ? { ...r, candidates } : r))
@@ -197,11 +187,49 @@ export function SessionWorkbench() {
           if (req !== reqRef.current || controller.signal.aborted) return;
           setStreaming(false);
           setRounds((prev) => prev.filter((r) => r.id !== roundId));
-          setError(`${words.failed}${err instanceof Error ? err.message : String(err)}`);
+          const message = err instanceof Error ? err.message : String(err);
+          setAiStatus("error");
+          setAiError(message);
         });
     },
-    [words, cancelSuggestions],
+    [],
   );
+
+  const retrySuggestions = React.useCallback(() => {
+    if (lastPromptRef.current) runSuggestions(lastPromptRef.current);
+  }, [runSuggestions]);
+
+  const handleFinal = React.useCallback(
+    (text: string, speaker: "user" | "other") => {
+      const turn = makeTurn(speaker, text);
+      turnsRef.current = [...turnsRef.current, turn];
+      setTurns(turnsRef.current);
+
+      // The user answered on their own — drop whatever was still generating.
+      if (speaker === "user") {
+        cancelSuggestions();
+        return;
+      }
+
+      // Show the line in the user's chosen translation language.
+      const { conversationLang, translateLang } = prefsRef.current;
+      if (translateLang !== conversationLang) {
+        void translateLine({ data: { text, from: conversationLang, to: translateLang } })
+          .then(({ translation }) => {
+            if (!translation) return;
+            turnsRef.current = turnsRef.current.map((x) =>
+              x.id === turn.id ? { ...x, translation } : x,
+            );
+            setTurns(turnsRef.current);
+          })
+          .catch(() => undefined);
+      }
+
+      runSuggestions(text);
+    },
+    [cancelSuggestions, runSuggestions],
+  );
+
 
 
 
@@ -288,6 +316,8 @@ export function SessionWorkbench() {
     }
     setLife("stopped");
     setStreaming(false);
+    setAiStatus("idle");
+    setAiError("");
     setInterim({ user: "", other: "" });
     setConfirmStop(false);
   };
@@ -466,8 +496,17 @@ export function SessionWorkbench() {
             className="mt-3 min-h-0 flex-1"
             rounds={rounds}
             streaming={streaming}
+            status={aiStatus}
+            errorMessage={aiError}
+            onRetry={retrySuggestions}
+            statusLabels={{
+              connecting: t("aiConnecting"),
+              streaming: t("aiStreaming"),
+              done: t("aiDone"),
+              failed: t("aiFailed"),
+              retry: t("aiRetry"),
+            }}
             emptyHint={t("emptySuggestions")}
-            generatingLabel={t("generatingSuggestions")}
             previousRoundLabel={t("previousRound")}
           />
         </section>

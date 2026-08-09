@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Sparkles, Clock } from "lucide-react";
+import { Sparkles, Clock, AlertCircle, CheckCircle2, Loader2, RotateCw } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { Candidate, Round, Segment } from "@/lib/kibo/types";
@@ -114,25 +114,117 @@ const PreviousRounds = React.memo(function PreviousRounds({
   );
 });
 
+export type AiStatus = "idle" | "connecting" | "streaming" | "done" | "error";
+
+/** A persistent banner so the user always knows what the model is doing. */
+const StatusBar = React.memo(function StatusBar({
+  status,
+  errorMessage,
+  labels,
+  onRetry,
+}: {
+  status: AiStatus;
+  errorMessage?: string | undefined;
+  labels: { connecting: string; streaming: string; done: string; failed: string; retry: string };
+  onRetry?: (() => void) | undefined;
+}) {
+  if (status === "idle") return null;
+
+  const tone =
+    status === "error"
+      ? "border-destructive/30 bg-destructive/10 text-destructive"
+      : status === "done"
+        ? "border-border bg-muted/40 text-muted-foreground"
+        : "border-primary/30 bg-primary/10 text-foreground";
+
+  const icon =
+    status === "error" ? (
+      <AlertCircle className="size-4 shrink-0" />
+    ) : status === "done" ? (
+      <CheckCircle2 className="size-4 shrink-0 text-primary" />
+    ) : status === "connecting" ? (
+      <Loader2 className="size-4 shrink-0 animate-spin text-primary" />
+    ) : (
+      <Sparkles className="size-4 shrink-0 animate-pulse text-primary" />
+    );
+
+  const label =
+    status === "error"
+      ? labels.failed
+      : status === "done"
+        ? labels.done
+        : status === "connecting"
+          ? labels.connecting
+          : labels.streaming;
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className={cn(
+        "flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold",
+        tone,
+      )}
+    >
+      {icon}
+      <span className="min-w-0 flex-1 truncate">
+        {label}
+        {status === "error" && errorMessage ? (
+          <span className="ml-1 font-normal opacity-80">{errorMessage}</span>
+        ) : null}
+      </span>
+      {status === "streaming" ? (
+        <span className="flex gap-0.5" aria-hidden>
+          <i className="size-1.5 animate-bounce rounded-full bg-primary [animation-delay:0ms]" />
+          <i className="size-1.5 animate-bounce rounded-full bg-primary [animation-delay:120ms]" />
+          <i className="size-1.5 animate-bounce rounded-full bg-primary [animation-delay:240ms]" />
+        </span>
+      ) : null}
+      {status === "error" && onRetry ? (
+        <button
+          type="button"
+          onClick={onRetry}
+          className="flex items-center gap-1 rounded-md border border-destructive/30 px-2 py-1 text-[11px] font-bold hover:bg-destructive/10"
+        >
+          <RotateCw className="size-3" />
+          {labels.retry}
+        </button>
+      ) : null}
+    </div>
+  );
+});
+
 export function SuggestionStage({
   rounds,
   streaming,
+  status = "idle",
+  errorMessage,
+  statusLabels,
+  onRetry,
   emptyHint,
-  generatingLabel,
   previousRoundLabel,
   className,
 }: {
   rounds: Round[];
   streaming: boolean;
+  status?: AiStatus;
+  errorMessage?: string | undefined;
+  statusLabels: {
+    connecting: string;
+    streaming: string;
+    done: string;
+    failed: string;
+    retry: string;
+  };
+  onRetry?: (() => void) | undefined;
   emptyHint: string;
-  generatingLabel: string;
   previousRoundLabel: string;
   className?: string;
 }) {
   const current = rounds[0];
   const previous = React.useMemo(() => rounds.slice(1, 3), [rounds]);
 
-  if (!current && !streaming) {
+  if (!current && status === "idle") {
     return (
       <div
         className={cn(
@@ -151,12 +243,12 @@ export function SuggestionStage({
     <ScrollArea className={className}>
       {/* Isolate streaming text updates from the rest of the page layout. */}
       <div className="space-y-4 pr-3 [contain:content]">
-        {streaming ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Sparkles className="size-4 animate-pulse text-primary" />
-            {generatingLabel}
-          </div>
-        ) : null}
+        <StatusBar
+          status={status}
+          errorMessage={errorMessage}
+          labels={statusLabels}
+          onRetry={onRetry}
+        />
 
         {current ? (
           <ol className="space-y-3">
