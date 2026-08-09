@@ -59,6 +59,7 @@ export const suggestReplies = createServerFn({ method: "POST" })
     const { getAiModels } = await import("./model-config.server");
     const content = await gateway({
       model: (await getAiModels()).suggest,
+      thinking: { type: "disabled" },
       messages: [
         {
           role: "system",
@@ -137,6 +138,7 @@ export const translateLine = createServerFn({ method: "POST" })
     const { getAiModels } = await import("./model-config.server");
     const translation = await gateway({
       model: (await getAiModels()).suggest,
+      thinking: { type: "disabled" },
       messages: [
         {
           role: "system",

@@ -50,6 +50,9 @@ export const Route = createFileRoute("/api/suggest")({
           body: JSON.stringify({
             model: aiModels.suggest,
             stream: true,
+            // DeepSeek v4 flash reasons before answering by default, which
+            // delays the first visible token — the coach must be instant.
+            thinking: { type: "disabled" },
             temperature: 0.7,
             max_tokens: 1200,
             messages: [
