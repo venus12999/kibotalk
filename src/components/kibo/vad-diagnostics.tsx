@@ -4,7 +4,11 @@ import { cn } from "@/lib/utils";
 import type { CaptureMode, UiLang } from "@/lib/kibo/types";
 import type { Diagnostics } from "@/lib/kibo/use-transcriber";
 
-const copy = {
+type Strings = {
+  [K in Exclude<keyof typeof copyRaw.en, "reason">]: string;
+} & { reason: Record<string, string> };
+
+const copyRaw = {
   zh: {
     title: "断句诊断",
     subtitle: "实时查看静音判定与采样状态",
@@ -106,9 +110,11 @@ const copy = {
   },
 } as const;
 
+const copy = copyRaw as unknown as Record<UiLang, Strings>;
+
 const ms = (v: number) => `${(v / 1000).toFixed(1)}s`;
 
-function buildTips(d: Diagnostics, mode: CaptureMode, w: (typeof copy)["en"]) {
+function buildTips(d: Diagnostics, mode: CaptureMode, w: Strings) {
   const tips: string[] = [];
   const done = d.segments;
   const short = done.filter((s) => s.sent && s.speechMs < d.minSpeechMs * 2.5).length;
