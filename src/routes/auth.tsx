@@ -31,7 +31,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = React.useState<"signin" | "signup" | "verify">("signin");
+  const [mode, setMode] = React.useState<"signin" | "signup" | "verify" | "forgot">("signin");
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [busy, setBusy] = React.useState(false);
