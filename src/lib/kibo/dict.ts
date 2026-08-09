@@ -134,7 +134,7 @@ export const dict = {
     "errorPrefix": "错误：",
     "sessionSummary": "会话总结",
     "sessionDetails": "会话详情",
-    "voiceprintRequired": "请先在设置中录入声纹，再开始会话。",
+    
     "sessionUnavailable": "语音暂时不可用，请检查权限或音频设置后重试。",
     "selectNetworkNode": "选择本次会话的网络节点",
     "networkNodeDescription": "以下延迟为你的设备到节点的实测往返时间。选择后，本次会话中不会切换节点。",
