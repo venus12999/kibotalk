@@ -73,7 +73,7 @@ function AuthPage() {
       const { error: err } = await supabase.auth.resend({
         type: "signup",
         email,
-        options: { emailRedirectTo: window.location.origin },
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
       });
       if (err) throw err;
       setNotice(`A new confirmation link is on its way to ${email}.`);
@@ -101,7 +101,7 @@ function AuthPage() {
         const { data, error: err } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin },
+          options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
         });
         if (err) {
           if (/already registered|already exists|User already/i.test(err.message)) {
