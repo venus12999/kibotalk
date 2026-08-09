@@ -181,7 +181,8 @@ function AuthPage() {
             disabled={busy || cooldown > 0}
             onClick={() => void resend()}
           >
-            {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
+            {busy ? <Loader2 className="size-4 animate-spin" /> : null}
+            {cooldown > 0 ? `Resend link in ${cooldown}s` : "Resend confirmation email"}
           </Button>
 
           <button
