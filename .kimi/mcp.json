@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "kibotalk": {
+      "type": "http",
+      "url": "https://kibotalk.lovable.app/mcp",
+      "description": "KiboTalk conversation sessions and emotion-intelligence library (OAuth; sign in on first use)."
+    }
+  }
+}
