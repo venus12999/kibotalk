@@ -148,7 +148,19 @@ export function KiboProvider({ children }: { children: React.ReactNode }) {
       history,
       addSession: (s) => {
         setHistory((h) => [s, ...h].slice(0, 50));
-        if (userId) void saveCloudSession(userId, s);
+        if (!userId) return;
+        // Keep the local row's id in sync with the cloud row, otherwise a later
+        // delete removes it locally but leaves the cloud copy behind.
+        void (async () => {
+          try {
+            const cloudId = await saveCloudSession(userId, s);
+            if (cloudId && cloudId !== s.id) {
+              setHistory((h) => h.map((x) => (x.id === s.id ? { ...x, id: cloudId } : x)));
+            }
+          } catch {
+            /* ignore */
+          }
+        })();
       },
       deleteSession: (id) => {
         setHistory((h) => h.filter((s) => s.id !== id));
