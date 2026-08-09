@@ -342,6 +342,20 @@ export function SessionWorkbench() {
 
 
   const active = life === "running" || life === "paused" || life === "preparing";
+
+  // The floating phone dock is position:fixed, so the scroll container needs a
+  // spacer that always matches its real height (it grows with the hold row).
+  const dockRef = React.useRef<HTMLDivElement | null>(null);
+  const [dockHeight, setDockHeight] = React.useState(140);
+  React.useEffect(() => {
+    const el = dockRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(([entry]) => setDockHeight(entry.contentRect.height));
+    ro.observe(el);
+    setDockHeight(el.getBoundingClientRect().height);
+    return () => ro.disconnect();
+  }, []);
+
   const statusLabel =
     life === "running"
       ? t("listening")
