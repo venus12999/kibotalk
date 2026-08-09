@@ -308,10 +308,23 @@ export function SuggestionStage({
   canRetry?: boolean;
   emptyHint: string;
   previousRoundLabel: string;
+  detailLabels?: { show: string; hide: string; alt: string; points: string };
   className?: string;
 }) {
   const current = rounds[0];
   const previous = React.useMemo(() => rounds.slice(1, 3), [rounds]);
+  // Accordion: only one note expanded at a time, so the panel height stays put.
+  const [openIndex, setOpenIndex] = React.useState<number | null>(null);
+  const roundId = current?.id;
+  React.useEffect(() => {
+    setOpenIndex(null);
+  }, [roundId]);
+  const labels = detailLabels ?? {
+    show: "Show details",
+    hide: "Hide",
+    alt: "Alternative phrasing",
+    points: "Key words",
+  };
 
   if (!current && status === "idle") {
     return (
@@ -344,10 +357,19 @@ export function SuggestionStage({
         {current ? (
           <ol className="space-y-3">
             {current.candidates.map((c, i) => (
-              <NoteCard key={i} candidate={c} caret={streaming && i === last} index={i} />
+              <NoteCard
+                key={i}
+                candidate={c}
+                caret={streaming && i === last}
+                index={i}
+                expanded={openIndex === i}
+                onToggle={() => setOpenIndex((prev) => (prev === i ? null : i))}
+                labels={labels}
+              />
             ))}
           </ol>
         ) : null}
+
 
         <PreviousRounds rounds={previous} label={previousRoundLabel} />
       </div>
