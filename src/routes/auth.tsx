@@ -222,15 +222,20 @@ function AuthPage() {
           ) : null}
 
 
+          <Button className="mt-3 w-full" disabled={busy} onClick={() => void checkNow()}>
+            {busy ? <Loader2 className="size-4 animate-spin" /> : null}
+            I've confirmed — continue
+          </Button>
+
           <Button
             variant="soft"
-            className="mt-3 w-full"
+            className="mt-2 w-full"
             disabled={busy || cooldown > 0}
             onClick={() => void resend()}
           >
-            {busy ? <Loader2 className="size-4 animate-spin" /> : null}
             {cooldown > 0 ? `Resend link in ${cooldown}s` : "Resend confirmation email"}
           </Button>
+
 
           <button
             type="button"
