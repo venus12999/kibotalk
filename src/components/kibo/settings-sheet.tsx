@@ -49,8 +49,22 @@ export function SettingsSheet({
 
   const refreshDevices = React.useCallback(async () => {
     const all = await navigator.mediaDevices?.enumerateDevices().catch(() => []);
-    setMics((all ?? []).filter((d) => d.kind === "audioinput"));
+    const inputs = (all ?? []).filter((d) => d.kind === "audioinput");
+    // Before permission is granted browsers expose placeholder entries with empty
+    // labels (and often several per physical mic). Showing them produced the
+    // bogus "Microphone 1/2/3" list, so keep only real, de-duplicated devices.
+    const seen = new Set<string>();
+    setMics(
+      inputs.filter((d) => {
+        if (!d.label || d.deviceId === "default" || d.deviceId === "communications") return false;
+        const key = d.groupId || d.label;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      }),
+    );
   }, []);
+
 
   React.useEffect(() => {
     if (!open) return;
@@ -164,22 +178,28 @@ export function SettingsSheet({
           </Row>
           <Row title={t("microphoneDevice")}>
             <select
-              className="h-9 min-w-48 rounded-md border border-border bg-background px-2 text-sm"
+              className="h-9 w-full min-w-0 rounded-md border border-border bg-background px-2 text-sm sm:w-auto sm:min-w-48"
               disabled={locked}
               value={prefs.micDeviceId}
               onChange={(e) => setPrefs({ micDeviceId: e.target.value })}
             >
               <option value="">{t("systemDefault")}</option>
-              {mics.map((d, i) => (
+              {mics.map((d) => (
                 <option key={d.deviceId} value={d.deviceId}>
-                  {d.label || `${t("microphone")} ${i + 1}`}
+                  {d.label}
                 </option>
               ))}
             </select>
           </Row>
-          <Row title={t("voiceprint")} description={t("voiceprintSavedLocal")}>
+          <div className="flex flex-col gap-3 border-b border-border py-4">
+            <div>
+              <p className="text-sm font-semibold">{t("voiceprint")}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t("voiceprintSavedLocal")}</p>
+            </div>
             <VoiceprintCard locked={locked} />
-          </Row>
+          </div>
+
+
 
           <p className="pt-6 text-xs font-bold tracking-wide text-muted-foreground uppercase">
             {t("permissions")}

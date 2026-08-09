@@ -274,21 +274,29 @@ export function SessionWorkbench() {
             : t("currentSession");
 
   return (
-    <div className="mx-auto flex h-dvh max-w-6xl flex-col gap-4 p-4 sm:p-6">
-      <header className="glass-bar flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-        <div className="flex items-center gap-3">
-          <span className="gradient-primary glow-sm flex size-9 items-center justify-center rounded-full text-primary-foreground">
+    <div
+      className="mx-auto flex min-h-dvh max-w-6xl flex-col gap-3 p-3 sm:gap-4 sm:p-6 lg:h-dvh"
+      style={{
+        paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
+        paddingTop: "max(0.75rem, env(safe-area-inset-top))",
+      }}
+    >
+      <header className="glass-bar grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <span className="gradient-primary glow-sm flex size-9 shrink-0 items-center justify-center rounded-full text-primary-foreground">
             <Mic className="size-4" />
           </span>
-          <div>
-            <h1 className="text-base leading-tight font-bold tracking-tight">{t("appName")}</h1>
-            <p className="text-xs text-muted-foreground">
+          <div className="min-w-0">
+            <h1 className="truncate text-base leading-tight font-bold tracking-tight">
+              {t("appName")}
+            </h1>
+            <p className="truncate text-xs text-muted-foreground">
               {langLabel(prefs.conversationLang, prefs.uiLang)} ·{" "}
               {levelLabel(prefs.level, prefs.uiLang)} · {t(sourceKey(prefs.audioSource))}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           <UiLanguageMenu />
           <AccountMenu />
 
@@ -305,6 +313,7 @@ export function SessionWorkbench() {
           </Button>
         </div>
       </header>
+
 
       {user && !voiceprintReady && !enrollDismissed ? (
         <div className="glass-quiet flex flex-wrap items-start gap-3 rounded-2xl p-4">
@@ -329,8 +338,9 @@ export function SessionWorkbench() {
         </div>
       ) : null}
 
-      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[1.15fr_1fr]">
-        <section className="glass-transcript flex min-h-0 flex-col p-4 sm:p-5">
+      <div className="grid min-h-0 flex-1 gap-3 sm:gap-4 lg:grid-cols-[1.15fr_1fr]">
+        <section className="glass-transcript flex min-h-[20rem] flex-col p-3 sm:p-5 lg:min-h-0">
+
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold">{t("conversation")}</h2>
             <span
@@ -436,7 +446,7 @@ export function SessionWorkbench() {
 
         </section>
 
-        <section className="paper-sheet flex min-h-0 flex-col p-4 sm:p-5">
+        <section className="paper-sheet flex min-h-[18rem] flex-col p-3 sm:p-5 lg:min-h-0">
           <h2 className="text-sm font-bold">{t("suggestions")}</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">{t("aiSuggestions")}</p>
           <SuggestionStage

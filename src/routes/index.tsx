@@ -4,6 +4,9 @@ import { KiboProvider, useKibo } from "@/lib/kibo/store";
 import { Onboarding } from "@/components/kibo/onboarding";
 import { SessionWorkbench } from "@/components/kibo/session-workbench";
 import { AppBackground } from "@/components/kibo/app-background";
+import { VoiceprintStep } from "@/components/kibo/voiceprint-step";
+import { loadVoiceprint } from "@/lib/kibo/voiceprint";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -27,7 +30,7 @@ export const Route = createFileRoute("/")({
   component: Page,
 });
 
-type Screen = "onboarding" | "session";
+type Screen = "onboarding" | "voiceprint" | "session";
 
 function App() {
   const { prefs, hydrated } = useKibo();
@@ -35,7 +38,8 @@ function App() {
 
   React.useEffect(() => {
     if (!hydrated || screen) return;
-    setScreen(prefs.onboarded ? "session" : "onboarding");
+    if (!prefs.onboarded) setScreen("onboarding");
+    else setScreen(loadVoiceprint() === null ? "voiceprint" : "session");
   }, [hydrated, prefs.onboarded, screen]);
 
   if (!hydrated || !screen) {
@@ -59,11 +63,16 @@ function App() {
     <>
       <AppBackground />
       <main className="flex min-h-dvh items-center justify-center p-4">
-        <Onboarding onContinue={() => setScreen("session")} />
+        {screen === "onboarding" ? (
+          <Onboarding onContinue={() => setScreen("voiceprint")} />
+        ) : (
+          <VoiceprintStep onContinue={() => setScreen("session")} />
+        )}
       </main>
     </>
   );
 }
+
 
 function Page() {
   return (
