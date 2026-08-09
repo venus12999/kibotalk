@@ -36,10 +36,6 @@ const copy = {
     screenSkipped: "已跳过系统音频（未选择共享），本次只采集麦克风。想采集线上通话声音时，请在设置里选择“系统音频”并在弹窗中勾选“同时分享音频”。",
     failed: "语音转写失败：",
     live: "正在听写…",
-    enrollTitle: "先录入你的声纹",
-    enrollBody: "录入后系统才能在对话中分清哪句是你说的。只需 6 秒，数据只保存在本机。",
-    enrollCta: "去录入",
-    dismiss: "稍后再说",
   },
   ja: {
     micDenied: "マイクにアクセスできません。ブラウザでマイクを許可してからもう一度お試しください。",
@@ -47,10 +43,6 @@ const copy = {
     screenSkipped: "システム音声はスキップされました。今回はマイクのみで進みます。",
     failed: "文字起こしに失敗しました：",
     live: "書き起こし中…",
-    enrollTitle: "まず声紋を登録しましょう",
-    enrollBody: "登録すると会話中にあなたの発言を判別できます。約6秒、データは端末内のみに保存されます。",
-    enrollCta: "登録する",
-    dismiss: "あとで",
   },
   en: {
     micDenied: "Microphone access failed. Allow microphone permission and try again.",
@@ -58,10 +50,6 @@ const copy = {
     screenSkipped: "System audio skipped — continuing with the microphone only.",
     failed: "Transcription failed: ",
     live: "Transcribing…",
-    enrollTitle: "Enroll your voiceprint first",
-    enrollBody: "It lets the app tell your speech apart during a conversation. Takes 6 seconds and stays on this device.",
-    enrollCta: "Enroll now",
-    dismiss: "Later",
   },
 } as const;
 
