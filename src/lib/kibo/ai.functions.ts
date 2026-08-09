@@ -3,7 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 // Fastest / cheapest model in the catalog — suggestions must land while the
 // other person is still talking.
-const MODEL = "google/gemini-2.5-flash-lite";
+
 
 const LANG_NAME: Record<string, string> = {
   ja: "Japanese",
@@ -57,8 +57,9 @@ export const suggestReplies = createServerFn({ method: "POST" })
       .map((t) => `${t.speaker === "user" ? "ME" : "OTHER"}: ${t.text}`)
       .join("\n");
 
+    const { getAiModels } = await import("./model-config.server");
     const content = await gateway({
-      model: MODEL,
+      model: (await getAiModels()).suggest,
       messages: [
         {
           role: "system",
@@ -107,8 +108,9 @@ export const summarizeSession = createServerFn({ method: "POST" })
       .map((t) => `${t.speaker === "user" ? "ME" : "OTHER"}: ${t.text}`)
       .join("\n");
 
+    const { getAiModels } = await import("./model-config.server");
     const summary = await gateway({
-      model: MODEL,
+      model: (await getAiModels()).summary,
       messages: [
         {
           role: "system",

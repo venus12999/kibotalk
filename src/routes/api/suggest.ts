@@ -31,6 +31,9 @@ export const Route = createFileRoute("/api/suggest")({
           return new Response("Invalid request body", { status: 400 });
         }
 
+        const { getAiModels } = await import("@/lib/kibo/model-config.server");
+        const aiModels = await getAiModels();
+
         const target = LANG_NAME[body.conversationLang ?? "en"] ?? "English";
         const ui = LANG_NAME[body.uiLang ?? "en"] ?? "English";
         const transcript = body.turns
@@ -46,7 +49,7 @@ export const Route = createFileRoute("/api/suggest")({
             "X-Lovable-AIG-SDK": "fetch",
           },
           body: JSON.stringify({
-            model: "google/gemini-2.5-flash-lite",
+            model: aiModels.suggest,
             stream: true,
             temperature: 0.7,
             max_tokens: 1200,
