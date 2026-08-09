@@ -9,9 +9,12 @@ import { AppBackground } from "@/components/kibo/app-background";
 import logoAsset from "@/assets/kibotalk-logo.png.asset.json";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { next?: string } => ({
     next: typeof search['next'] === "string" ? (search['next'] as string) : "",
   }),
+
   head: () => ({
     meta: [
       { title: "登录 — KiboTalk 语言陪练" },
