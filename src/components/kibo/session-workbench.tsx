@@ -5,8 +5,7 @@ import {
   type AiErrorKind,
 } from "@/lib/kibo/ai-error";
 
-import { Brain, HelpCircle, History, Lightbulb, Mic, Pause, Play, Settings, Square, User, Users } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { HelpCircle, History, Lightbulb, Mic, Pause, Play, Settings, Square, User, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -605,11 +604,6 @@ export function SessionWorkbench() {
           <UiLanguageMenu />
           <AccountMenu />
 
-          <Button variant="soft" size="icon" asChild aria-label="Kibo 记忆" title="Kibo 记忆">
-            <Link to="/memory">
-              <Brain className="size-4" />
-            </Link>
-          </Button>
           <Button
             variant="soft"
             size="icon"
