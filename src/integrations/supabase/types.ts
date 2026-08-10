@@ -83,6 +83,39 @@ export type Database = {
         }
         Relationships: []
       }
+      memories: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["memory_kind"]
+          last_used_at: string | null
+          pinned: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["memory_kind"]
+          last_used_at?: string | null
+          pinned?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["memory_kind"]
+          last_used_at?: string | null
+          pinned?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -210,6 +243,7 @@ export type Database = {
         | "social_pressure"
         | "learning"
       emotion_category: "positive" | "negative" | "neutral"
+      memory_kind: "profile" | "preference" | "relationship" | "goal" | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -355,6 +389,7 @@ export const Constants = {
         "learning",
       ],
       emotion_category: ["positive", "negative", "neutral"],
+      memory_kind: ["profile", "preference", "relationship", "goal", "other"],
     },
   },
 } as const
