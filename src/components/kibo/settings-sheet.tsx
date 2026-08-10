@@ -70,6 +70,12 @@ export function SettingsSheet({
   locked: boolean;
 }) {
   const { prefs, setPrefs, t, clearHistory, reset } = useKibo();
+  const systemAudioSupported = useSystemAudioSupport();
+  React.useEffect(() => {
+    if (!systemAudioSupported && prefs.audioSource !== "microphone") {
+      setPrefs({ audioSource: "microphone" });
+    }
+  }, [systemAudioSupported, prefs.audioSource, setPrefs]);
   const ui = prefs.uiLang;
 
   const [mics, setMics] = React.useState<MediaDeviceInfo[]>([]);
