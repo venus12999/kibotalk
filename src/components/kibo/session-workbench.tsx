@@ -745,7 +745,7 @@ export function SessionWorkbench() {
                 )}
                 style={{
                   transform: transcriber.recording
-                    ? `scale(${1 + 0.06 + Math.min(transcriber.level, 1) * 0.45})`
+                    ? `scale(${1 + 0.06 + Math.min(transcriber.level, 1) * 0.28})`
                     : undefined,
                 }}
               />
@@ -763,17 +763,8 @@ export function SessionWorkbench() {
 
         return (
           <main
-            style={
-              prefs.panelLayout === "row"
-                ? ({
-                    "--pc-font": String(prefs.rowFontScale ?? 1),
-                    "--pc-line": String(prefs.rowLineScale ?? 1),
-                    "--pc-gap": String(prefs.rowGapScale ?? 1),
-                  } as React.CSSProperties)
-                : undefined
-            }
-            className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-5 py-4"
-          >
+          className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-5 py-4"
+        >
             {wide ? (
               <div className="grid w-full min-h-0 flex-1 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 sm:gap-6">
                 {/* Left: the conversation floating in the blank space. */}
