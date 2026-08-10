@@ -674,9 +674,20 @@ export function SessionWorkbench() {
         ) : null}
 
         {livePanel !== "none" ? (
-          <section className="orb-stage flex h-[40dvh] w-full min-h-0 flex-col overflow-hidden p-3 sm:p-5">
+          <section className="orb-stage relative flex h-[40dvh] w-full min-h-0 flex-col overflow-hidden p-3 sm:p-5">
             {livePanel === "transcript" ? (
+              <>
+              {!following && turns.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={scrollToLatest}
+                  className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-lg"
+                >
+                  {prefs.uiLang === "zh" ? "回到最新" : prefs.uiLang === "ja" ? "最新へ" : "Jump to latest"}
+                </button>
+              ) : null}
               <ScrollArea ref={scrollRef} className="min-h-0 flex-1">
+
                 {turns.length === 0 ? (
                   <p className="py-12 text-center text-sm text-muted-foreground">
                     {t("noTranscript")}
