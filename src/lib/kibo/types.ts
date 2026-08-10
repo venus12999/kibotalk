@@ -104,6 +104,7 @@ export const defaultPrefs: Prefs = {
   rowFontScale: 1,
   rowLineScale: 1,
   rowGapScale: 1,
+  suggestionFontScale: 1,
   profileName: "",
   profileAbout: "",
   profileGoal: "",
