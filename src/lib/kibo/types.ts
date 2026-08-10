@@ -8,6 +8,9 @@ export type Lifecycle = "idle" | "preparing" | "running" | "paused" | "stopped";
 export type CaptureMode = "push" | "continuous";
 /** How the transcript and suggestion panels are arranged. */
 export type PanelLayout = "auto" | "row" | "column";
+/** Whether the two side panels scroll together or on their own. */
+export type ScrollSync = "linked" | "independent";
+
 
 export type Prefs = {
   uiLang: UiLang;
