@@ -92,6 +92,11 @@ export function SessionWorkbench() {
   const [aiAttempt, setAiAttempt] = React.useState(0);
   /** Live-voice stage: which pull-up panel is open under the orb. */
   const [livePanel, setLivePanel] = React.useState<"none" | "transcript" | "ideas">("none");
+  // New ideas arriving should surface themselves, like a voice-mode caption card.
+  React.useEffect(() => {
+    if (streaming) setLivePanel((p) => (p === "transcript" ? p : "ideas"));
+  }, [streaming]);
+
   const [settingsOpen, setSettingsOpen] = React.useState(false);
 
   const [historyOpen, setHistoryOpen] = React.useState(false);
