@@ -61,6 +61,9 @@
 }
 
 :root {
+  /* Declaring color-scheme stops Chrome on Android from force-darkening
+     ("Auto dark theme") our own carefully themed surfaces. */
+  color-scheme: light;
   --radius: 0.9375rem;
   --background: oklch(98.5% 0.002 106);
   --foreground: oklch(25.5% 0.012 70);
@@ -100,6 +103,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: oklch(17.5% 0.008 80);
   --foreground: oklch(93.5% 0.012 90);
   --card: oklch(21% 0.009 80);
