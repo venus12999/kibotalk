@@ -96,8 +96,8 @@ const NoteCard = React.memo(function NoteCard({
     <li
       className={cn(
         "group relative flex items-start gap-3 py-3 pr-4 pl-3 transition-transform duration-300",
-        "rounded-[1.75rem] animate-scale-in",
         NOTE_TONES[index % NOTE_TONES.length],
+        "!rounded-[1.75rem] animate-scale-in",
       )}
     >
       {/* Orb marker: the gradient sphere replaces the old sticky-note spine. */}
@@ -423,8 +423,15 @@ export function SuggestionStage({
             return (
               <li
                 key={i}
-                className="flex min-h-[4.5rem] items-center justify-center rounded-md border border-dashed border-border px-4 py-3 text-center text-xs text-muted-foreground"
+                className="flex min-h-[4.5rem] items-center gap-3 rounded-[1.75rem] border border-dashed border-border px-3 py-3 text-xs text-muted-foreground"
               >
+                <span
+                  aria-hidden
+                  className="flex size-7 shrink-0 items-center justify-center rounded-full border border-dashed border-current/40 text-[11px] font-black opacity-50"
+                >
+                  {i + 1}
+                </span>
+                <span className="min-w-0 flex-1">
                 {i === 0 && candidates.length === 0 && status === "idle" ? (
                   emptyHint
                 ) : (
@@ -434,6 +441,7 @@ export function SuggestionStage({
                     <i className="size-1.5 animate-pulse rounded-full bg-current opacity-40 [animation-delay:300ms]" />
                   </span>
                 )}
+                </span>
               </li>
             );
           })}
