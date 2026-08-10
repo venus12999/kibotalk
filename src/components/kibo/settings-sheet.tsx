@@ -23,6 +23,19 @@ const translateCopy = {
   },
 } as const;
 
+/**
+ * Android Chrome (and iOS Safari) have no `getDisplayMedia`, so tab / system
+ * audio capture is impossible there — hide those options instead of offering a
+ * button that always fails.
+ */
+function useSystemAudioSupport() {
+  const [supported, setSupported] = React.useState(true);
+  React.useEffect(() => {
+    setSupported(typeof navigator?.mediaDevices?.getDisplayMedia === "function");
+  }, []);
+  return supported;
+}
+
 function Row({
   title,
   description,
