@@ -207,6 +207,25 @@
 }
 
 
+/*
+ * Reply-idea text tones. Bare text over a blurred backdrop, so each theme gets
+ * its own trio: darkened ambers on light, brightened ambers on dark, plus a
+ * background-colored halo that keeps them legible over the image background.
+ */
+:root {
+  --idea-1: oklch(52% 0.16 82);
+  --idea-2: oklch(56% 0.17 48);
+  --idea-3: oklch(34% 0.03 80);
+  --idea-halo: 0 1px 10px color-mix(in oklab, var(--background) 80%, transparent);
+}
+
+.dark {
+  --idea-1: oklch(88% 0.16 92);
+  --idea-2: oklch(83% 0.14 58);
+  --idea-3: oklch(93% 0.02 90);
+  --idea-halo: 0 1px 12px color-mix(in oklab, oklch(0% 0 0) 70%, transparent);
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
@@ -370,18 +389,18 @@
  * ideas distinguishable: deep amber, warm orange, and soft foreground.
  */
 @utility idea-tone-1 {
-  color: oklch(from var(--primary) calc(l - 0.28) calc(c + 0.02) h);
-  text-shadow: 0 1px 8px color-mix(in oklab, var(--background) 70%, transparent);
+  color: var(--idea-1);
+  text-shadow: var(--idea-halo);
 }
 
 @utility idea-tone-2 {
-  color: var(--accent-foreground);
-  text-shadow: 0 1px 8px color-mix(in oklab, var(--background) 70%, transparent);
+  color: var(--idea-2);
+  text-shadow: var(--idea-halo);
 }
 
 @utility idea-tone-3 {
-  color: color-mix(in oklab, var(--foreground) 78%, var(--primary) 22%);
-  text-shadow: 0 1px 8px color-mix(in oklab, var(--background) 70%, transparent);
+  color: var(--idea-3);
+  text-shadow: var(--idea-halo);
 }
 
 @keyframes kibo-bar {
