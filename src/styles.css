@@ -518,8 +518,12 @@
   display: none;
 }
 .dock-compact {
-  padding-top: 0.25rem;
-  padding-bottom: 0.25rem;
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem;
+  gap: 0.25rem;
+}
+.dock-compact .dock-scaled {
+  height: calc(2.5rem * var(--dock-scale, 1));
 }
 
 /* User-tunable font size for the suggestion panel. */

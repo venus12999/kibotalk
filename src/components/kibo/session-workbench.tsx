@@ -745,7 +745,7 @@ export function SessionWorkbench() {
                 )}
                 style={{
                   transform: transcriber.recording
-                    ? `scale(${1 + Math.min(transcriber.level, 1) * 0.18})`
+                    ? `scale(${1 + Math.min(transcriber.level, 1) * 0.45})`
                     : undefined,
                 }}
               />
@@ -800,13 +800,13 @@ export function SessionWorkbench() {
                 {/* Mobile: keep transcript + suggestions above the thumb zone so
                     holding the dock buttons doesn't cover them. */}
                 <div className="grid w-full min-h-0 shrink-0 grid-cols-2 gap-3">
-                  <section className="flex h-[24dvh] min-h-0 flex-col overflow-hidden">
+                  <section className="flex h-[32dvh] min-h-0 flex-col overflow-hidden">
                     <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                       {t("conversation")}
                     </p>
                     {transcriptView}
                   </section>
-                  <section className="flex h-[24dvh] min-h-0 flex-col overflow-hidden">
+                  <section className="flex h-[32dvh] min-h-0 flex-col overflow-hidden">
                     <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                       <Lightbulb className="size-3" />
                       {t("suggestions")}
@@ -814,7 +814,8 @@ export function SessionWorkbench() {
                     {ideasView}
                   </section>
                 </div>
-                {orb}
+                {/* Orb sits low and is partly tucked under the dock. */}
+                <div className="-mb-20 mt-auto scale-90">{orb}</div>
               </>
             )}
           </main>
@@ -822,7 +823,11 @@ export function SessionWorkbench() {
       })()}
 
       {/* Spacer so the floating phone dock never covers the last panel. */}
-      <div aria-hidden className="shrink-0 sm:hidden" style={{ height: dockHeight + 16 }} />
+      <div
+        aria-hidden
+        className="shrink-0 sm:hidden"
+        style={{ height: Math.max(dockHeight - 48, 8) }}
+      />
 
       {/* Phone: floating thumb-reach dock. Tablet/desktop: inline sticky bar. */}
       <div
@@ -882,8 +887,8 @@ export function SessionWorkbench() {
                   />
                 ))}
               </div>
-              <div className="flex items-center gap-2">
-                <p className="dock-secondary min-w-0 flex-1 text-[11px] text-muted-foreground">
+              <div className="dock-secondary flex items-center gap-2">
+                <p className="min-w-0 flex-1 text-[11px] text-muted-foreground">
                   {transcriber.holding ? t("releaseToSend") : t("holdHint")}
                 </p>
                 <Button
