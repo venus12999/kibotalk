@@ -511,6 +511,27 @@
   }
 }
 
+/* User-tunable font size for the suggestion panel. */
+.suggest-scaled {
+  font-size: calc(0.875rem * var(--suggest-scale, 1));
+}
+.suggest-scaled :is(.text-sm) {
+  font-size: calc(0.875rem * var(--suggest-scale, 1));
+  line-height: calc(1.375 * var(--suggest-scale, 1));
+}
+.suggest-scaled :is(.text-xs) {
+  font-size: calc(0.75rem * var(--suggest-scale, 1));
+  line-height: calc(1rem * var(--suggest-scale, 1));
+}
+.suggest-scaled :is(.text-\[11px\]) {
+  font-size: calc(0.6875rem * var(--suggest-scale, 1));
+  line-height: calc(0.95rem * var(--suggest-scale, 1));
+}
+.suggest-scaled :is(.text-\[10px\]) {
+  font-size: calc(0.625rem * var(--suggest-scale, 1));
+  line-height: calc(0.875rem * var(--suggest-scale, 1));
+}
+
 /* ── Orb language (KiboTalk visual reference) ───────────────────────────── */
 
 @utility kibo-orb {
