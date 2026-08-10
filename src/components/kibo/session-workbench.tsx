@@ -680,7 +680,9 @@ export function SessionWorkbench() {
 
         const ideasView = (
           <SuggestionStage
+            scrollRef={ideasScrollRef}
             className="min-h-0 flex-1"
+
             rounds={rounds}
             streaming={streaming}
             status={aiStatus}
