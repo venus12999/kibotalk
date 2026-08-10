@@ -24,6 +24,10 @@ export type Prefs = {
   rowFontScale: number;
   rowLineScale: number;
   rowGapScale: number;
+  /** Who the user is — fed to the coach so replies sound like them. */
+  profileName: string;
+  profileAbout: string;
+  profileGoal: string;
   onboarded: boolean;
 
 };
@@ -85,6 +89,9 @@ export const defaultPrefs: Prefs = {
   rowFontScale: 1,
   rowLineScale: 1,
   rowGapScale: 1,
+  profileName: "",
+  profileAbout: "",
+  profileGoal: "",
   onboarded: false,
 
 };
