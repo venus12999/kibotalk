@@ -370,18 +370,18 @@
  * ideas distinguishable: deep amber, warm orange, and soft foreground.
  */
 @utility idea-tone-1 {
-  color: oklch(from var(--primary) calc(l - 0.28) calc(c + 0.02) h);
-  text-shadow: 0 1px 8px color-mix(in oklab, var(--background) 70%, transparent);
+  color: var(--idea-1);
+  text-shadow: var(--idea-halo);
 }
 
 @utility idea-tone-2 {
-  color: var(--accent-foreground);
-  text-shadow: 0 1px 8px color-mix(in oklab, var(--background) 70%, transparent);
+  color: var(--idea-2);
+  text-shadow: var(--idea-halo);
 }
 
 @utility idea-tone-3 {
-  color: color-mix(in oklab, var(--foreground) 78%, var(--primary) 22%);
-  text-shadow: 0 1px 8px color-mix(in oklab, var(--background) 70%, transparent);
+  color: var(--idea-3);
+  text-shadow: var(--idea-halo);
 }
 
 @keyframes kibo-bar {
