@@ -115,25 +115,49 @@ export function HoldTalkButton({
         release(touch.identifier, "touch");
       }
     };
+    const withinGrace = () => performance.now() - startedAtRef.current < CANCEL_GRACE_MS;
+    const touchCancel = (event: TouchEvent) => {
+      // Android fires this during its own long-press detection; ignore early ones.
+      if (withinGrace()) return;
+      touchEnd(event);
+    };
+    const contextMenu = (event: Event) => {
+      if (pointerRef.current !== null) event.preventDefault();
+    };
     const pointerUp = (event: PointerEvent) => release(event.pointerId, "pointer");
-    const pointerCancel = (event: PointerEvent) => release(event.pointerId, "pointer");
-    const blur = () => release();
+    const pointerCancel = (event: PointerEvent) => {
+      if (withinGrace()) return;
+      release(event.pointerId, "pointer");
+    };
+    const blur = () => {
+      // A permission chip or the vibration API can blur the window right after
+      // the press on Android; only a real backgrounding should end the turn.
+      if (withinGrace()) return;
+      release();
+    };
+    const visibility = () => {
+      if (document.visibilityState === "hidden") release();
+    };
 
     button.addEventListener("touchstart", touchStart, { passive: false });
     button.addEventListener("touchmove", touchMove, { passive: false });
     window.addEventListener("touchend", touchEnd, { passive: true });
-    window.addEventListener("touchcancel", touchEnd, { passive: true });
+    window.addEventListener("touchcancel", touchCancel, { passive: true });
     window.addEventListener("pointerup", pointerUp);
     window.addEventListener("pointercancel", pointerCancel);
+    window.addEventListener("contextmenu", contextMenu);
     window.addEventListener("blur", blur);
+    document.addEventListener("visibilitychange", visibility);
     return () => {
       button.removeEventListener("touchstart", touchStart);
       button.removeEventListener("touchmove", touchMove);
       window.removeEventListener("touchend", touchEnd);
-      window.removeEventListener("touchcancel", touchEnd);
+      window.removeEventListener("touchcancel", touchCancel);
       window.removeEventListener("pointerup", pointerUp);
       window.removeEventListener("pointercancel", pointerCancel);
+      window.removeEventListener("contextmenu", contextMenu);
       window.removeEventListener("blur", blur);
+      document.removeEventListener("visibilitychange", visibility);
       release();
     };
   }, [begin, release]);
