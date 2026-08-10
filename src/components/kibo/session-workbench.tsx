@@ -114,6 +114,16 @@ export function SessionWorkbench() {
   const [error, setError] = React.useState("");
 
   const scrollRef = React.useRef<HTMLDivElement>(null);
+  // Wide screens get the orb flanked by conversation (left) and ideas (right).
+  const [wide, setWide] = React.useState(false);
+  React.useEffect(() => {
+    const mql = window.matchMedia("(min-width: 1024px)");
+    const onChange = () => setWide(mql.matches);
+    onChange();
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+
   const words = copy[prefs.uiLang] ?? copy.en;
   const guideLabel =
     prefs.uiLang === "zh" ? "使用指南" : prefs.uiLang === "ja" ? "使い方ガイド" : "How to use";
@@ -567,42 +577,108 @@ export function SessionWorkbench() {
 
 
 
-      {/* Live-voice stage: one breathing orb, captions underneath, and the
-          transcript / ideas living in a pull-up panel instead of two frames. */}
-      <main
-        style={
-          prefs.panelLayout === "row"
-            ? ({
-                "--pc-font": String(prefs.rowFontScale ?? 1),
-                "--pc-line": String(prefs.rowLineScale ?? 1),
-                "--pc-gap": String(prefs.rowGapScale ?? 1),
-              } as React.CSSProperties)
-            : undefined
-        }
-        className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-5 py-4"
-      >
-        <div className="relative flex items-center justify-center">
-          <div aria-hidden className="orb-aurora" />
-          <div
-            aria-hidden
-            className={cn(
-              "kibo-orb relative size-44 transition-transform duration-100 ease-out sm:size-56",
-              !transcriber.recording && "orb-float",
-              streaming && "orb-pulse",
-            )}
-            style={{
-              transform: transcriber.recording
-                ? `scale(${1 + Math.min(transcriber.level, 1) * 0.18})`
-                : undefined,
+      {/* Live-voice stage: a breathing orb in the middle, the conversation
+          floating to its left and the three ideas floating to its right. */}
+      {(() => {
+        const jumpLabel =
+          prefs.uiLang === "zh" ? "回到最新" : prefs.uiLang === "ja" ? "最新へ" : "Jump to latest";
+
+        const transcriptView = (
+          <div className="relative flex min-h-0 flex-1 flex-col">
+            {!following && turns.length > 0 ? (
+              <button
+                type="button"
+                onClick={scrollToLatest}
+                className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-lg"
+              >
+                {jumpLabel}
+              </button>
+            ) : null}
+            <ScrollArea ref={scrollRef} className="min-h-0 flex-1">
+              {turns.length === 0 ? (
+                <p className="py-12 text-center text-sm text-muted-foreground">
+                  {t("noTranscript")}
+                </p>
+              ) : (
+                <ul className="space-y-3 pr-3">
+                  {turns.map((turn) => (
+                    <li
+                      key={turn.id}
+                      className={cn(
+                        "flex",
+                        turn.speaker === "user" ? "justify-end" : "justify-start",
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "max-w-[85%] px-4 py-2.5",
+                          turn.speaker === "user"
+                            ? "bubble-self"
+                            : "bubble-other text-card-foreground",
+                        )}
+                      >
+                        <div className="flex items-baseline gap-2 text-[11px] font-semibold opacity-70">
+                          <span>{turn.speaker === "user" ? t("me") : t("other")}</span>
+                          <time
+                            dateTime={new Date(turn.at).toISOString()}
+                            className="tabular-nums font-normal"
+                          >
+                            {new Date(turn.at).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </time>
+                        </div>
+                        <p className="mt-0.5 whitespace-pre-wrap break-words text-sm leading-relaxed">
+                          {turn.text}
+                        </p>
+                        {turn.translation ? (
+                          <p className="mt-1 border-t border-current/15 pt-1 text-xs leading-relaxed opacity-75">
+                            {turn.translation}
+                          </p>
+                        ) : null}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </ScrollArea>
+          </div>
+        );
+
+        const ideasView = (
+          <SuggestionStage
+            className="min-h-0 flex-1"
+            rounds={rounds}
+            streaming={streaming}
+            status={aiStatus}
+            errorMessage={aiError}
+            errorTitle={describeAiError(aiErrorKind, prefs.uiLang).title}
+            errorAdvice={describeAiError(aiErrorKind, prefs.uiLang).advice}
+            attempt={aiAttempt}
+            onRetry={retrySuggestions}
+            canRetry={lastRequestRef.current !== null}
+            statusLabels={{
+              connecting: t("aiConnecting"),
+              retrying: t("aiRetrying"),
+              attempt: t("aiAttempt"),
+              streaming: t("aiStreaming"),
+              done: t("aiDone"),
+              failed: t("aiFailed"),
+              retry: t("aiRetry"),
+            }}
+            emptyHint={t("emptySuggestions")}
+            previousRoundLabel={t("previousRound")}
+            detailLabels={{
+              show: t("showDetail"),
+              hide: t("hideDetail"),
+              alt: t("altPhrasing"),
+              points: t("keyPoints"),
             }}
           />
-          <span className="pointer-events-none absolute text-sm font-semibold text-primary-foreground/90">
-            {statusLabel}
-          </span>
-        </div>
+        );
 
-        {/* Caption: the newest line, exactly like a live-voice transcript. */}
-        {(() => {
+        const caption = (() => {
           const last = turns.at(-1);
           const liveSpeaker: "user" | "other" | null = interim.other
             ? "other"
@@ -627,7 +703,10 @@ export function SessionWorkbench() {
                     {liveSpeaker === "user" ? t("me") : t("other")}
                   </span>
                   {liveAt ? (
-                    <time dateTime={new Date(liveAt).toISOString()} className="tabular-nums font-normal normal-case">
+                    <time
+                      dateTime={new Date(liveAt).toISOString()}
+                      className="tabular-nums font-normal normal-case"
+                    >
                       {new Date(liveAt).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
@@ -648,131 +727,104 @@ export function SessionWorkbench() {
               </p>
             </div>
           );
-        })()}
+        })();
 
-
-        <div className="flex items-center gap-2">
-          <Button
-            variant={livePanel === "transcript" ? "default" : "soft"}
-            size="sm"
-            onClick={() => setLivePanel(livePanel === "transcript" ? "none" : "transcript")}
-          >
-            {t("conversation")}
-          </Button>
-          <Button
-            variant={livePanel === "ideas" ? "default" : "soft"}
-            size="sm"
-            onClick={() => setLivePanel(livePanel === "ideas" ? "none" : "ideas")}
-          >
-            <Lightbulb className="size-4" />
-            {t("suggestions")}
-          </Button>
-        </div>
-
-        {error ? (
-          <p className="rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>
-        ) : null}
-
-        {livePanel !== "none" ? (
-          <section className="orb-stage relative flex h-[40dvh] w-full min-h-0 flex-col overflow-hidden p-3 sm:p-5">
-            {livePanel === "transcript" ? (
-              <>
-              {!following && turns.length > 0 ? (
-                <button
-                  type="button"
-                  onClick={scrollToLatest}
-                  className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-lg"
-                >
-                  {prefs.uiLang === "zh" ? "回到最新" : prefs.uiLang === "ja" ? "最新へ" : "Jump to latest"}
-                </button>
-              ) : null}
-              <ScrollArea ref={scrollRef} className="min-h-0 flex-1">
-
-                {turns.length === 0 ? (
-                  <p className="py-12 text-center text-sm text-muted-foreground">
-                    {t("noTranscript")}
-                  </p>
-                ) : (
-                  <ul className="space-y-3 pr-3">
-                    {turns.map((turn) => (
-                      <li
-                        key={turn.id}
-                        className={cn(
-                          "flex",
-                          turn.speaker === "user" ? "justify-end" : "justify-start",
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            "max-w-[85%] px-4 py-2.5",
-                            turn.speaker === "user"
-                              ? "bubble-self"
-                              : "bubble-other text-card-foreground",
-                          )}
-                        >
-                          <div className="flex items-baseline gap-2 text-[11px] font-semibold opacity-70">
-                            <span>{turn.speaker === "user" ? t("me") : t("other")}</span>
-                            <time
-                              dateTime={new Date(turn.at).toISOString()}
-                              className="tabular-nums font-normal"
-                            >
-                              {new Date(turn.at).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </time>
-                          </div>
-                          <p className="mt-0.5 whitespace-pre-wrap break-words text-sm leading-relaxed">
-                            {turn.text}
-                          </p>
-
-                          {turn.translation ? (
-                            <p className="mt-1 border-t border-current/15 pt-1 text-xs leading-relaxed opacity-75">
-                              {turn.translation}
-                            </p>
-                          ) : null}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+        const orb = (
+          <div className="relative flex flex-col items-center gap-5">
+            <div className="relative flex items-center justify-center">
+              <div aria-hidden className="orb-aurora" />
+              <div
+                aria-hidden
+                className={cn(
+                  "kibo-orb relative size-44 transition-transform duration-100 ease-out sm:size-56",
+                  !transcriber.recording && "orb-float",
+                  streaming && "orb-pulse",
                 )}
-              </ScrollArea>
-              </>
-            ) : (
-
-              <SuggestionStage
-                className="min-h-0 flex-1"
-                rounds={rounds}
-                streaming={streaming}
-                status={aiStatus}
-                errorMessage={aiError}
-                errorTitle={describeAiError(aiErrorKind, prefs.uiLang).title}
-                errorAdvice={describeAiError(aiErrorKind, prefs.uiLang).advice}
-                attempt={aiAttempt}
-                onRetry={retrySuggestions}
-                canRetry={lastRequestRef.current !== null}
-                statusLabels={{
-                  connecting: t("aiConnecting"),
-                  retrying: t("aiRetrying"),
-                  attempt: t("aiAttempt"),
-                  streaming: t("aiStreaming"),
-                  done: t("aiDone"),
-                  failed: t("aiFailed"),
-                  retry: t("aiRetry"),
-                }}
-                emptyHint={t("emptySuggestions")}
-                previousRoundLabel={t("previousRound")}
-                detailLabels={{
-                  show: t("showDetail"),
-                  hide: t("hideDetail"),
-                  alt: t("altPhrasing"),
-                  points: t("keyPoints"),
+                style={{
+                  transform: transcriber.recording
+                    ? `scale(${1 + Math.min(transcriber.level, 1) * 0.18})`
+                    : undefined,
                 }}
               />
+              <span className="pointer-events-none absolute text-sm font-semibold text-primary-foreground/90">
+                {statusLabel}
+              </span>
+            </div>
+            {caption}
+            {error ? (
+              <p className="rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                {error}
+              </p>
+            ) : null}
+          </div>
+        );
+
+        return (
+          <main
+            style={
+              prefs.panelLayout === "row"
+                ? ({
+                    "--pc-font": String(prefs.rowFontScale ?? 1),
+                    "--pc-line": String(prefs.rowLineScale ?? 1),
+                    "--pc-gap": String(prefs.rowGapScale ?? 1),
+                  } as React.CSSProperties)
+                : undefined
+            }
+            className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-5 py-4"
+          >
+            {wide ? (
+              <div className="grid w-full min-h-0 flex-1 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-6">
+                {/* Left: the conversation floating beside the orb. */}
+                <section className="orb-stage flex h-[56dvh] min-h-0 flex-col overflow-hidden p-4">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {t("conversation")}
+                  </p>
+                  {transcriptView}
+                </section>
+
+                {orb}
+
+                {/* Right: the three ideas. */}
+                <section className="orb-stage flex h-[56dvh] min-h-0 flex-col overflow-hidden p-4">
+                  <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <Lightbulb className="size-3.5" />
+                    {t("suggestions")}
+                  </p>
+                  {ideasView}
+                </section>
+              </div>
+            ) : (
+              <>
+                {orb}
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant={livePanel === "transcript" ? "default" : "soft"}
+                    size="sm"
+                    onClick={() => setLivePanel(livePanel === "transcript" ? "none" : "transcript")}
+                  >
+                    {t("conversation")}
+                  </Button>
+                  <Button
+                    variant={livePanel === "ideas" ? "default" : "soft"}
+                    size="sm"
+                    onClick={() => setLivePanel(livePanel === "ideas" ? "none" : "ideas")}
+                  >
+                    <Lightbulb className="size-4" />
+                    {t("suggestions")}
+                  </Button>
+                </div>
+
+                {livePanel !== "none" ? (
+                  <section className="orb-stage relative flex h-[40dvh] w-full min-h-0 flex-col overflow-hidden p-3 sm:p-5">
+                    {livePanel === "transcript" ? transcriptView : ideasView}
+                  </section>
+                ) : null}
+              </>
             )}
-          </section>
-        ) : null}
-      </main>
+          </main>
+        );
+      })()}
+
 
 
 
