@@ -352,6 +352,8 @@ export function SuggestionStage({
   previousRoundLabel,
   detailLabels,
   className,
+  scrollRef,
+
 }: {
   rounds: Round[];
   streaming: boolean;
