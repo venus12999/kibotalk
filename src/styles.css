@@ -160,8 +160,7 @@
   --glass-filter-sm: blur(var(--glass-blur-sm)) saturate(140%);
 
   /* Elevation */
-  --glass-shadow: 0 1px 0 oklch(100% 0 0 / 0.6) inset,
-    0 18px 45px -22px oklch(50% 0.12 80 / 0.55);
+  --glass-shadow: 0 1px 0 oklch(100% 0 0 / 0.6) inset, 0 18px 45px -22px oklch(50% 0.12 80 / 0.55);
   --shadow-glow-sm: 0 8px 20px -14px oklch(60% 0.15 85 / 0.95);
   --shadow-glow: 0 10px 24px -14px oklch(60% 0.15 85 / 0.95);
   --shadow-glow-lg: 0 12px 28px -18px oklch(60% 0.15 85 / 0.95);
@@ -193,8 +192,7 @@
   --glass-strong: oklch(30% 0.025 80 / 0.72);
   --glass-border: oklch(100% 0 0 / 0.14);
   --glass-border-vivid: oklch(100% 0 0 / 0.22);
-  --glass-shadow: 0 1px 0 oklch(100% 0 0 / 0.08) inset,
-    0 20px 50px -24px oklch(0% 0 0 / 0.75);
+  --glass-shadow: 0 1px 0 oklch(100% 0 0 / 0.08) inset, 0 20px 50px -24px oklch(0% 0 0 / 0.75);
   --shadow-glow-sm: 0 8px 20px -14px oklch(0% 0 0 / 0.8);
   --shadow-glow: 0 10px 26px -14px oklch(0% 0 0 / 0.85);
   --shadow-glow-lg: 0 14px 32px -18px oklch(0% 0 0 / 0.9);
@@ -205,7 +203,6 @@
     oklch(100% 0 0 / 0.08) 100%
   );
 }
-
 
 /*
  * Reply-idea text tones. Bare text over a blurred backdrop, so each theme gets
@@ -340,7 +337,8 @@
  * never mistaken for one another, each kept translucent + blurred.
  */
 @utility note-glass-1 {
-  background-image: linear-gradient(
+  background-image:
+    linear-gradient(
       160deg,
       color-mix(in oklab, var(--primary-soft) 82%, transparent) 0%,
       color-mix(in oklab, var(--primary-soft-strong) 70%, transparent) 100%
@@ -354,7 +352,8 @@
 }
 
 @utility note-glass-2 {
-  background-image: linear-gradient(
+  background-image:
+    linear-gradient(
       160deg,
       color-mix(in oklab, var(--primary-soft-strong) 85%, transparent) 0%,
       color-mix(in oklab, var(--primary) 55%, transparent) 100%
@@ -368,7 +367,8 @@
 }
 
 @utility note-glass-3 {
-  background-image: linear-gradient(
+  background-image:
+    linear-gradient(
       160deg,
       color-mix(in oklab, var(--primary) 72%, transparent) 0%,
       color-mix(in oklab, var(--primary) 92%, transparent) 100%
@@ -380,9 +380,6 @@
   box-shadow: var(--shadow-glow-lg);
   backdrop-filter: var(--glass-filter-md);
 }
-
-
-
 
 /*
  * Suggestion ideas render as bare text (no card). Three tones keep adjacent
@@ -461,7 +458,6 @@
 @utility ptt-flash {
   animation: ptt-flash 320ms ease-out forwards;
 }
-
 
 /* Compact typography/spacing for two-column (row) layout on narrow screens.
    Scales are user-tunable via --pc-font / --pc-line / --pc-gap. */
@@ -551,8 +547,13 @@
 }
 
 @keyframes orb-float {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-6px) scale(1.015); }
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-6px) scale(1.015);
+  }
 }
 
 /* Aurora fog behind the hero orb. */
@@ -617,8 +618,15 @@
 }
 
 @keyframes orb-pulse {
-  0%, 100% { transform: scale(1); filter: brightness(1); }
-  50% { transform: scale(1.05); filter: brightness(1.08); }
+  0%,
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.05);
+    filter: brightness(1.08);
+  }
 }
 
 /* Ideas surface: soft fade + slide-up as each suggestion appears. */

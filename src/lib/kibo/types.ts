@@ -46,7 +46,6 @@ export type Prefs = {
   onboarded: boolean;
 };
 
-
 export type Turn = {
   id: string;
   speaker: "user" | "other";
