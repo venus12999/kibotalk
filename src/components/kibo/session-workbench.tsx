@@ -800,13 +800,13 @@ export function SessionWorkbench() {
                 {/* Mobile: keep transcript + suggestions above the thumb zone so
                     holding the dock buttons doesn't cover them. */}
                 <div className="grid w-full min-h-0 shrink-0 grid-cols-2 gap-3">
-                  <section className="flex h-[24dvh] min-h-0 flex-col overflow-hidden">
+                  <section className="flex h-[32dvh] min-h-0 flex-col overflow-hidden">
                     <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                       {t("conversation")}
                     </p>
                     {transcriptView}
                   </section>
-                  <section className="flex h-[24dvh] min-h-0 flex-col overflow-hidden">
+                  <section className="flex h-[32dvh] min-h-0 flex-col overflow-hidden">
                     <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                       <Lightbulb className="size-3" />
                       {t("suggestions")}
@@ -814,7 +814,8 @@ export function SessionWorkbench() {
                     {ideasView}
                   </section>
                 </div>
-                {orb}
+                {/* Orb sits low and is partly tucked under the dock. */}
+                <div className="-mb-20 mt-auto scale-90">{orb}</div>
               </>
             )}
           </main>
