@@ -820,11 +820,38 @@ export function SessionWorkbench() {
         ref={dockRef}
         className={cn(
           "glass-bar z-30 flex flex-col gap-2 px-3 py-2",
-          "fixed inset-x-3 bottom-4 shadow-lg",
-          "sm:sticky sm:inset-x-auto sm:bottom-0 sm:gap-2 sm:px-4 sm:py-2.5 sm:shadow-none",
+          "fixed shadow-lg",
+          dockStyle === "bar"
+            ? "inset-x-0 bottom-0 rounded-b-none rounded-t-2xl"
+            : "inset-x-3 bottom-4",
+          dockCollapsed && "dock-compact",
+          "sm:sticky sm:inset-x-auto sm:bottom-0 sm:gap-2 sm:rounded-2xl sm:px-4 sm:py-2.5 sm:shadow-none",
         )}
-        style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
+        style={
+          {
+            paddingBottom:
+              dockStyle === "bar"
+                ? "max(0.5rem, env(safe-area-inset-bottom))"
+                : "max(0.5rem, env(safe-area-inset-bottom))",
+            "--dock-scale": String(dockScale),
+          } as React.CSSProperties
+        }
       >
+        {active && life !== "preparing" ? (
+          <button
+            type="button"
+            aria-expanded={!dockCollapsed}
+            onClick={() => {
+              navigator.vibrate?.(6);
+              setPrefs({ dockCollapsed: !dockCollapsed });
+            }}
+            className="mx-auto -mt-1 flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-semibold text-muted-foreground sm:hidden"
+          >
+            {dockCollapsed ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
+            {dockCollapsed ? t("dockExpand") : t("dockCollapse")}
+          </button>
+        ) : null}
+
         {active && life !== "preparing" ? (
           prefs.captureMode === "push" ? (
             <>
