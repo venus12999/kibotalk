@@ -666,10 +666,22 @@ export function SessionWorkbench() {
                               : "bubble-other text-card-foreground",
                           )}
                         >
-                          <p className="text-[11px] font-semibold opacity-70">
-                            {turn.speaker === "user" ? t("me") : t("other")}
+                          <div className="flex items-baseline gap-2 text-[11px] font-semibold opacity-70">
+                            <span>{turn.speaker === "user" ? t("me") : t("other")}</span>
+                            <time
+                              dateTime={new Date(turn.at).toISOString()}
+                              className="tabular-nums font-normal"
+                            >
+                              {new Date(turn.at).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </time>
+                          </div>
+                          <p className="mt-0.5 whitespace-pre-wrap break-words text-sm leading-relaxed">
+                            {turn.text}
                           </p>
-                          <p className="mt-0.5 text-sm leading-relaxed">{turn.text}</p>
+
                           {turn.translation ? (
                             <p className="mt-1 border-t border-current/15 pt-1 text-xs leading-relaxed opacity-75">
                               {turn.translation}
