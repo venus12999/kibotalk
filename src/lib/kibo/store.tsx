@@ -35,7 +35,6 @@ type Ctx = {
 
 const KiboContext = React.createContext<Ctx | null>(null);
 
-
 function read<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
   try {
@@ -129,6 +128,9 @@ export function KiboProvider({ children }: { children: React.ReactNode }) {
     const apply = () => {
       const dark = prefs.theme === "dark" || (prefs.theme === "system" && mq?.matches === true);
       document.documentElement.classList.toggle("dark", dark);
+      // Keep the UA color-scheme in sync so Android Chrome doesn't apply its
+      // own auto-dark filter on top of our theme.
+      document.documentElement.style.colorScheme = dark ? "dark" : "light";
     };
     apply();
     if (prefs.theme !== "system" || !mq) return;
@@ -179,7 +181,6 @@ export function KiboProvider({ children }: { children: React.ReactNode }) {
     }),
     [prefs, history, hydrated, user, authLoading, syncing, userId],
   );
-
 
   return <KiboContext.Provider value={value}>{children}</KiboContext.Provider>;
 }

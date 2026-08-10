@@ -23,6 +23,19 @@ const translateCopy = {
   },
 } as const;
 
+/**
+ * Android Chrome (and iOS Safari) have no `getDisplayMedia`, so tab / system
+ * audio capture is impossible there — hide those options instead of offering a
+ * button that always fails.
+ */
+function useSystemAudioSupport() {
+  const [supported, setSupported] = React.useState(true);
+  React.useEffect(() => {
+    setSupported(typeof navigator?.mediaDevices?.getDisplayMedia === "function");
+  }, []);
+  return supported;
+}
+
 function Row({
   title,
   description,
@@ -57,6 +70,12 @@ export function SettingsSheet({
   locked: boolean;
 }) {
   const { prefs, setPrefs, t, clearHistory, reset } = useKibo();
+  const systemAudioSupported = useSystemAudioSupport();
+  React.useEffect(() => {
+    if (!systemAudioSupported && prefs.audioSource !== "microphone") {
+      setPrefs({ audioSource: "microphone" });
+    }
+  }, [systemAudioSupported, prefs.audioSource, setPrefs]);
   const ui = prefs.uiLang;
 
   const [mics, setMics] = React.useState<MediaDeviceInfo[]>([]);
@@ -203,16 +222,24 @@ export function SettingsSheet({
               onChange={(v) => setPrefs({ audioSource: v })}
               options={[
                 {
-                  value: "microphone",
+                  value: "microphone" as AudioSource,
                   label: t("microphone"),
                   description: t("microphoneDescription"),
                 },
-                {
-                  value: "system",
-                  label: t("systemAudio"),
-                  description: t("systemAudioDescription"),
-                },
-                { value: "both", label: t("bothAudio"), description: t("bothAudioDescription") },
+                ...(systemAudioSupported
+                  ? [
+                      {
+                        value: "system" as AudioSource,
+                        label: t("systemAudio"),
+                        description: t("systemAudioDescription"),
+                      },
+                      {
+                        value: "both" as AudioSource,
+                        label: t("bothAudio"),
+                        description: t("bothAudioDescription"),
+                      },
+                    ]
+                  : []),
               ]}
             />
           </div>
@@ -312,7 +339,6 @@ export function SettingsSheet({
             </div>
             <p className="text-xs text-foreground/70">{t("dockSizeDescription")}</p>
           </div>
-
 
           <div className="flex flex-col gap-3 border-b border-border py-4">
             <div className="min-w-0">

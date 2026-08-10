@@ -60,7 +60,16 @@ export function HoldTalkButton({
    * re-render of the button (which happens the instant a turn starts) can drop
    * an implicit pointer capture and fire `lostpointercapture`, which used to
    * end the turn immediately — the "long press doesn't work on phones" bug.
+   *
+   * Android Chrome has the mirror problem: right after the press it can emit a
+   * spurious `touchcancel` (long-press gesture detection) or blur the window
+   * (mic permission chip / vibration), which used to cancel the turn before the
+   * user ever spoke. Those two signals are therefore ignored for a short grace
+   * period after the press; a real finger lift always arrives as `touchend`.
    */
+  const startedAtRef = React.useRef(0);
+  const CANCEL_GRACE_MS = 1200;
+
   const release = React.useCallback((pointerId?: number, input?: "pointer" | "touch") => {
     if (pointerRef.current === null) return;
     if (input && inputRef.current !== input) return;
@@ -82,6 +91,7 @@ export function HoldTalkButton({
     }
     pointerRef.current = pointerId;
     inputRef.current = input;
+    startedAtRef.current = performance.now();
     hapticPressStart();
     setPressKey((k) => k + 1);
     onBeginRef.current();
@@ -105,25 +115,49 @@ export function HoldTalkButton({
         release(touch.identifier, "touch");
       }
     };
+    const withinGrace = () => performance.now() - startedAtRef.current < CANCEL_GRACE_MS;
+    const touchCancel = (event: TouchEvent) => {
+      // Android fires this during its own long-press detection; ignore early ones.
+      if (withinGrace()) return;
+      touchEnd(event);
+    };
+    const contextMenu = (event: Event) => {
+      if (pointerRef.current !== null) event.preventDefault();
+    };
     const pointerUp = (event: PointerEvent) => release(event.pointerId, "pointer");
-    const pointerCancel = (event: PointerEvent) => release(event.pointerId, "pointer");
-    const blur = () => release();
+    const pointerCancel = (event: PointerEvent) => {
+      if (withinGrace()) return;
+      release(event.pointerId, "pointer");
+    };
+    const blur = () => {
+      // A permission chip or the vibration API can blur the window right after
+      // the press on Android; only a real backgrounding should end the turn.
+      if (withinGrace()) return;
+      release();
+    };
+    const visibility = () => {
+      if (document.visibilityState === "hidden") release();
+    };
 
     button.addEventListener("touchstart", touchStart, { passive: false });
     button.addEventListener("touchmove", touchMove, { passive: false });
     window.addEventListener("touchend", touchEnd, { passive: true });
-    window.addEventListener("touchcancel", touchEnd, { passive: true });
+    window.addEventListener("touchcancel", touchCancel, { passive: true });
     window.addEventListener("pointerup", pointerUp);
     window.addEventListener("pointercancel", pointerCancel);
+    window.addEventListener("contextmenu", contextMenu);
     window.addEventListener("blur", blur);
+    document.addEventListener("visibilitychange", visibility);
     return () => {
       button.removeEventListener("touchstart", touchStart);
       button.removeEventListener("touchmove", touchMove);
       window.removeEventListener("touchend", touchEnd);
-      window.removeEventListener("touchcancel", touchEnd);
+      window.removeEventListener("touchcancel", touchCancel);
       window.removeEventListener("pointerup", pointerUp);
       window.removeEventListener("pointercancel", pointerCancel);
+      window.removeEventListener("contextmenu", contextMenu);
       window.removeEventListener("blur", blur);
+      document.removeEventListener("visibilitychange", visibility);
       release();
     };
   }, [begin, release]);
@@ -161,7 +195,6 @@ export function HoldTalkButton({
       onContextMenu={(e) => e.preventDefault()}
       onDragStart={(e) => e.preventDefault()}
     >
-
       {/* press ripple */}
       {pressKey > 0 ? (
         <span
@@ -206,4 +239,3 @@ export function HoldTalkButton({
     </button>
   );
 }
-

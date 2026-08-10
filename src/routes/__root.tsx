@@ -13,7 +13,6 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { WechatOpenInBrowser } from "@/components/kibo/wechat-open-in-browser";
 
-
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -79,6 +78,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      // Opt out of Android Chrome's "Auto dark theme" force-darkening.
+      { name: "color-scheme", content: "light dark" },
       { title: "Lovable App" },
       { name: "description", content: "Lovable Generated Project" },
       { name: "author", content: "Lovable" },
@@ -126,5 +127,4 @@ function RootComponent() {
       <WechatOpenInBrowser />
     </QueryClientProvider>
   );
-
 }
