@@ -28,6 +28,8 @@ export type Prefs = {
   rowFontScale: number;
   rowLineScale: number;
   rowGapScale: number;
+  /** Scale the suggestion font size up or down to fit the screen. 1 = default. */
+  suggestionFontScale: number;
   /** Who the user is — fed to the coach so replies sound like them. */
   profileName: string;
   profileAbout: string;
