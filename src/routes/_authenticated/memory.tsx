@@ -87,7 +87,6 @@ function MemoryImage({ path, alt }: { path: string; alt: string }) {
 
 function MemoryPage() {
   const { user } = useSession();
-  useKibo();
   const userId = user?.id ?? null;
 
   const [items, setItems] = React.useState<MemoryItem[]>([]);
