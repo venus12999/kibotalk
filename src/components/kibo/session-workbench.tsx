@@ -311,12 +311,14 @@ export function SessionWorkbench() {
       const nextTurns = [...prevTurns, turn];
       turnsRef.current = nextTurns;
       setTurns(nextTurns);
-      if (prevTurns.length >= 2 && prevTurns[0].id !== nextTurns[0].id) {
-        const pushedOut = prevTurns[0].id;
-        setExitingId(pushedOut);
+      // The line that just fell out of the visible pair animates away.
+      const pushedOut = prevTurns.length >= 2 ? prevTurns[prevTurns.length - 2] : undefined;
+      if (pushedOut) {
+        const pushedId = pushedOut.id;
+        setExitingId(pushedId);
         if (exitingTimerRef.current) clearTimeout(exitingTimerRef.current);
         exitingTimerRef.current = setTimeout(() => {
-          setExitingId((current) => (current === pushedOut ? null : current));
+          setExitingId((current) => (current === pushedId ? null : current));
         }, 420);
       }
 
