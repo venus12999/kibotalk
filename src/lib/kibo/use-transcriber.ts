@@ -489,8 +489,18 @@ export function useTranscriber({
       };
 
       source.connect(node);
-      node.connect(ctx.destination);
+      node.connect(sink);
+      // A headset unplug, a phone call, or iOS revoking the mic ends the track;
+      // without this the UI keeps claiming it is recording silence forever.
+      stream.getAudioTracks().forEach((track) => {
+        track.addEventListener("ended", () => {
+          if (pipesRef.current.includes(pipe)) {
+            cbRef.current.onError("microphone");
+          }
+        });
+      });
       pipesRef.current.push(pipe);
+
     };
 
     // With both sources the microphone is you and the system audio is the other
