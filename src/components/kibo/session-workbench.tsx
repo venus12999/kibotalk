@@ -307,8 +307,18 @@ export function SessionWorkbench() {
   const handleFinal = React.useCallback(
     (text: string, speaker: "user" | "other") => {
       const turn = makeTurn(speaker, text);
-      turnsRef.current = [...turnsRef.current, turn];
-      setTurns(turnsRef.current);
+      const prevTurns = turnsRef.current;
+      const nextTurns = [...prevTurns, turn];
+      turnsRef.current = nextTurns;
+      setTurns(nextTurns);
+      if (prevTurns.length >= 2 && prevTurns[0].id !== nextTurns[0].id) {
+        const pushedOut = prevTurns[0].id;
+        setExitingId(pushedOut);
+        if (exitingTimerRef.current) clearTimeout(exitingTimerRef.current);
+        exitingTimerRef.current = setTimeout(() => {
+          setExitingId((current) => (current === pushedOut ? null : current));
+        }, 420);
+      }
 
       // The user answered on their own — drop whatever was still generating.
       if (speaker === "user") {
