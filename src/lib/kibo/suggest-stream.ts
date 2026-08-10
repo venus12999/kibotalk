@@ -1,7 +1,6 @@
 import { SuggestError } from "./ai-error";
 import type { Candidate, Segment } from "./types";
 
-
 export type SuggestStreamInput = {
   turns: { speaker: "user" | "other"; text: string }[];
   /** The line the suggestions must answer. */
@@ -22,9 +21,6 @@ type RawCandidate = {
 };
 
 const ROLES = new Set(["content", "particle", "punct"]);
-
-
-
 
 const STR = (key: string) => new RegExp(`"${key}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"?`);
 const unquote = (v: string | undefined) => {
@@ -60,7 +56,12 @@ export function parseCandidates(buffer: string): Candidate[] {
   // The model ignored the JSON shape: show its plain lines instead of nothing.
   return buffer
     .split("\n")
-    .map((l) => l.replace(/```(?:json)?/gi, "").replace(/^(?:[-*]|\d+[.)])\s+/, "").trim())
+    .map((l) =>
+      l
+        .replace(/```(?:json)?/gi, "")
+        .replace(/^(?:[-*]|\d+[.)])\s+/, "")
+        .trim(),
+    )
     .filter((l) => l.length > 0 && !l.startsWith("{") && !l.startsWith("["))
     .slice(0, 3)
     .map((text) => ({ text, meaning: "" }));
@@ -90,8 +91,6 @@ function parseSegments(chunk: string): Segment[] {
     .filter((s): s is Segment => s !== null);
 }
 
-
-
 function sameSegments(a?: Segment[], b?: Segment[]) {
   if (a === b) return true;
   if (!a || !b || a.length !== b.length) return false;
@@ -116,7 +115,6 @@ function reconcile(prev: Candidate[], next: Candidate[]): Candidate[] | null {
   return next.map((c, i) => (equal(prev[i], c) ? (prev[i] as Candidate) : c));
 }
 
-
 const schedule: (cb: () => void) => number =
   typeof requestAnimationFrame === "function"
     ? (cb) => requestAnimationFrame(cb)
@@ -131,10 +129,7 @@ const unschedule = (id: number) => {
  * body. Mobile browsers and in-app WebViews that cannot read a live stream
  * (older iOS Safari, WeChat) end up here instead of showing an empty result.
  */
-async function fetchWhole(
-  input: SuggestStreamInput,
-  signal?: AbortSignal,
-): Promise<Candidate[]> {
+async function fetchWhole(input: SuggestStreamInput, signal?: AbortSignal): Promise<Candidate[]> {
   const res = await fetch("/api/suggest", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -202,7 +197,6 @@ export async function streamSuggestions(
     if (candidates.length > 0) onUpdate(candidates);
     return candidates;
   }
-
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
@@ -291,5 +285,3 @@ export async function streamSuggestions(
   }
   return final;
 }
-
-

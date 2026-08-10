@@ -156,7 +156,6 @@ function AuthCallback() {
         <p className="mt-3 text-center text-[11px] text-muted-foreground">
           确认邮箱后才能开始使用。
         </p>
-
       </div>
     </main>
   );

@@ -53,7 +53,6 @@ export function Onboarding({ onContinue }: { onContinue: () => void }) {
             {g.start}
           </Button>
         </div>
-
       </div>
     );
   }

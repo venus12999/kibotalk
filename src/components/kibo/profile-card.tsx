@@ -29,15 +29,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 const inputClass =
   "h-11 w-full rounded-xl border-0 bg-background/45 px-3.5 text-[15px] text-foreground outline-none transition placeholder:text-muted-foreground/70 focus:bg-background/70 focus-visible:ring-2 focus-visible:ring-ring";
 
-function Chip({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
+function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
     <button
       type="button"
@@ -88,9 +80,7 @@ export function ProfileCard() {
 
   const toggle = (key: MultiKey, value: string) => {
     const current = (prefs[key] as string[]) ?? [];
-    const next = current.includes(value)
-      ? current.filter((v) => v !== value)
-      : [...current, value];
+    const next = current.includes(value) ? current.filter((v) => v !== value) : [...current, value];
     setPrefs({ [key]: next } as Partial<Prefs>);
   };
 

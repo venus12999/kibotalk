@@ -6,7 +6,7 @@ import searchEmotions from "./tools/search-emotions";
 
 // The OAuth issuer must be the direct Supabase host; the project ref is the
 // only value that survives publish unchanged.
-const projectRef = import.meta.env['VITE_SUPABASE_PROJECT_ID'] ?? "project-ref-unset";
+const projectRef = import.meta.env["VITE_SUPABASE_PROJECT_ID"] ?? "project-ref-unset";
 
 export default defineMcp({
   name: "kibotalk",
@@ -21,5 +21,4 @@ export default defineMcp({
   // Cast: tools without an outputSchema widen to `undefined`, which trips
   // exactOptionalPropertyTypes even though the runtime shape is correct.
   tools: [listSessions, getSession, deleteSession, searchEmotions] as never,
-
 });

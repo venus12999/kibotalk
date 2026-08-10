@@ -23,4 +23,3 @@ export function hapticPressEnd() {
 export function hapticReject() {
   hapticTap([6, 60, 6]);
 }
-

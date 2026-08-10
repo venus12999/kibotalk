@@ -6,7 +6,6 @@ import { SessionWorkbench } from "@/components/kibo/session-workbench";
 import { AppBackground } from "@/components/kibo/app-background";
 import { useSession } from "@/lib/kibo/use-session";
 
-
 export const Route = createFileRoute("/")({
   ssr: false,
 
@@ -75,7 +74,6 @@ function App() {
     </>
   );
 }
-
 
 function Page() {
   return (

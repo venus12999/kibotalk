@@ -2,19 +2,36 @@ import * as React from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Loader2, RefreshCw, Save, ShieldCheck, Users, MessagesSquare, Sparkles } from "lucide-react";
+import {
+  ArrowLeft,
+  Loader2,
+  RefreshCw,
+  Save,
+  ShieldCheck,
+  Users,
+  MessagesSquare,
+  Sparkles,
+} from "lucide-react";
 import { toast } from "sonner";
 import { AppBackground } from "@/components/kibo/app-background";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getAdminOverview, updateAiModels, updateCoachPrompt, setUserAdmin } from "@/lib/kibo/admin.functions";
+import {
+  getAdminOverview,
+  updateAiModels,
+  updateCoachPrompt,
+  setUserAdmin,
+} from "@/lib/kibo/admin.functions";
 import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
     meta: [
       { title: "KiboTalk 管理后台 · 用户与会话数据" },
-      { name: "description", content: "查看 KiboTalk 用户、会话记录与统计数据，并随时切换对话所用的大模型。" },
+      {
+        name: "description",
+        content: "查看 KiboTalk 用户、会话记录与统计数据，并随时切换对话所用的大模型。",
+      },
       { property: "og:title", content: "KiboTalk 管理后台" },
       { property: "og:description", content: "用户、会话记录与大模型配置的统一管理界面。" },
       { property: "og:type", content: "website" },
@@ -38,7 +55,9 @@ function fmt(d: string | null) {
 function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
   return (
     <div className="paper-sheet flex items-center gap-3 rounded-2xl p-4">
-      <div className="grid size-9 place-items-center rounded-xl bg-primary/20 text-primary-foreground/80">{icon}</div>
+      <div className="grid size-9 place-items-center rounded-xl bg-primary/20 text-primary-foreground/80">
+        {icon}
+      </div>
       <div>
         <div className="text-2xl font-semibold leading-none">{value}</div>
         <div className="mt-1 text-xs text-muted-foreground">{label}</div>
@@ -138,7 +157,9 @@ function AdminPage() {
         <header className="glass-bar mb-5 flex items-center justify-between rounded-2xl px-4 py-3">
           <div className="flex items-center gap-3">
             <Button variant="soft" size="icon" asChild aria-label="返回">
-              <Link to="/"><ArrowLeft className="size-4" /></Link>
+              <Link to="/">
+                <ArrowLeft className="size-4" />
+              </Link>
             </Button>
             <div>
               <h1 className="text-base font-semibold">管理后台</h1>
@@ -152,9 +173,21 @@ function AdminPage() {
 
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat icon={<Users className="size-4" />} label="用户" value={d.stats.userCount} />
-          <Stat icon={<ShieldCheck className="size-4" />} label="管理员" value={d.stats.adminCount} />
-          <Stat icon={<MessagesSquare className="size-4" />} label="会话" value={d.stats.sessionCount} />
-          <Stat icon={<Sparkles className="size-4" />} label="近 7 天会话" value={d.stats.sessionsLast7d} />
+          <Stat
+            icon={<ShieldCheck className="size-4" />}
+            label="管理员"
+            value={d.stats.adminCount}
+          />
+          <Stat
+            icon={<MessagesSquare className="size-4" />}
+            label="会话"
+            value={d.stats.sessionCount}
+          />
+          <Stat
+            icon={<Sparkles className="size-4" />}
+            label="近 7 天会话"
+            value={d.stats.sessionsLast7d}
+          />
         </section>
 
         <section className="paper-sheet mt-5 rounded-3xl p-5">
@@ -163,13 +196,18 @@ function AdminPage() {
             修改后立即对所有用户生效（约 30 秒内刷新缓存）。
           </p>
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
-            {([
-              ["suggest", "回复建议模型", MODEL_OPTIONS],
-              ["summary", "总结模型", MODEL_OPTIONS],
-              ["transcribe", "语音转写模型", STT_OPTIONS],
-            ] as const).map(([key, label, options]) => (
+            {(
+              [
+                ["suggest", "回复建议模型", MODEL_OPTIONS],
+                ["summary", "总结模型", MODEL_OPTIONS],
+                ["transcribe", "语音转写模型", STT_OPTIONS],
+              ] as const
+            ).map(([key, label, options]) => (
               <div key={key}>
-                <label className="text-xs font-medium text-muted-foreground" htmlFor={`model-${key}`}>
+                <label
+                  className="text-xs font-medium text-muted-foreground"
+                  htmlFor={`model-${key}`}
+                >
                   {label}
                 </label>
                 <Input
@@ -192,7 +230,11 @@ function AdminPage() {
             disabled={saveMutation.isPending}
             onClick={() => saveMutation.mutate()}
           >
-            {saveMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+            {saveMutation.isPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Save className="size-4" />
+            )}
             保存配置
           </Button>
         </section>
@@ -200,7 +242,8 @@ function AdminPage() {
         <section className="paper-sheet mt-5 rounded-3xl p-5">
           <h2 className="text-sm font-semibold">思路提示词</h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            生成回复建议时附加的表达教练规则（结论先行、听众视角、举例比喻、画面感、前后一致、时间感知、金句捕捉、不跑题、立场清晰）。修改后约 30 秒内对所有用户生效。
+            生成回复建议时附加的表达教练规则（结论先行、听众视角、举例比喻、画面感、前后一致、时间感知、金句捕捉、不跑题、立场清晰）。修改后约
+            30 秒内对所有用户生效。
           </p>
           <Textarea
             className="mt-3 min-h-64 font-mono text-xs leading-relaxed"
@@ -214,7 +257,11 @@ function AdminPage() {
               disabled={promptMutation.isPending}
               onClick={() => promptMutation.mutate()}
             >
-              {promptMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+              {promptMutation.isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Save className="size-4" />
+              )}
               保存提示词
             </Button>
             <Button
@@ -245,7 +292,9 @@ function AdminPage() {
                   <tr key={u.id} className="border-t border-border/40">
                     <td className="py-2 pr-3">{u.email || u.id.slice(0, 8)}</td>
                     <td className="py-2 pr-3 text-xs text-muted-foreground">{fmt(u.createdAt)}</td>
-                    <td className="py-2 pr-3 text-xs text-muted-foreground">{fmt(u.lastSignInAt)}</td>
+                    <td className="py-2 pr-3 text-xs text-muted-foreground">
+                      {fmt(u.lastSignInAt)}
+                    </td>
                     <td className="py-2 pr-3">{u.sessionCount}</td>
                     <td className="py-2">
                       <Button

@@ -7,7 +7,12 @@ export default defineTool({
   title: "Delete a conversation session",
   description: "Permanently delete one saved KiboTalk session belonging to the signed-in user.",
   inputSchema: { id: z.string().describe("The session id returned by list_sessions.") },
-  annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
   handler: async ({ id }, ctx) => {
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };

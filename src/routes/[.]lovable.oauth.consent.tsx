@@ -16,8 +16,12 @@ type OAuthResult = {
 const oauth = (
   supabase.auth as unknown as {
     oauth: {
-      getAuthorizationDetails: (id: string) => Promise<{ data: OAuthResult | null; error: Error | null }>;
-      approveAuthorization: (id: string) => Promise<{ data: OAuthResult | null; error: Error | null }>;
+      getAuthorizationDetails: (
+        id: string,
+      ) => Promise<{ data: OAuthResult | null; error: Error | null }>;
+      approveAuthorization: (
+        id: string,
+      ) => Promise<{ data: OAuthResult | null; error: Error | null }>;
       denyAuthorization: (id: string) => Promise<{ data: OAuthResult | null; error: Error | null }>;
     };
   }
@@ -27,7 +31,8 @@ export const Route = createFileRoute("/.lovable/oauth/consent")({
   // Browser-only: the Supabase session lives in localStorage.
   ssr: false,
   validateSearch: (s: Record<string, unknown>) => ({
-    authorization_id: typeof s['authorization_id'] === "string" ? (s['authorization_id'] as string) : "",
+    authorization_id:
+      typeof s["authorization_id"] === "string" ? (s["authorization_id"] as string) : "",
   }),
   beforeLoad: async ({ search, location }) => {
     if (!search.authorization_id) throw new Error("Missing authorization_id");
@@ -86,13 +91,19 @@ function Consent() {
     <main className="flex min-h-dvh items-center justify-center p-4">
       <AppBackground />
       <div className="paper-sheet w-full max-w-sm p-6 sm:p-8">
-        <img src={logoAsset.url} alt="KiboTalk" className="h-8 w-auto select-none" draggable={false} />
+        <img
+          src={logoAsset.url}
+          alt="KiboTalk"
+          className="h-8 w-auto select-none"
+          draggable={false}
+        />
         <h1 className="mt-4 flex items-center gap-2 text-sm font-semibold">
           <ShieldCheck className="size-4 text-primary" />
           允许 {clientName} 访问你的 KiboTalk？
         </h1>
         <p className="mt-2 text-xs text-muted-foreground">
-          授权后，{clientName} 可以以你的身份读取、删除你的会话记录，并查询情绪词库。你随时可以在对方应用中断开连接。
+          授权后，{clientName}{" "}
+          可以以你的身份读取、删除你的会话记录，并查询情绪词库。你随时可以在对方应用中断开连接。
         </p>
         {error && (
           <p role="alert" className="mt-3 text-xs text-destructive">
@@ -104,7 +115,12 @@ function Consent() {
             {busy && <Loader2 className="mr-1 size-3.5 animate-spin" />}
             允许
           </Button>
-          <Button variant="soft" className="flex-1" disabled={busy} onClick={() => void decide(false)}>
+          <Button
+            variant="soft"
+            className="flex-1"
+            disabled={busy}
+            onClick={() => void decide(false)}
+          >
             拒绝
           </Button>
         </div>

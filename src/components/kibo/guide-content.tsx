@@ -1,5 +1,17 @@
 import * as React from "react";
-import { Brain, Check, CircleDot, Hand, Headphones, Languages, Lightbulb, MessageSquare, Radio, Settings2, Sparkles } from "lucide-react";
+import {
+  Brain,
+  Check,
+  CircleDot,
+  Hand,
+  Headphones,
+  Languages,
+  Lightbulb,
+  MessageSquare,
+  Radio,
+  Settings2,
+  Sparkles,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PillGroup } from "./pill-group";
 import { useKibo } from "@/lib/kibo/store";
@@ -299,7 +311,11 @@ export function GuideContent() {
       </div>
       <Block icon={<MessageSquare className="size-3.5" />} title={c.fStage} items={c.fStageBody} />
       <Block icon={<Sparkles className="size-3.5" />} title={c.fIdeas} items={c.fIdeasBody} />
-      <Block icon={<Settings2 className="size-3.5" />} title={c.fSettings} items={c.fSettingsBody} />
+      <Block
+        icon={<Settings2 className="size-3.5" />}
+        title={c.fSettings}
+        items={c.fSettingsBody}
+      />
       <Block icon={<Brain className="size-3.5" />} title={c.fMemory} items={c.fMemoryBody} />
       <Block icon={<Languages className="size-3.5" />} title={c.fAccount} items={c.fAccountBody} />
 
@@ -315,7 +331,9 @@ export function GuideContent() {
             <h3 className="text-sm font-bold">{c.drill}</h3>
           </div>
           <span className="text-[11px] font-semibold text-muted-foreground">
-            {c.progress.replace("{a}", String(checked.length)).replace("{b}", String(c.steps.length))}
+            {c.progress
+              .replace("{a}", String(checked.length))
+              .replace("{b}", String(c.steps.length))}
           </span>
         </div>
         <ol className="mt-2 space-y-1.5">

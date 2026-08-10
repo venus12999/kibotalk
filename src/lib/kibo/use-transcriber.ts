@@ -282,7 +282,6 @@ export function useTranscriber({
     ctxRef.current = null;
   }, []);
 
-
   const flushPipe = React.useCallback(
     (pipe: Pipeline, minSpeechMs = MIN_SPEECH_MS, reason: FlushReason = "manual") => {
       const sampleRate = ctxRef.current?.sampleRate ?? 48000;
@@ -500,7 +499,6 @@ export function useTranscriber({
         });
       });
       pipesRef.current.push(pipe);
-
     };
 
     // With both sources the microphone is you and the system audio is the other
@@ -579,7 +577,6 @@ export function useTranscriber({
       window.removeEventListener("pageshow", resume);
     };
   }, []);
-
 
   return {
     start,

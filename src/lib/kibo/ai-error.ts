@@ -91,7 +91,10 @@ const dict: Record<"zh" | "en" | "ja", Record<AiErrorKind, Copy>> = {
     server: { title: "Service error", advice: "The model service is down briefly. Retry shortly." },
     invalid: { title: "Invalid request", advice: "This turn couldn't be processed — rephrase it." },
     empty: { title: "Empty answer", advice: "The model returned nothing. Retrying usually works." },
-    unknown: { title: "Generation failed", advice: "Unknown issue — retry, or restart the session." },
+    unknown: {
+      title: "Generation failed",
+      advice: "Unknown issue — retry, or restart the session.",
+    },
   },
   ja: {
     offline: { title: "オフラインです", advice: "Wi‑Fi かモバイル通信に接続してから再試行を。" },

@@ -17,9 +17,7 @@ export function PillGroup<T extends string>({
 }) {
   return (
     <div className="space-y-1.5">
-      {label ? (
-        <p className="text-xs font-semibold text-foreground/70">{label}</p>
-      ) : null}
+      {label ? <p className="text-xs font-semibold text-foreground/70">{label}</p> : null}
       <div
         role="radiogroup"
         aria-label={label}
@@ -51,7 +49,6 @@ export function PillGroup<T extends string>({
                   {opt.description}
                 </span>
               ) : null}
-
             </button>
           );
         })}
@@ -59,6 +56,3 @@ export function PillGroup<T extends string>({
     </div>
   );
 }
-
-
-

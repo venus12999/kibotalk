@@ -210,7 +210,6 @@ export function HoldTalkButton({
       }}
       onContextMenu={(e) => e.preventDefault()}
       onDragStart={(e) => e.preventDefault()}
-
     >
       {/* press ripple */}
       {pressKey > 0 ? (

@@ -838,7 +838,6 @@ export function SessionWorkbench() {
             "--dock-scale": String(dockScale),
           } as React.CSSProperties
         }
-
       >
         {active && life !== "preparing" ? (
           <button

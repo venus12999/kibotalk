@@ -68,10 +68,12 @@ const copyRaw = {
     dropped: "未処理",
     tips: "アドバイス",
     ok: "区切りは良好です。今のペースを維持してください。",
-    tipShort: "{n} 未満の区間があります。離すのが早い可能性があるので、言い終えてから0.5秒ほど長めに押してください。",
+    tipShort:
+      "{n} 未満の区間があります。離すのが早い可能性があるので、言い終えてから0.5秒ほど長めに押してください。",
     tipDropped: "短すぎて破棄された音声があります。文を最後まで話してから離してください。",
     tipMax: "長すぎて分割された区間があります。1回10秒以内を目安に。",
-    tipNoisy: "無音時のノイズがしきい値に近く、環境が騒がしいようです。「押して話す」やヘッドセットを検討してください。",
+    tipNoisy:
+      "無音時のノイズがしきい値に近く、環境が騒がしいようです。「押して話す」やヘッドセットを検討してください。",
     tipQuiet: "声が小さめです。マイクに近づくか入力音量を上げてください。",
     tipPause: "常時収音は {n} の無音で区切ります。一文ごとにはっきり間を取ってください。",
   },
@@ -101,10 +103,12 @@ const copyRaw = {
     dropped: "Not sent",
     tips: "Suggestions",
     ok: "Segmentation looks healthy — keep this rhythm.",
-    tipShort: "Some segments were under {n} — you may be releasing too early. Hold half a second past your last word.",
+    tipShort:
+      "Some segments were under {n} — you may be releasing too early. Hold half a second past your last word.",
     tipDropped: "Some audio was dropped for being too short. Finish the sentence before releasing.",
     tipMax: "Segments were split for length. Aim for one sentence under 10s at a time.",
-    tipNoisy: "Background noise is close to the threshold. Switch to push-to-talk or use a headset mic.",
+    tipNoisy:
+      "Background noise is close to the threshold. Switch to push-to-talk or use a headset mic.",
     tipQuiet: "Your voice reads quiet — move closer to the mic or raise input gain.",
     tipPause: "Continuous mode cuts after {n} of silence. Pause clearly between sentences.",
   },
@@ -126,7 +130,8 @@ function buildTips(d: Diagnostics, mode: CaptureMode, w: Strings) {
   if (maxed >= 1) tips.push(w.tipMax);
   if (!d.voiced && d.rms > d.silenceThreshold * 0.7) tips.push(w.tipNoisy);
   if (d.voiced && d.rms < d.silenceThreshold * 1.6) tips.push(w.tipQuiet);
-  if (mode === "continuous" && done.length === 0) tips.push(w.tipPause.replace("{n}", ms(d.silenceWindowMs)));
+  if (mode === "continuous" && done.length === 0)
+    tips.push(w.tipPause.replace("{n}", ms(d.silenceWindowMs)));
   if (tips.length === 0 && done.length > 0) tips.push(w.ok);
   return tips;
 }
@@ -157,7 +162,9 @@ export function VadDiagnostics({ diagnostics: d, mode, uiLang, recording, classN
         className="flex w-full items-center gap-2 text-left"
         aria-expanded={open}
       >
-        <Activity className={cn("size-4 shrink-0", recording ? "text-primary" : "text-muted-foreground")} />
+        <Activity
+          className={cn("size-4 shrink-0", recording ? "text-primary" : "text-muted-foreground")}
+        />
         <span className="flex-1">
           <span className="block text-xs font-bold">{w.title}</span>
           <span className="block text-[11px] text-muted-foreground">{w.subtitle}</span>
@@ -165,12 +172,16 @@ export function VadDiagnostics({ diagnostics: d, mode, uiLang, recording, classN
         <span
           className={cn(
             "rounded-full px-2 py-0.5 text-[10px] font-semibold",
-            d.voiced ? "gradient-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+            d.voiced
+              ? "gradient-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground",
           )}
         >
           {d.voiced ? w.speaking : w.silent}
         </span>
-        <ChevronDown className={cn("size-4 text-muted-foreground transition-transform", open && "rotate-180")} />
+        <ChevronDown
+          className={cn("size-4 text-muted-foreground transition-transform", open && "rotate-180")}
+        />
       </button>
 
       {open ? (
@@ -182,7 +193,10 @@ export function VadDiagnostics({ diagnostics: d, mode, uiLang, recording, classN
             </div>
             <div className="glass-fill relative mt-1 h-2 overflow-hidden rounded-full">
               <div
-                className={cn("h-full rounded-full transition-[width] duration-100", d.voiced ? "gradient-primary" : "bg-muted-foreground/40")}
+                className={cn(
+                  "h-full rounded-full transition-[width] duration-100",
+                  d.voiced ? "gradient-primary" : "bg-muted-foreground/40",
+                )}
                 style={{ width: `${levelPct}%` }}
               />
               <span
@@ -197,10 +211,7 @@ export function VadDiagnostics({ diagnostics: d, mode, uiLang, recording, classN
           <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
             <Row label={w.speechMs} value={ms(d.speechMs)} />
             <Row label={w.silenceMs} value={ms(d.silenceMs)} />
-            <Row
-              label={w.threshold}
-              value={d.silenceThreshold.toFixed(3)}
-            />
+            <Row label={w.threshold} value={d.silenceThreshold.toFixed(3)} />
             <Row
               label={mode === "push" ? w.cutManual : w.cutIn.replace("{n}", ms(d.silenceToCut))}
               value={mode === "push" ? "—" : ms(d.silenceWindowMs)}

@@ -97,10 +97,7 @@ function parseServerFrame(data: ArrayBuffer): Parsed {
  * Streams one audio segment through Volcengine ASR and returns an SSE body
  * with `transcript.text.delta` / `transcript.text.done` events.
  */
-export async function transcribeWithVolc(
-  wav: Uint8Array,
-  options: VolcOptions,
-): Promise<Response> {
+export async function transcribeWithVolc(wav: Uint8Array, options: VolcOptions): Promise<Response> {
   const pcm = wavToPcm(wav);
   if (pcm.length < 3200) return new Response("Empty audio", { status: 400 });
 
@@ -204,11 +201,7 @@ export async function transcribeWithVolc(
           seq += 1;
           try {
             ws.send(
-              frame(
-                header(0b0010, last ? 0b0011 : 0b0001, 0b0000),
-                last ? -seq : seq,
-                slice,
-              ),
+              frame(header(0b0010, last ? 0b0011 : 0b0001, 0b0000), last ? -seq : seq, slice),
             );
           } catch {
             finish();
@@ -231,8 +224,7 @@ export async function transcribeWithVolc(
   });
 }
 
-const FLASH_ENDPOINT =
-  "https://openspeech.bytedance.com/api/v3/auc/bigmodel/recognize/flash";
+const FLASH_ENDPOINT = "https://openspeech.bytedance.com/api/v3/auc/bigmodel/recognize/flash";
 const FLASH_RESOURCE = "volc.bigasr.auc_turbo";
 
 function base64(bytes: Uint8Array) {

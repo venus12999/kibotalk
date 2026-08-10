@@ -31,7 +31,6 @@ type Body = {
   memory?: string[];
 };
 
-
 export const Route = createFileRoute("/api/suggest")({
   server: {
     handlers: {
@@ -54,8 +53,12 @@ export const Route = createFileRoute("/api/suggest")({
           .slice(-12)
           .map((t) => `${t.speaker === "user" ? "ME" : "OTHER"}: ${t.text}`)
           .join("\n");
-        const latest = (body.latest ?? "").trim() ||
-          [...body.turns].reverse().find((t) => t.speaker === "other")?.text.trim() ||
+        const latest =
+          (body.latest ?? "").trim() ||
+          [...body.turns]
+            .reverse()
+            .find((t) => t.speaker === "other")
+            ?.text.trim() ||
           "";
 
         // Emotion-intelligence read of the moment: dictionary match on the
@@ -63,9 +66,8 @@ export const Route = createFileRoute("/api/suggest")({
         // real communication need instead of just answering the words.
         let briefing = "";
         try {
-          const { loadEmotionLibrary, matchEmotions, emotionBriefing } = await import(
-            "@/lib/kibo/emotion.server"
-          );
+          const { loadEmotionLibrary, matchEmotions, emotionBriefing } =
+            await import("@/lib/kibo/emotion.server");
           const rows = await loadEmotionLibrary();
           const myLast = [...body.turns].reverse().find((t) => t.speaker === "user")?.text ?? "";
           const matches = matchEmotions(`${latest}\n${myLast}`, rows, 3);
@@ -73,7 +75,6 @@ export const Route = createFileRoute("/api/suggest")({
         } catch {
           /* emotion library is an enhancement; never block a suggestion */
         }
-
 
         // Kibo Memory: stable facts about the user that must survive sessions.
         const profile = (body.profile ?? "").trim().slice(0, 600);
@@ -138,7 +139,6 @@ export const Route = createFileRoute("/api/suggest")({
                   : "(the conversation just started)",
               },
             ],
-
           }),
         });
 
@@ -205,9 +205,7 @@ export const Route = createFileRoute("/api/suggest")({
                 };
                 const delta = json.choices?.[0]?.delta?.content;
                 if (delta) {
-                  controller.enqueue(
-                    encoder.encode(`data: ${JSON.stringify({ delta })}\n\n`),
-                  );
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ delta })}\n\n`));
                 }
               } catch {
                 /* ignore partial frames */

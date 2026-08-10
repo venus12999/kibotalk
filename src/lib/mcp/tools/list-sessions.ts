@@ -8,7 +8,11 @@ export default defineTool({
   description:
     "List the signed-in user's saved KiboTalk conversation sessions, newest first, with summary and language.",
   inputSchema: {
-    limit: z.number().int().optional().describe("How many sessions to return (default 20, max 100)."),
+    limit: z
+      .number()
+      .int()
+      .optional()
+      .describe("How many sessions to return (default 20, max 100)."),
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ limit }, ctx) => {

@@ -5,7 +5,8 @@ import { supabaseForUser } from "../supabase";
 export default defineTool({
   name: "get_session",
   title: "Get a conversation session",
-  description: "Fetch one saved KiboTalk session belonging to the signed-in user, including its full transcript turns.",
+  description:
+    "Fetch one saved KiboTalk session belonging to the signed-in user, including its full transcript turns.",
   inputSchema: { id: z.string().describe("The session id returned by list_sessions.") },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ id }, ctx) => {
