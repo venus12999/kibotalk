@@ -701,10 +701,7 @@ export function SessionWorkbench() {
         const ideasView = (
           <SuggestionStage
             scrollRef={ideasScrollRef}
-            className={cn(
-              "min-h-0 flex-1",
-              wide && "h-auto min-h-[40dvh] max-h-[72dvh]",
-            )}
+            className={cn("min-h-0 flex-1", wide && "h-auto min-h-[40dvh] max-h-[72dvh]")}
             fontScale={prefs.suggestionFontScale}
             rounds={rounds}
             streaming={streaming}
@@ -765,9 +762,7 @@ export function SessionWorkbench() {
         );
 
         return (
-          <main
-          className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-5 py-4"
-        >
+          <main className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-5 py-4">
             {wide ? (
               <div className="grid w-full min-h-0 flex-1 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 sm:gap-6">
                 {/* Left: the conversation floating in the blank space. */}
