@@ -340,7 +340,6 @@ export function SettingsSheet({
             <p className="text-xs text-foreground/70">{t("dockSizeDescription")}</p>
           </div>
 
-
           <div className="flex flex-col gap-3 border-b border-border py-4">
             <div className="min-w-0">
               <p className="text-sm font-semibold">{t("suggestionFontSize")}</p>

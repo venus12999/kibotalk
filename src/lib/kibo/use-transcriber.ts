@@ -88,7 +88,6 @@ type Pipeline = {
   rms: number;
 };
 
-
 export function useTranscriber({
   language,
   audioSource,
@@ -124,16 +123,13 @@ export function useTranscriber({
   const segmentsRef = React.useRef<SegmentStat[]>([]);
   const segmentSeq = React.useRef(0);
 
-  const recordSegment = React.useCallback(
-    (stat: Omit<SegmentStat, "id" | "at">) => {
-      segmentSeq.current += 1;
-      segmentsRef.current = [
-        { ...stat, id: segmentSeq.current, at: Date.now() },
-        ...segmentsRef.current,
-      ].slice(0, 8);
-    },
-    [],
-  );
+  const recordSegment = React.useCallback((stat: Omit<SegmentStat, "id" | "at">) => {
+    segmentSeq.current += 1;
+    segmentsRef.current = [
+      { ...stat, id: segmentSeq.current, at: Date.now() },
+      ...segmentsRef.current,
+    ].slice(0, 8);
+  }, []);
 
   React.useEffect(() => {
     const id = window.setInterval(() => {
@@ -165,8 +161,6 @@ export function useTranscriber({
     }, 120);
     return () => window.clearInterval(id);
   }, []);
-
-
 
   /** Source routing decides the speaker; a lone microphone follows the buttons. */
   const speakerOf = React.useCallback(
@@ -313,7 +307,6 @@ export function useTranscriber({
       pipesRef.current.forEach((pipe) => flushPipe(pipe, minSpeechMs, reason));
     },
     [flushPipe],
-
   );
 
   const start = React.useCallback(async () => {
@@ -321,8 +314,7 @@ export function useTranscriber({
 
     // Android Chrome / iOS Safari expose no getDisplayMedia — fall back to mic.
     const canCaptureSystem = typeof navigator?.mediaDevices?.getDisplayMedia === "function";
-    const wantSystem =
-      canCaptureSystem && (audioSource === "system" || audioSource === "both");
+    const wantSystem = canCaptureSystem && (audioSource === "system" || audioSource === "both");
     const wantMic = audioSource === "microphone" || audioSource === "both" || !wantSystem;
 
     let micStream: MediaStream | null = null;
@@ -371,9 +363,7 @@ export function useTranscriber({
         sysStream = new MediaStream(display.getAudioTracks());
       } catch (error) {
         const reason =
-          error instanceof Error && error.message === "no-system-audio"
-            ? "system-audio"
-            : "screen";
+          error instanceof Error && error.message === "no-system-audio" ? "system-audio" : "screen";
         // "Both" still works with just the microphone — keep the session alive
         // and only warn, instead of failing the whole start.
         if (micStream) {
@@ -384,7 +374,6 @@ export function useTranscriber({
         }
       }
     }
-
 
     const AudioCtx =
       window.AudioContext ??
@@ -462,7 +451,6 @@ export function useTranscriber({
           flushPipe(pipe, MIN_PUSH_SPEECH_MS, "max");
           return;
         }
-
 
         // Live partials: re-transcribe the growing buffer on a slow cadence so
         // the bubble shows real words instead of a placeholder.
@@ -561,5 +549,4 @@ export function useTranscriber({
     diagnostics,
     sampleRate: TARGET_RATE,
   };
-
 }

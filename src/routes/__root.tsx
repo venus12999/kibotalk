@@ -13,7 +13,6 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { WechatOpenInBrowser } from "@/components/kibo/wechat-open-in-browser";
 
-
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -128,5 +127,4 @@ function RootComponent() {
       <WechatOpenInBrowser />
     </QueryClientProvider>
   );
-
 }

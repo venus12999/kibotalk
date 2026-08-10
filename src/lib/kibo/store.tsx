@@ -35,7 +35,6 @@ type Ctx = {
 
 const KiboContext = React.createContext<Ctx | null>(null);
 
-
 function read<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
   try {
@@ -182,7 +181,6 @@ export function KiboProvider({ children }: { children: React.ReactNode }) {
     }),
     [prefs, history, hydrated, user, authLoading, syncing, userId],
   );
-
 
   return <KiboContext.Provider value={value}>{children}</KiboContext.Provider>;
 }
