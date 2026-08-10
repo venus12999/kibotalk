@@ -615,65 +615,58 @@ export function SessionWorkbench() {
         const jumpLabel =
           prefs.uiLang === "zh" ? "回到最新" : prefs.uiLang === "ja" ? "最新へ" : "Jump to latest";
 
+        // Only the two most recent turns stay on screen: every new line pushes
+        // the oldest one out, and the text floats without any bubble.
+        const visibleTurns = turns.slice(-2);
         const transcriptView = (
-          <div className="relative flex min-h-0 flex-1 flex-col">
-            {!following && turns.length > 0 ? (
-              <button
-                type="button"
-                onClick={scrollToLatest}
-                className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-lg"
-              >
-                {jumpLabel}
-              </button>
-            ) : null}
+          <div className="relative flex min-h-0 flex-1 flex-col justify-end">
             <ScrollArea ref={scrollRef} className="min-h-0 flex-1">
-              {turns.length === 0 ? (
+              {visibleTurns.length === 0 ? (
                 <p className="py-12 text-center text-sm text-muted-foreground">
                   {t("noTranscript")}
                 </p>
               ) : (
-                <ul className="space-y-3 pr-3">
-                  {turns.map((turn) => (
+                <ul className="flex flex-col justify-end gap-5 pr-3">
+                  {visibleTurns.map((turn) => (
                     <li
                       key={turn.id}
                       className={cn(
-                        "flex",
-                        turn.speaker === "user" ? "justify-end" : "justify-start",
+                        "idea-rise",
+                        turn.speaker === "user"
+                          ? "text-right text-transcript-self [text-shadow:0_1px_3px_oklch(0%_0_0/0.22)]"
+                          : "text-left text-transcript-other",
                       )}
                     >
                       <div
                         className={cn(
-                          "max-w-[85%] px-4 py-2.5",
-                          turn.speaker === "user"
-                            ? "bubble-self"
-                            : "bubble-other text-card-foreground",
+                          "flex items-baseline gap-2 text-[11px] font-semibold opacity-70",
+                          turn.speaker === "user" ? "justify-end" : "justify-start",
                         )}
                       >
-                        <div className="flex items-baseline gap-2 text-[11px] font-semibold opacity-70">
-                          <span>{turn.speaker === "user" ? t("me") : t("other")}</span>
-                          <time
-                            dateTime={new Date(turn.at).toISOString()}
-                            className="tabular-nums font-normal"
-                          >
-                            {new Date(turn.at).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </time>
-                        </div>
-                        <p className="mt-0.5 whitespace-pre-wrap break-words text-sm leading-relaxed">
-                          {turn.text}
-                        </p>
-                        {turn.translation ? (
-                          <p className="mt-1 border-t border-current/15 pt-1 text-xs leading-relaxed opacity-75">
-                            {turn.translation}
-                          </p>
-                        ) : null}
+                        <span>{turn.speaker === "user" ? t("me") : t("other")}</span>
+                        <time
+                          dateTime={new Date(turn.at).toISOString()}
+                          className="tabular-nums font-normal"
+                        >
+                          {new Date(turn.at).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </time>
                       </div>
+                      <p className="mt-1 whitespace-pre-wrap break-words text-base font-semibold leading-relaxed">
+                        {turn.text}
+                      </p>
+                      {turn.translation ? (
+                        <p className="mt-1 text-xs leading-relaxed opacity-75">
+                          {turn.translation}
+                        </p>
+                      ) : null}
                     </li>
                   ))}
                 </ul>
               )}
+
             </ScrollArea>
           </div>
         );
