@@ -116,12 +116,14 @@ function MemoryPage() {
     }
   };
 
+  const pinnedCount = items.filter((m) => m.pinned).length;
+
   return (
     <>
       <AppBackground />
       <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col gap-4 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-5">
-        <header className="glass-bar flex items-center gap-3 rounded-2xl px-3 py-2.5">
-          <Button variant="soft" size="icon" asChild aria-label="返回">
+        <header className="glass-bar flex items-center gap-3 rounded-full px-3 py-2.5">
+          <Button variant="soft" size="icon" className="rounded-full" asChild aria-label="返回">
             <Link to="/">
               <ArrowLeft className="size-4" />
             </Link>
@@ -136,12 +138,31 @@ function MemoryPage() {
           </div>
         </header>
 
-        <section className="paper-sheet space-y-3 rounded-2xl p-4">
+        {/* Hero orb — the memory core */}
+        <section className="relative flex flex-col items-center py-4">
+          <div className="relative flex size-36 items-center justify-center sm:size-44">
+            <span aria-hidden className="orb-aurora" />
+            <div className="kibo-orb orb-float relative flex size-full flex-col items-center justify-center text-center">
+              <span className="text-2xl font-black tabular-nums text-foreground/85 sm:text-3xl">
+                {items.length}
+              </span>
+              <span className="text-[11px] font-medium text-foreground/60">条记忆</span>
+              {pinnedCount > 0 ? (
+                <span className="mt-1 rounded-full bg-background/35 px-2 py-0.5 text-[10px] text-foreground/70">
+                  {pinnedCount} 条常驻
+                </span>
+              ) : null}
+            </div>
+          </div>
+        </section>
+
+        <section className="orb-sheet space-y-3 p-4">
           <h2 className="text-sm font-semibold">我的资料</h2>
           <div className="space-y-2">
             <Input
               value={prefs.profileName}
               maxLength={40}
+              className="rounded-full"
               placeholder="怎么称呼你"
               onChange={(e) => setPrefs({ profileName: e.target.value })}
             />
@@ -149,6 +170,7 @@ function MemoryPage() {
               value={prefs.profileAbout}
               maxLength={300}
               rows={3}
+              className="rounded-3xl"
               placeholder="简单介绍你自己：职业、性格、说话风格…"
               onChange={(e) => setPrefs({ profileAbout: e.target.value })}
             />
@@ -156,6 +178,7 @@ function MemoryPage() {
               value={prefs.profileGoal}
               maxLength={300}
               rows={2}
+              className="rounded-3xl"
               placeholder="你希望在对话里达成什么？例如：交朋友、面试、谈业务"
               onChange={(e) => setPrefs({ profileGoal: e.target.value })}
             />
@@ -163,7 +186,7 @@ function MemoryPage() {
           <p className="text-xs text-muted-foreground">资料会随账号云同步，随时可改。</p>
         </section>
 
-        <section className="paper-sheet space-y-3 rounded-2xl p-4">
+        <section className="orb-sheet space-y-3 p-4">
           <h2 className="text-sm font-semibold">添加一条记忆</h2>
           <div className="flex flex-wrap gap-1.5">
             {MEMORY_KINDS.map((k) => (
@@ -171,6 +194,7 @@ function MemoryPage() {
                 key={k}
                 type="button"
                 size="sm"
+                className="rounded-full"
                 variant={kind === k ? "default" : "soft"}
                 onClick={() => setKind(k)}
               >
@@ -182,17 +206,22 @@ function MemoryPage() {
             value={draft}
             rows={2}
             maxLength={500}
+            className="rounded-3xl"
             placeholder="例如：我在东京做设计，喜欢直接但礼貌的说话方式"
             onChange={(e) => setDraft(e.target.value)}
           />
-          <Button className="w-full gap-2" disabled={!draft.trim() || saving} onClick={() => void create()}>
+          <Button
+            className="w-full gap-2 rounded-full"
+            disabled={!draft.trim() || saving}
+            onClick={() => void create()}
+          >
             {saving ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
             记住这条
           </Button>
         </section>
 
-        <section className="paper-sheet space-y-2 rounded-2xl p-4">
-          <h2 className="text-sm font-semibold">已记住 ({items.length})</h2>
+        <section className="orb-sheet space-y-2.5 p-4">
+          <h2 className="text-sm font-semibold">记忆星图 ({items.length})</h2>
           {loading ? (
             <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
               <Loader2 className="size-4 animate-spin" /> 加载中…
@@ -200,19 +229,26 @@ function MemoryPage() {
           ) : items.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">还没有记忆条目。</p>
           ) : (
-            <ul className="space-y-2">
-              {items.map((m) => (
+            <ul className="space-y-2.5">
+              {items.map((m, i) => (
                 <li
                   key={m.id}
-                  className="flex items-start gap-2 rounded-xl bg-background/40 px-3 py-2"
+                  className={`flex items-center gap-2.5 py-1.5 pr-1.5 pl-2 ${
+                    m.pinned ? "orb-node orb-node-pinned" : "orb-node"
+                  }`}
                 >
-                  <span className="mt-0.5 shrink-0 rounded-full bg-primary/20 px-2 py-0.5 text-[11px] text-foreground/80">
-                    {KIND_LABEL[m.kind]}
+                  <span
+                    aria-hidden
+                    className="kibo-orb orb-float flex size-9 shrink-0 items-center justify-center text-[10px] font-bold text-foreground/70"
+                    style={{ animationDelay: `${(i % 5) * 0.4}s` }}
+                  >
+                    {KIND_LABEL[m.kind].slice(0, 1)}
                   </span>
-                  <p className="min-w-0 flex-1 text-sm break-words">{m.content}</p>
+                  <p className="min-w-0 flex-1 text-sm leading-snug break-words">{m.content}</p>
                   <Button
                     variant="ghost"
                     size="icon"
+                    className="rounded-full"
                     aria-label={m.pinned ? "取消置顶" : "置顶"}
                     onClick={() => void togglePin(m)}
                   >
@@ -225,6 +261,7 @@ function MemoryPage() {
                   <Button
                     variant="ghost"
                     size="icon"
+                    className="rounded-full"
                     aria-label="删除"
                     onClick={() => void remove(m)}
                   >
@@ -239,3 +276,4 @@ function MemoryPage() {
     </>
   );
 }
+
