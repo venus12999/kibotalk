@@ -90,7 +90,10 @@ export function SessionWorkbench() {
   const [aiErrorKind, setAiErrorKind] = React.useState<AiErrorKind>("unknown");
 
   const [aiAttempt, setAiAttempt] = React.useState(0);
+  /** Live-voice stage: which pull-up panel is open under the orb. */
+  const [livePanel, setLivePanel] = React.useState<"none" | "transcript" | "ideas">("none");
   const [settingsOpen, setSettingsOpen] = React.useState(false);
+
   const [historyOpen, setHistoryOpen] = React.useState(false);
   const [guideOpen, setGuideOpen] = React.useState(false);
   const [confirmStop, setConfirmStop] = React.useState(false);
