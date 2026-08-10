@@ -1,11 +1,18 @@
 import * as React from "react";
-import {
-  classifyAiError,
-  describeAiError,
-  type AiErrorKind,
-} from "@/lib/kibo/ai-error";
+import { classifyAiError, describeAiError, type AiErrorKind } from "@/lib/kibo/ai-error";
 
-import { HelpCircle, History, Lightbulb, Mic, Pause, Play, Settings, Square, User, Users } from "lucide-react";
+import {
+  HelpCircle,
+  History,
+  Lightbulb,
+  Mic,
+  Pause,
+  Play,
+  Settings,
+  Square,
+  User,
+  Users,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -38,7 +45,6 @@ import { VadDiagnostics } from "./vad-diagnostics";
 import { loadMemoryContext } from "@/lib/kibo/memory";
 import { useSession } from "@/lib/kibo/use-session";
 
-
 const uid = () => Math.random().toString(36).slice(2, 10);
 
 /** Shown when the model returns nothing usable, so the panel is never blank. */
@@ -48,19 +54,19 @@ const emptyAiMessage: Record<string, string> = {
   en: "No suggestions came back — tap retry.",
 };
 
-
-
 const copy = {
   zh: {
     micDenied: "无法访问麦克风，请在浏览器中允许麦克风权限后重试。",
     screenDenied: "未能获取系统音频，请在共享对话框中勾选“分享标签页/系统音频”。",
-    screenSkipped: "已跳过系统音频（未选择共享），本次只采集麦克风。想采集线上通话声音时，请在设置里选择“系统音频”并在弹窗中勾选“同时分享音频”。",
+    screenSkipped:
+      "已跳过系统音频（未选择共享），本次只采集麦克风。想采集线上通话声音时，请在设置里选择“系统音频”并在弹窗中勾选“同时分享音频”。",
     failed: "语音转写失败：",
     live: "正在听写…",
   },
   ja: {
     micDenied: "マイクにアクセスできません。ブラウザでマイクを許可してからもう一度お試しください。",
-    screenDenied: "システム音声を取得できませんでした。共有ダイアログで「音声を共有」を有効にしてください。",
+    screenDenied:
+      "システム音声を取得できませんでした。共有ダイアログで「音声を共有」を有効にしてください。",
     screenSkipped: "システム音声はスキップされました。今回はマイクのみで進みます。",
     failed: "文字起こしに失敗しました：",
     live: "書き起こし中…",
@@ -73,7 +79,6 @@ const copy = {
     live: "Transcribing…",
   },
 } as const;
-
 
 export function SessionWorkbench() {
   const { prefs, t, addSession } = useKibo();
@@ -99,7 +104,6 @@ export function SessionWorkbench() {
   React.useEffect(() => {
     if (rounds.length > 0) setLivePanel((p) => (p === "transcript" ? p : "ideas"));
   }, [rounds.length]);
-
 
   const [settingsOpen, setSettingsOpen] = React.useState(false);
 
@@ -168,7 +172,6 @@ export function SessionWorkbench() {
     setRounds((prev) => (prev[0] && prev[0].candidates.length === 0 ? prev.slice(1) : prev));
   }, []);
 
-
   const handleInterim = React.useCallback(
     (text: string, speaker: "user" | "other") => {
       if (speaker === "user" && text.trim().length > 1) cancelSuggestions();
@@ -190,126 +193,118 @@ export function SessionWorkbench() {
   const lastRequestRef = React.useRef<{ text: string; payload: SuggestPayload } | null>(null);
 
   /** Kick off a suggestion stream for one incoming line, tracking its status. */
-  const runSuggestions = React.useCallback(
-    (text: string, replay?: SuggestPayload) => {
-      const req = ++reqRef.current;
-      const roundId = uid();
-      // A new turn makes the in-flight suggestion obsolete — cancel it.
-      abortRef.current?.abort();
-      const controller = new AbortController();
-      abortRef.current = controller;
-      setStreaming(true);
-      setAiError("");
-      setAiStatus(replay ? "retrying" : "connecting");
-      setAiAttempt((n) => (replay ? n + 1 : 0));
-      // Only the round for the newest line stays on screen: suggestions written
-      // for an older message are stale the moment the context moves on.
-      setRounds([{ id: roundId, prompt: text, candidates: [] }]);
+  const runSuggestions = React.useCallback((text: string, replay?: SuggestPayload) => {
+    const req = ++reqRef.current;
+    const roundId = uid();
+    // A new turn makes the in-flight suggestion obsolete — cancel it.
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setStreaming(true);
+    setAiError("");
+    setAiStatus(replay ? "retrying" : "connecting");
+    setAiAttempt((n) => (replay ? n + 1 : 0));
+    // Only the round for the newest line stays on screen: suggestions written
+    // for an older message are stale the moment the context moves on.
+    setRounds([{ id: roundId, prompt: text, candidates: [] }]);
 
-      // Whatever the stream managed to produce, so a late failure never wipes
-      // suggestions the user is already reading.
-      let partial: Candidate[] = [];
-      const onUpdate = (candidates: Candidate[]) => {
+    // Whatever the stream managed to produce, so a late failure never wipes
+    // suggestions the user is already reading.
+    let partial: Candidate[] = [];
+    const onUpdate = (candidates: Candidate[]) => {
+      if (req !== reqRef.current) return;
+      partial = candidates;
+      setAiStatus((s) => (s === "connecting" || s === "retrying" ? "streaming" : s));
+      setRounds((prev) => {
+        // The streaming round is always the head; patch it in place.
+        if (prev[0]?.id !== roundId) return prev;
+        const next = prev.slice();
+        next[0] = { ...prev[0], candidates };
+        return next;
+      });
+    };
+
+    // Retries replay the captured context verbatim; fresh turns snapshot it now.
+    const payload: SuggestPayload = replay ?? {
+      turns: turnsRef.current.map((x) => ({ speaker: x.speaker, text: x.text })),
+      latest: text,
+      conversationLang: prefsRef.current.conversationLang,
+      uiLang: prefsRef.current.uiLang,
+      level: prefsRef.current.level,
+      profile: [
+        prefsRef.current.profileName && `name: ${prefsRef.current.profileName}`,
+        prefsRef.current.profileAbout,
+        prefsRef.current.profileGoal && `goal: ${prefsRef.current.profileGoal}`,
+        prefsRef.current.profileRole && `role: ${prefsRef.current.profileRole}`,
+        prefsRef.current.profileAge && `age: ${prefsRef.current.profileAge}`,
+        prefsRef.current.profileNativeLang && `native: ${prefsRef.current.profileNativeLang}`,
+        prefsRef.current.profileCity && `city: ${prefsRef.current.profileCity}`,
+        prefsRef.current.profileGoals.length > 0 &&
+          `goals: ${prefsRef.current.profileGoals.join(", ")}`,
+        prefsRef.current.profileScenes.length > 0 &&
+          `scenes: ${prefsRef.current.profileScenes.join(", ")}`,
+        prefsRef.current.profileTones.length > 0 &&
+          `tone: ${prefsRef.current.profileTones.join(", ")}`,
+        prefsRef.current.profileStuck.length > 0 &&
+          `when stuck: ${prefsRef.current.profileStuck.join(", ")}`,
+      ]
+        .filter(Boolean)
+        .join("; "),
+      memory: memoryRef.current,
+    };
+    lastRequestRef.current = { text, payload };
+
+    // One transparent retry, but only while nothing has been shown yet:
+    // re-running after tokens landed would restart the answer from scratch.
+    const run = async () => {
+      try {
+        return await streamSuggestions(payload, onUpdate, controller.signal);
+      } catch (err) {
+        if (controller.signal.aborted || partial.length > 0) throw err;
+        return await streamSuggestions(payload, onUpdate, controller.signal);
+      }
+    };
+
+    void run()
+      .then((candidates) => {
         if (req !== reqRef.current) return;
-        partial = candidates;
-        setAiStatus((s) => (s === "connecting" || s === "retrying" ? "streaming" : s));
-        setRounds((prev) => {
-          // The streaming round is always the head; patch it in place.
-          if (prev[0]?.id !== roundId) return prev;
-          const next = prev.slice();
-          next[0] = { ...prev[0], candidates };
-          return next;
-        });
-      };
-
-      // Retries replay the captured context verbatim; fresh turns snapshot it now.
-      const payload: SuggestPayload =
-        replay ?? {
-          turns: turnsRef.current.map((x) => ({ speaker: x.speaker, text: x.text })),
-          latest: text,
-          conversationLang: prefsRef.current.conversationLang,
-          uiLang: prefsRef.current.uiLang,
-          level: prefsRef.current.level,
-          profile: [
-            prefsRef.current.profileName && `name: ${prefsRef.current.profileName}`,
-            prefsRef.current.profileAbout,
-            prefsRef.current.profileGoal && `goal: ${prefsRef.current.profileGoal}`,
-            prefsRef.current.profileRole && `role: ${prefsRef.current.profileRole}`,
-            prefsRef.current.profileAge && `age: ${prefsRef.current.profileAge}`,
-            prefsRef.current.profileNativeLang && `native: ${prefsRef.current.profileNativeLang}`,
-            prefsRef.current.profileCity && `city: ${prefsRef.current.profileCity}`,
-            prefsRef.current.profileGoals.length > 0 &&
-              `goals: ${prefsRef.current.profileGoals.join(", ")}`,
-            prefsRef.current.profileScenes.length > 0 &&
-              `scenes: ${prefsRef.current.profileScenes.join(", ")}`,
-            prefsRef.current.profileTones.length > 0 &&
-              `tone: ${prefsRef.current.profileTones.join(", ")}`,
-            prefsRef.current.profileStuck.length > 0 &&
-              `when stuck: ${prefsRef.current.profileStuck.join(", ")}`,
-          ]
-            .filter(Boolean)
-            .join("; "),
-          memory: memoryRef.current,
-        };
-      lastRequestRef.current = { text, payload };
-
-
-      // One transparent retry, but only while nothing has been shown yet:
-      // re-running after tokens landed would restart the answer from scratch.
-      const run = async () => {
-        try {
-          return await streamSuggestions(payload, onUpdate, controller.signal);
-        } catch (err) {
-          if (controller.signal.aborted || partial.length > 0) throw err;
-          return await streamSuggestions(payload, onUpdate, controller.signal);
-        }
-      };
-
-      void run()
-        .then((candidates) => {
-          if (req !== reqRef.current) return;
-          setStreaming(false);
-          const final = candidates.length > 0 ? candidates : partial;
-          if (final.length > 0) {
-            setAiStatus("done");
-            setAiError("");
-            setRounds((prev) =>
-              prev.map((r) => (r.id === roundId ? { ...r, candidates: final } : r)),
-            );
-          } else {
-            // An empty answer must not vanish silently — offer a retry.
-            setAiStatus("error");
-            setAiErrorKind("empty");
-            setAiError(emptyAiMessage[prefsRef.current.uiLang] ?? "No suggestions came back.");
-
-            setRounds((prev) => prev.filter((r) => r.id !== roundId));
-          }
-        })
-        .catch((err: unknown) => {
-          if (req !== reqRef.current || controller.signal.aborted) return;
-          setStreaming(false);
-          // A connection that dropped after some text still gave usable ideas:
-          // keep them on screen and finish quietly instead of showing a failure.
-          if (partial.length > 0) {
-            setAiStatus("done");
-            setAiError("");
-            setRounds((prev) =>
-              prev.map((r) => (r.id === roundId ? { ...r, candidates: partial } : r)),
-            );
-            return;
-          }
-          setRounds((prev) => prev.filter((r) => r.id !== roundId));
-          const message = err instanceof Error ? err.message : String(err);
+        setStreaming(false);
+        const final = candidates.length > 0 ? candidates : partial;
+        if (final.length > 0) {
+          setAiStatus("done");
+          setAiError("");
+          setRounds((prev) =>
+            prev.map((r) => (r.id === roundId ? { ...r, candidates: final } : r)),
+          );
+        } else {
+          // An empty answer must not vanish silently — offer a retry.
           setAiStatus("error");
-          setAiErrorKind(classifyAiError(err));
-          setAiError(message);
+          setAiErrorKind("empty");
+          setAiError(emptyAiMessage[prefsRef.current.uiLang] ?? "No suggestions came back.");
 
-        });
-
-
-    },
-    [],
-  );
+          setRounds((prev) => prev.filter((r) => r.id !== roundId));
+        }
+      })
+      .catch((err: unknown) => {
+        if (req !== reqRef.current || controller.signal.aborted) return;
+        setStreaming(false);
+        // A connection that dropped after some text still gave usable ideas:
+        // keep them on screen and finish quietly instead of showing a failure.
+        if (partial.length > 0) {
+          setAiStatus("done");
+          setAiError("");
+          setRounds((prev) =>
+            prev.map((r) => (r.id === roundId ? { ...r, candidates: partial } : r)),
+          );
+          return;
+        }
+        setRounds((prev) => prev.filter((r) => r.id !== roundId));
+        const message = err instanceof Error ? err.message : String(err);
+        setAiStatus("error");
+        setAiErrorKind(classifyAiError(err));
+        setAiError(message);
+      });
+  }, []);
 
   const retrySuggestions = React.useCallback(() => {
     const last = lastRequestRef.current;
@@ -357,7 +352,6 @@ export function SessionWorkbench() {
       // Every finished line from the other person triggers ideas automatically,
       // in both capture modes. The manual button stays as a way to re-ask.
       runSuggestions(text);
-
     },
     [cancelSuggestions, runSuggestions],
   );
@@ -380,7 +374,6 @@ export function SessionWorkbench() {
     lastRequestRef.current = null;
   }, [contextKey, cancelSuggestions]);
 
-
   const handleError = React.useCallback(
     (message: string) => {
       const soft = message.endsWith(":soft");
@@ -392,8 +385,6 @@ export function SessionWorkbench() {
     },
     [words],
   );
-
-
 
   const transcriber = useTranscriber({
     language: prefs.conversationLang,
@@ -474,8 +465,6 @@ export function SessionWorkbench() {
     };
   }, [wide, prefs.scrollSync, getViewport, livePanel]);
 
-
-
   const startSession = async () => {
     reqRef.current += 1;
     abortRef.current?.abort();
@@ -546,8 +535,6 @@ export function SessionWorkbench() {
     setConfirmStop(false);
   };
 
-
-
   const active = life === "running" || life === "paused" || life === "preparing";
 
   // The floating phone dock is position:fixed, so the scroll container needs a
@@ -614,7 +601,12 @@ export function SessionWorkbench() {
           >
             <HelpCircle className="size-4" />
           </Button>
-          <Button variant="soft" size="icon" aria-label={t("history")} onClick={() => setHistoryOpen(true)}>
+          <Button
+            variant="soft"
+            size="icon"
+            aria-label={t("history")}
+            onClick={() => setHistoryOpen(true)}
+          >
             <History className="size-4" />
           </Button>
           <Button
@@ -627,8 +619,6 @@ export function SessionWorkbench() {
           </Button>
         </div>
       </header>
-
-
 
       {/* Live-voice stage: a breathing orb in the middle, the conversation
           floating to its left and the three ideas floating to its right. */}
@@ -664,7 +654,6 @@ export function SessionWorkbench() {
                           : "text-left text-transcript-other",
                       )}
                     >
-
                       <div
                         className={cn(
                           "flex items-baseline gap-2 text-[11px] font-semibold opacity-70",
@@ -694,7 +683,6 @@ export function SessionWorkbench() {
                   ))}
                 </ul>
               )}
-
             </ScrollArea>
           </div>
         );
@@ -871,13 +859,9 @@ export function SessionWorkbench() {
                 </div>
               </>
             )}
-
           </main>
         );
       })()}
-
-
-
 
       {/* Spacer so the floating phone dock never covers the last panel. */}
       <div aria-hidden className="shrink-0 sm:hidden" style={{ height: dockHeight + 16 }} />
@@ -889,17 +873,13 @@ export function SessionWorkbench() {
           "glass-bar z-30 flex flex-col gap-2.5 px-3 py-3",
           "fixed inset-x-2 bottom-2 shadow-lg",
           "sm:sticky sm:inset-x-auto sm:bottom-0 sm:gap-2 sm:px-4 sm:py-2.5 sm:shadow-none",
-
         )}
         style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
       >
-
-
         {active && life !== "preparing" ? (
           prefs.captureMode === "push" ? (
             <>
               <div className="flex gap-3 sm:gap-2">
-
                 {(["other", "user"] as const).map((who) => (
                   <HoldTalkButton
                     key={who}
@@ -908,7 +888,9 @@ export function SessionWorkbench() {
                     disabled={life === "paused"}
                     label={who === "other" ? t("holdOther") : t("holdMe")}
                     activeLabel={who === "other" ? t("holdingOther") : t("holdingMe")}
-                    icon={who === "other" ? <Users className="size-4" /> : <User className="size-4" />}
+                    icon={
+                      who === "other" ? <Users className="size-4" /> : <User className="size-4" />
+                    }
                     level={transcriber.level}
                     onBegin={() => transcriber.beginTurn(who)}
                     onEnd={() => transcriber.endTurn()}
@@ -931,8 +913,6 @@ export function SessionWorkbench() {
                 </Button>
               </div>
             </>
-
-
           ) : (
             <div className="flex gap-2">
               <div className="flex flex-1 gap-1 rounded-full bg-muted/60 p-1">
@@ -971,7 +951,6 @@ export function SessionWorkbench() {
             transcriber.holding && "pointer-events-none opacity-40",
           )}
         >
-
           {!active ? (
             <Button className="flex-1" onClick={() => void startSession()}>
               <Play className="size-4" />
@@ -996,7 +975,6 @@ export function SessionWorkbench() {
           )}
         </div>
       </div>
-
 
       <AlertDialog open={confirmStop} onOpenChange={setConfirmStop}>
         <AlertDialogContent>

@@ -136,43 +136,36 @@ const NoteCard = React.memo(function NoteCard({
           </button>
         ) : null}
 
-
-      {expanded ? (
-        <div className="mt-2 space-y-2 border-t border-current/15 pt-2">
-          {candidate.meaning ? (
-            <div>
-              <p className="text-[11px] font-bold opacity-60">{labels.alt}</p>
-              <p className="text-xs opacity-85">{candidate.meaning}</p>
-            </div>
-          ) : null}
-          {words.length ? (
-            <div>
-              <p className="text-[11px] font-bold opacity-60">{labels.points}</p>
-              <ul className="mt-1 flex flex-wrap gap-1">
-                {words.map((w, i) => (
-                  <li
-                    key={i}
-                    className="rounded-full bg-current/10 px-2 py-0.5 text-[11px] font-semibold"
-                  >
-                    {w.t}
-                    {w.r ? <span className="ml-1 opacity-60">{w.r}</span> : null}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
+        {expanded ? (
+          <div className="mt-2 space-y-2 border-t border-current/15 pt-2">
+            {candidate.meaning ? (
+              <div>
+                <p className="text-[11px] font-bold opacity-60">{labels.alt}</p>
+                <p className="text-xs opacity-85">{candidate.meaning}</p>
+              </div>
+            ) : null}
+            {words.length ? (
+              <div>
+                <p className="text-[11px] font-bold opacity-60">{labels.points}</p>
+                <ul className="mt-1 flex flex-wrap gap-1">
+                  {words.map((w, i) => (
+                    <li
+                      key={i}
+                      className="rounded-full bg-current/10 px-2 py-0.5 text-[11px] font-semibold"
+                    >
+                      {w.t}
+                      {w.r ? <span className="ml-1 opacity-60">{w.r}</span> : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </li>
-
   );
 });
-
-
-
-
-
 
 /** Past rounds are static; keep them out of the streaming render path. */
 const PreviousRounds = React.memo(function PreviousRounds({
@@ -270,11 +263,7 @@ const StatusBar = React.memo(function StatusBar({
   // matter more than the raw message, which is kept as small technical detail.
   if (status === "error") {
     return (
-      <div
-        role="status"
-        aria-live="polite"
-        className={cn("text-xs", tone)}
-      >
+      <div role="status" aria-live="polite" className={cn("text-xs", tone)}>
         <div className="flex items-start gap-2">
           {icon}
           <div className="min-w-0 flex-1">
@@ -312,10 +301,7 @@ const StatusBar = React.memo(function StatusBar({
     <div
       role="status"
       aria-live="polite"
-      className={cn(
-        "flex items-center gap-2 text-xs font-semibold",
-        tone,
-      )}
+      className={cn("flex items-center gap-2 text-xs font-semibold", tone)}
     >
       {icon}
       <span className="min-w-0 flex-1 truncate">
@@ -337,7 +323,6 @@ const StatusBar = React.memo(function StatusBar({
   );
 });
 
-
 export function SuggestionStage({
   rounds,
   streaming,
@@ -354,7 +339,6 @@ export function SuggestionStage({
   detailLabels,
   className,
   scrollRef,
-
 }: {
   rounds: Round[];
   streaming: boolean;
@@ -373,7 +357,6 @@ export function SuggestionStage({
   /** Lets the workbench observe/drive this panel's scrolling. */
   scrollRef?: React.Ref<HTMLDivElement>;
 }) {
-
   const current = rounds[0];
   const previous = React.useMemo(() => rounds.slice(1, 3), [rounds]);
   // Accordion: only one note expanded at a time, so the panel height stays put.
@@ -442,9 +425,6 @@ export function SuggestionStage({
             );
           })}
         </ol>
-
-
-
 
         <PreviousRounds rounds={previous} label={previousRoundLabel} />
       </div>
