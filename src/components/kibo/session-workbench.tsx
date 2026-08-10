@@ -83,7 +83,12 @@ const copy = {
 } as const;
 
 export function SessionWorkbench() {
-  const { prefs, t, addSession } = useKibo();
+  const { prefs, setPrefs, t, addSession } = useKibo();
+  // Phone dock: floating card or edge bar, with a user-set size and a collapse
+  // toggle so the thumb zone never has to cover the panels above it.
+  const dockStyle = prefs.dockStyle ?? "float";
+  const dockScale = prefs.dockScale ?? 1;
+  const dockCollapsed = Boolean(prefs.dockCollapsed);
   /** Continuous mode: who the microphone is currently attributed to. */
   const [speaker, setSpeaker] = React.useState<"user" | "other">("other");
   const [life, setLife] = React.useState<Lifecycle>("idle");
