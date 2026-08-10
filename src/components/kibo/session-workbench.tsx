@@ -786,15 +786,16 @@ export function SessionWorkbench() {
               </div>
             ) : (
               <>
-                {orb}
-                <div className="grid w-full min-h-0 flex-1 grid-cols-2 gap-3">
-                  <section className="flex h-[34dvh] min-h-0 flex-col overflow-hidden">
+                {/* Mobile: keep transcript + suggestions above the thumb zone so
+                    holding the dock buttons doesn't cover them. */}
+                <div className="grid w-full min-h-0 shrink-0 grid-cols-2 gap-3">
+                  <section className="flex h-[24dvh] min-h-0 flex-col overflow-hidden">
                     <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                       {t("conversation")}
                     </p>
                     {transcriptView}
                   </section>
-                  <section className="flex h-[34dvh] min-h-0 flex-col overflow-hidden">
+                  <section className="flex h-[24dvh] min-h-0 flex-col overflow-hidden">
                     <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                       <Lightbulb className="size-3" />
                       {t("suggestions")}
@@ -802,6 +803,7 @@ export function SessionWorkbench() {
                     {ideasView}
                   </section>
                 </div>
+                {orb}
               </>
             )}
           </main>
@@ -815,11 +817,11 @@ export function SessionWorkbench() {
       <div
         ref={dockRef}
         className={cn(
-          "glass-bar z-30 flex flex-col gap-2.5 px-3 py-3",
-          "fixed inset-x-2 bottom-2 shadow-lg",
+          "glass-bar z-30 flex flex-col gap-2 px-3 py-2",
+          "fixed inset-x-3 bottom-4 shadow-lg",
           "sm:sticky sm:inset-x-auto sm:bottom-0 sm:gap-2 sm:px-4 sm:py-2.5 sm:shadow-none",
         )}
-        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
       >
         {active && life !== "preparing" ? (
           prefs.captureMode === "push" ? (

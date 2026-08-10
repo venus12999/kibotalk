@@ -137,7 +137,7 @@ export function HoldTalkButton({
       disabled={disabled}
       style={{ WebkitTouchCallout: "none", WebkitUserSelect: "none", touchAction: "none" }}
       className={cn(
-        "relative flex h-20 flex-1 select-none touch-none flex-col items-center justify-center gap-0.5 overflow-hidden rounded-2xl sm:h-16",
+        "relative flex h-14 flex-1 select-none touch-none flex-col items-center justify-center gap-0.5 overflow-hidden rounded-2xl sm:h-16",
         "text-sm font-semibold transition-all duration-150 ease-out will-change-transform",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         active
