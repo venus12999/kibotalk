@@ -320,7 +320,10 @@ export function useTranscriber({
     if (pipesRef.current.length > 0) return true;
 
     const wantMic = audioSource === "microphone" || audioSource === "both";
-    const wantSystem = audioSource === "system" || audioSource === "both";
+    // Android Chrome / iOS Safari expose no getDisplayMedia — fall back to mic.
+    const canCaptureSystem = typeof navigator?.mediaDevices?.getDisplayMedia === "function";
+    const wantSystem =
+      canCaptureSystem && (audioSource === "system" || audioSource === "both");
 
     let micStream: MediaStream | null = null;
     let sysStream: MediaStream | null = null;
@@ -383,7 +386,10 @@ export function useTranscriber({
     }
 
 
-    const ctx = new AudioContext();
+    const AudioCtx =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    const ctx = new AudioCtx!();
     await ctx.resume().catch(() => undefined);
     ctxRef.current = ctx;
     userPausedRef.current = false;
