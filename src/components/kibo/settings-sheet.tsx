@@ -8,6 +8,7 @@ import type {
   AudioSource,
   CaptureMode,
   ConvLang,
+  DockStyle,
   Level,
   PanelLayout,
   Theme,
@@ -293,6 +294,44 @@ export function SettingsSheet({
                 },
               ]}
             />
+          </div>
+
+          {/* Phone-only: how the hold-to-talk dock sits at the bottom. */}
+          <div className="flex flex-col gap-3 border-b border-border py-4 sm:hidden">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">{t("mobileDock")}</p>
+              <p className="mt-0.5 text-xs text-foreground/70">{t("mobileDockDescription")}</p>
+            </div>
+            <PillGroup<DockStyle>
+              label=""
+              value={prefs.dockStyle ?? "float"}
+              onChange={(v) => setPrefs({ dockStyle: v })}
+              options={[
+                {
+                  value: "float",
+                  label: t("dockFloat"),
+                  description: t("dockFloatDescription"),
+                },
+                { value: "bar", label: t("dockBar"), description: t("dockBarDescription") },
+              ]}
+            />
+            <div className="flex items-center gap-3">
+              <span className="w-14 shrink-0 text-xs font-semibold text-foreground/80">
+                {t("dockSize")}
+              </span>
+              <Slider
+                className="min-w-0 flex-1"
+                min={0.8}
+                max={1.3}
+                step={0.05}
+                value={[prefs.dockScale ?? 1]}
+                onValueChange={([v]: number[]) => setPrefs({ dockScale: v ?? 1 })}
+              />
+              <span className="w-10 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+                {Math.round((prefs.dockScale ?? 1) * 100)}%
+              </span>
+            </div>
+            <p className="text-xs text-foreground/70">{t("dockSizeDescription")}</p>
           </div>
 
           {(prefs.panelLayout ?? "auto") === "row" ? (

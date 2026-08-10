@@ -507,6 +507,21 @@
   }
 }
 
+/* Phone talk dock: user-set control height, plus a collapsed state that keeps
+   only the talk buttons so the panels above stay readable. */
+@media (max-width: 639px) {
+  .dock-scaled {
+    height: calc(3.5rem * var(--dock-scale, 1));
+  }
+}
+.dock-compact .dock-secondary {
+  display: none;
+}
+.dock-compact {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
 /* User-tunable font size for the suggestion panel. */
 .suggest-scaled {
   font-size: calc(0.875rem * var(--suggest-scale, 1));
