@@ -425,32 +425,23 @@ export function SuggestionStage({
                 />
               );
             }
+            // Nothing to show yet: stay invisible until ideas actually arrive.
+            if (!streaming) return null;
             return (
               <li
                 key={i}
-                className="flex min-h-[4.5rem] items-center gap-3 rounded-[1.75rem] border border-dashed border-border px-3 py-3 text-xs text-muted-foreground"
+                className="flex min-h-[3rem] items-center gap-3 px-3 py-3 text-xs text-muted-foreground"
               >
-                <span
-                  aria-hidden
-                  className="flex size-7 shrink-0 items-center justify-center rounded-full border border-dashed border-current/40 text-[11px] font-black opacity-50"
-                >
-                  {i + 1}
-                </span>
-                <span className="min-w-0 flex-1">
-                {i === 0 && candidates.length === 0 && status === "idle" ? (
-                  emptyHint
-                ) : (
-                  <span className="flex gap-1" aria-hidden>
-                    <i className="size-1.5 animate-pulse rounded-full bg-current opacity-40" />
-                    <i className="size-1.5 animate-pulse rounded-full bg-current opacity-40 [animation-delay:150ms]" />
-                    <i className="size-1.5 animate-pulse rounded-full bg-current opacity-40 [animation-delay:300ms]" />
-                  </span>
-                )}
+                <span className="flex gap-1" aria-hidden>
+                  <i className="size-1.5 animate-pulse rounded-full bg-current opacity-40" />
+                  <i className="size-1.5 animate-pulse rounded-full bg-current opacity-40 [animation-delay:150ms]" />
+                  <i className="size-1.5 animate-pulse rounded-full bg-current opacity-40 [animation-delay:300ms]" />
                 </span>
               </li>
             );
           })}
         </ol>
+
 
 
 
