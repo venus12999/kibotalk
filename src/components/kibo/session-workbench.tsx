@@ -2,6 +2,8 @@ import * as React from "react";
 import { classifyAiError, describeAiError, type AiErrorKind } from "@/lib/kibo/ai-error";
 
 import {
+  ChevronDown,
+  ChevronUp,
   HelpCircle,
   History,
   Lightbulb,
