@@ -526,9 +526,9 @@ export function SessionWorkbench() {
 
 
 
-      {/* One orb instead of two framed panels: transcript and suggestions share
-          a single spherical glass surface. */}
-      <div
+      {/* Live-voice stage: one breathing orb, captions underneath, and the
+          transcript / ideas living in a pull-up panel instead of two frames. */}
+      <main
         style={
           prefs.panelLayout === "row"
             ? ({
@@ -538,173 +538,133 @@ export function SessionWorkbench() {
               } as React.CSSProperties)
             : undefined
         }
-        className="relative flex min-h-0 flex-1 flex-col"
+        className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-5 py-4"
       >
-        <div aria-hidden className="orb-aurora" />
-        <div
-          className={cn(
-            "orb-stage relative flex min-h-0 flex-1 gap-3 overflow-hidden p-4 sm:gap-5 sm:p-6",
-            prefs.panelLayout === "row" ? "panel-compact flex-row" : "flex-col",
-          )}
-        >
-        <section
-          className={cn(
-            "flex min-w-0 min-h-0 flex-col",
-            prefs.panelLayout === "row" ? "flex-1" : "flex-[1.1]",
-          )}
-        >
-
-
-
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold">{t("conversation")}</h2>
-            <span
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold backdrop-blur-md",
-                life === "running"
-                  ? "gradient-primary text-primary-foreground"
-                  : "glass-quiet text-muted-foreground",
-              )}
-            >
-              {life === "running" ? (
-                <span className="size-1.5 animate-pulse rounded-full bg-primary" />
-              ) : null}
-              {statusLabel}
-            </span>
-          </div>
-
-          <ScrollArea ref={scrollRef} className="mt-3 min-h-0 flex-1">
-            {turns.length === 0 && !interim.user && !interim.other ? (
-              <p className="py-16 text-center text-sm text-muted-foreground">{t("noTranscript")}</p>
-            ) : (
-              <ul className="space-y-3 pr-3">
-                {turns.map((turn) => (
-                  <li
-                    key={turn.id}
-                    className={cn("flex", turn.speaker === "user" ? "justify-end" : "justify-start")}
-                  >
-                    <div
-                      className={cn(
-                        "max-w-[85%] px-4 py-2.5",
-                        turn.speaker === "user"
-                          ? "bubble-self"
-                          : "bubble-other text-card-foreground",
-                      )}
-                    >
-                      <p className="text-[11px] font-semibold opacity-70">
-                        {turn.speaker === "user" ? t("me") : t("other")}
-                      </p>
-                      <p className="mt-0.5 text-sm leading-relaxed">{turn.text}</p>
-                      {turn.translation ? (
-                        <p className="mt-1 border-t border-current/15 pt-1 text-xs leading-relaxed opacity-75">
-                          {turn.translation}
-                        </p>
-                      ) : null}
-                    </div>
-                  </li>
-                ))}
-                {(["other", "user"] as const).map((who) =>
-                  interim[who] ? (
-                    <li
-                      key={who}
-                      className={cn("flex", who === "user" ? "justify-end" : "justify-start")}
-                    >
-                      <div className="bubble-interim max-w-[85%] px-4 py-2.5">
-                        <p className="text-[11px] font-semibold text-muted-foreground">
-                          {who === "user" ? t("me") : t("other")} · {words.live}
-                        </p>
-                        <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">
-                          {interim[who]}
-                        </p>
-                      </div>
-                    </li>
-                  ) : null,
-                )}
-              </ul>
+        <div className="relative flex items-center justify-center">
+          <div aria-hidden className="orb-aurora" />
+          <div
+            aria-hidden
+            className={cn(
+              "kibo-orb relative size-44 transition-transform duration-100 ease-out sm:size-56",
+              !transcriber.recording && "orb-float",
+              streaming && "orb-pulse",
             )}
-          </ScrollArea>
-
-          {error ? (
-            <p className="mt-3 rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
-              {error}
-            </p>
-          ) : null}
-
-          {transcriber.recording ? (
-            <div className="glass-fill mt-3 h-1.5 overflow-hidden rounded-full">
-              <div
-                className="gradient-primary h-full rounded-full transition-[width] duration-100"
-                style={{ width: `${Math.round(transcriber.level * 100)}%` }}
-              />
-            </div>
-          ) : null}
-
-          <VadDiagnostics
-            className="mt-3 hidden sm:block"
-            diagnostics={transcriber.diagnostics}
-            mode={prefs.captureMode}
-            uiLang={prefs.uiLang}
-            recording={transcriber.recording}
-          />
-
-
-        </section>
-
-        <div
-          aria-hidden
-          className={cn(
-            "shrink-0 bg-gradient-to-r from-transparent via-border/70 to-transparent",
-            prefs.panelLayout === "row"
-              ? "w-px bg-gradient-to-b"
-              : "h-px",
-          )}
-        />
-
-        <section
-          className={cn(
-            "flex min-w-0 min-h-0 flex-col",
-            prefs.panelLayout === "row" ? "flex-1" : "flex-1",
-          )}
-        >
-
-
-
-          <h2 className="text-sm font-bold">{t("suggestions")}</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">{t("aiSuggestions")}</p>
-          <SuggestionStage
-            className="mt-3 min-h-0 flex-1"
-            rounds={rounds}
-            streaming={streaming}
-            status={aiStatus}
-            errorMessage={aiError}
-            errorTitle={describeAiError(aiErrorKind, prefs.uiLang).title}
-            errorAdvice={describeAiError(aiErrorKind, prefs.uiLang).advice}
-
-            attempt={aiAttempt}
-            onRetry={retrySuggestions}
-            canRetry={lastRequestRef.current !== null}
-            statusLabels={{
-              connecting: t("aiConnecting"),
-              retrying: t("aiRetrying"),
-              attempt: t("aiAttempt"),
-              streaming: t("aiStreaming"),
-              done: t("aiDone"),
-              failed: t("aiFailed"),
-              retry: t("aiRetry"),
+            style={{
+              transform: transcriber.recording
+                ? `scale(${1 + Math.min(transcriber.level, 1) * 0.18})`
+                : undefined,
             }}
-            emptyHint={t("emptySuggestions")}
-            previousRoundLabel={t("previousRound")}
-            detailLabels={{
-              show: t("showDetail"),
-              hide: t("hideDetail"),
-              alt: t("altPhrasing"),
-              points: t("keyPoints"),
-            }}
-
           />
-        </section>
+          <span className="pointer-events-none absolute text-sm font-semibold text-primary-foreground/90">
+            {statusLabel}
+          </span>
         </div>
-      </div>
+
+        {/* Caption: the newest line, exactly like a live-voice transcript. */}
+        <p className="min-h-[3.5rem] max-w-xl px-4 text-center text-base leading-relaxed text-foreground/90">
+          {interim.other || interim.user
+            ? interim.other || interim.user
+            : (turns.at(-1)?.text ?? t("noTranscript"))}
+        </p>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant={livePanel === "transcript" ? "default" : "soft"}
+            size="sm"
+            onClick={() => setLivePanel(livePanel === "transcript" ? "none" : "transcript")}
+          >
+            {t("conversation")}
+          </Button>
+          <Button
+            variant={livePanel === "ideas" ? "default" : "soft"}
+            size="sm"
+            onClick={() => setLivePanel(livePanel === "ideas" ? "none" : "ideas")}
+          >
+            <Lightbulb className="size-4" />
+            {t("suggestions")}
+          </Button>
+        </div>
+
+        {error ? (
+          <p className="rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>
+        ) : null}
+
+        {livePanel !== "none" ? (
+          <section className="orb-stage flex h-[40dvh] w-full min-h-0 flex-col overflow-hidden p-3 sm:p-5">
+            {livePanel === "transcript" ? (
+              <ScrollArea ref={scrollRef} className="min-h-0 flex-1">
+                {turns.length === 0 ? (
+                  <p className="py-12 text-center text-sm text-muted-foreground">
+                    {t("noTranscript")}
+                  </p>
+                ) : (
+                  <ul className="space-y-3 pr-3">
+                    {turns.map((turn) => (
+                      <li
+                        key={turn.id}
+                        className={cn(
+                          "flex",
+                          turn.speaker === "user" ? "justify-end" : "justify-start",
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            "max-w-[85%] px-4 py-2.5",
+                            turn.speaker === "user"
+                              ? "bubble-self"
+                              : "bubble-other text-card-foreground",
+                          )}
+                        >
+                          <p className="text-[11px] font-semibold opacity-70">
+                            {turn.speaker === "user" ? t("me") : t("other")}
+                          </p>
+                          <p className="mt-0.5 text-sm leading-relaxed">{turn.text}</p>
+                          {turn.translation ? (
+                            <p className="mt-1 border-t border-current/15 pt-1 text-xs leading-relaxed opacity-75">
+                              {turn.translation}
+                            </p>
+                          ) : null}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </ScrollArea>
+            ) : (
+              <SuggestionStage
+                className="min-h-0 flex-1"
+                rounds={rounds}
+                streaming={streaming}
+                status={aiStatus}
+                errorMessage={aiError}
+                errorTitle={describeAiError(aiErrorKind, prefs.uiLang).title}
+                errorAdvice={describeAiError(aiErrorKind, prefs.uiLang).advice}
+                attempt={aiAttempt}
+                onRetry={retrySuggestions}
+                canRetry={lastRequestRef.current !== null}
+                statusLabels={{
+                  connecting: t("aiConnecting"),
+                  retrying: t("aiRetrying"),
+                  attempt: t("aiAttempt"),
+                  streaming: t("aiStreaming"),
+                  done: t("aiDone"),
+                  failed: t("aiFailed"),
+                  retry: t("aiRetry"),
+                }}
+                emptyHint={t("emptySuggestions")}
+                previousRoundLabel={t("previousRound")}
+                detailLabels={{
+                  show: t("showDetail"),
+                  hide: t("hideDetail"),
+                  alt: t("altPhrasing"),
+                  points: t("keyPoints"),
+                }}
+              />
+            )}
+          </section>
+        ) : null}
+      </main>
+
 
 
       {/* Spacer so the floating phone dock never covers the last panel. */}
