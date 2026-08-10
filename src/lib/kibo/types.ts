@@ -105,5 +105,14 @@ export const defaultPrefs: Prefs = {
   profileName: "",
   profileAbout: "",
   profileGoal: "",
+  profileNativeLang: "zh",
+  profileCity: "",
+  profileRole: "",
+  profileAge: "",
+  profileGoals: [],
+  profileScenes: [],
+  profileTones: [],
+  profileStuck: [],
+
   onboarded: false,
 };
