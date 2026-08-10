@@ -216,16 +216,24 @@ export function SettingsSheet({
               onChange={(v) => setPrefs({ audioSource: v })}
               options={[
                 {
-                  value: "microphone",
+                  value: "microphone" as AudioSource,
                   label: t("microphone"),
                   description: t("microphoneDescription"),
                 },
-                {
-                  value: "system",
-                  label: t("systemAudio"),
-                  description: t("systemAudioDescription"),
-                },
-                { value: "both", label: t("bothAudio"), description: t("bothAudioDescription") },
+                ...(systemAudioSupported
+                  ? [
+                      {
+                        value: "system" as AudioSource,
+                        label: t("systemAudio"),
+                        description: t("systemAudioDescription"),
+                      },
+                      {
+                        value: "both" as AudioSource,
+                        label: t("bothAudio"),
+                        description: t("bothAudioDescription"),
+                      },
+                    ]
+                  : []),
               ]}
             />
           </div>
