@@ -104,7 +104,11 @@ export function useTranscriber({
   const [holding, setHolding] = React.useState<Speaker | null>(null);
 
   const ctxRef = React.useRef<AudioContext | null>(null);
+  /** Silent sink: ScriptProcessor only ticks when connected, but routing the
+   *  microphone to the speakers would cause feedback/echo on phones. */
+  const sinkRef = React.useRef<GainNode | null>(null);
   const pipesRef = React.useRef<Pipeline[]>([]);
+
   const pausedRef = React.useRef(false);
   const userPausedRef = React.useRef(false);
   const inFlightRef = React.useRef(0);
