@@ -60,7 +60,16 @@ export function HoldTalkButton({
    * re-render of the button (which happens the instant a turn starts) can drop
    * an implicit pointer capture and fire `lostpointercapture`, which used to
    * end the turn immediately — the "long press doesn't work on phones" bug.
+   *
+   * Android Chrome has the mirror problem: right after the press it can emit a
+   * spurious `touchcancel` (long-press gesture detection) or blur the window
+   * (mic permission chip / vibration), which used to cancel the turn before the
+   * user ever spoke. Those two signals are therefore ignored for a short grace
+   * period after the press; a real finger lift always arrives as `touchend`.
    */
+  const startedAtRef = React.useRef(0);
+  const CANCEL_GRACE_MS = 1200;
+
   const release = React.useCallback((pointerId?: number, input?: "pointer" | "touch") => {
     if (pointerRef.current === null) return;
     if (input && inputRef.current !== input) return;
@@ -82,6 +91,7 @@ export function HoldTalkButton({
     }
     pointerRef.current = pointerId;
     inputRef.current = input;
+    startedAtRef.current = performance.now();
     hapticPressStart();
     setPressKey((k) => k + 1);
     onBeginRef.current();
