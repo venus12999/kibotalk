@@ -517,7 +517,7 @@
 }
 .suggest-scaled :is(.text-sm) {
   font-size: calc(0.875rem * var(--suggest-scale, 1));
-  line-height: calc(1.375 * var(--suggest-scale, 1));
+  line-height: 1.375;
 }
 .suggest-scaled :is(.text-xs) {
   font-size: calc(0.75rem * var(--suggest-scale, 1));
