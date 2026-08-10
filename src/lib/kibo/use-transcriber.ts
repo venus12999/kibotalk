@@ -389,6 +389,12 @@ export function useTranscriber({
     const ctx = new AudioCtx!();
     await ctx.resume().catch(() => undefined);
     ctxRef.current = ctx;
+    // Muted sink: keeps the ScriptProcessor ticking without playing the
+    // microphone back through the phone speaker (echo / howling on mobile).
+    const sink = ctx.createGain();
+    sink.gain.value = 0;
+    sink.connect(ctx.destination);
+    sinkRef.current = sink;
     userPausedRef.current = false;
     // Push-to-talk starts silent: audio is only kept while a button is held.
     pausedRef.current = modeRef.current === "push";
@@ -396,6 +402,7 @@ export function useTranscriber({
     const attach = (stream: MediaStream, speaker: Speaker, ambiguous: boolean) => {
       const source = ctx.createMediaStreamSource(stream);
       const node = ctx.createScriptProcessor(4096, 1, 1);
+
       const pipe: Pipeline = {
         speaker,
         ambiguous,
