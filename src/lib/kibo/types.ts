@@ -32,8 +32,18 @@ export type Prefs = {
   profileName: string;
   profileAbout: string;
   profileGoal: string;
+  /** Extended profile used to personalise the coach's tone and examples. */
+  profileNativeLang: ConvLang;
+  profileCity: string;
+  profileRole: string;
+  profileAge: string;
+  profileGoals: string[];
+  profileScenes: string[];
+  profileTones: string[];
+  profileStuck: string[];
   onboarded: boolean;
 };
+
 
 export type Turn = {
   id: string;
