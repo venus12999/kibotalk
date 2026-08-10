@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { AppBackground } from "@/components/kibo/app-background";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { KiboProvider, useKibo } from "@/lib/kibo/store";
+import { KiboProvider } from "@/lib/kibo/store";
 import { useSession } from "@/lib/kibo/use-session";
 import {
   MEMORY_KINDS,
