@@ -10,7 +10,6 @@ import type {
   ConvLang,
   DockStyle,
   Level,
-  PanelLayout,
   Theme,
   UiLang,
 } from "@/lib/kibo/types";
@@ -254,26 +253,6 @@ export function SettingsSheet({
           </div>
           <div className="flex flex-col gap-2 border-b border-border py-4">
             <div className="min-w-0">
-              <p className="text-sm font-semibold">{t("panelLayout")}</p>
-              <p className="mt-0.5 text-xs text-foreground/70">{t("panelLayoutDescription")}</p>
-            </div>
-            <PillGroup<PanelLayout>
-              label=""
-              value={prefs.panelLayout ?? "auto"}
-              onChange={(v) => setPrefs({ panelLayout: v })}
-              options={[
-                { value: "auto", label: t("layoutAuto"), description: t("layoutAutoDescription") },
-                { value: "row", label: t("layoutRow"), description: t("layoutRowDescription") },
-                {
-                  value: "column",
-                  label: t("layoutColumn"),
-                  description: t("layoutColumnDescription"),
-                },
-              ]}
-            />
-          </div>
-          <div className="flex flex-col gap-2 border-b border-border py-4">
-            <div className="min-w-0">
               <p className="text-sm font-semibold">{t("scrollSync")}</p>
               <p className="mt-0.5 text-xs text-foreground/70">{t("scrollSyncDescription")}</p>
             </div>
@@ -335,51 +314,6 @@ export function SettingsSheet({
           </div>
 
 
-          {(prefs.panelLayout ?? "auto") === "row" ? (
-            <div className="flex flex-col gap-3 border-b border-border py-4">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold">{t("rowTypography")}</p>
-                <p className="mt-0.5 text-xs text-foreground/70">{t("rowTypographyDescription")}</p>
-              </div>
-              {(
-                [
-                  ["fontScale", "rowFontScale", 0.8, 1.4] as const,
-                  ["lineScale", "rowLineScale", 0.85, 1.6] as const,
-                  ["gapScale", "rowGapScale", 0.6, 1.6] as const,
-                ] as const
-              ).map(([labelKey, key, min, max]) => {
-                const value = (prefs[key] as number | undefined) ?? 1;
-                return (
-                  <div key={key} className="flex items-center gap-3">
-                    <span className="w-14 shrink-0 text-xs font-semibold text-foreground/80">
-                      {t(labelKey)}
-                    </span>
-                    <Slider
-                      className="min-w-0 flex-1"
-                      min={min}
-                      max={max}
-                      step={0.05}
-                      value={[value]}
-                      onValueChange={([v]: number[]) =>
-                        setPrefs({ [key]: v ?? 1 } as Partial<typeof prefs>)
-                      }
-                    />
-                    <span className="w-10 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
-                      {Math.round(value * 100)}%
-                    </span>
-                  </div>
-                );
-              })}
-              <Button
-                variant="soft"
-                size="sm"
-                className="self-start"
-                onClick={() => setPrefs({ rowFontScale: 1, rowLineScale: 1, rowGapScale: 1 })}
-              >
-                {t("resetTypography")}
-              </Button>
-            </div>
-          ) : null}
           <div className="flex flex-col gap-3 border-b border-border py-4">
             <div className="min-w-0">
               <p className="text-sm font-semibold">{t("suggestionFontSize")}</p>
