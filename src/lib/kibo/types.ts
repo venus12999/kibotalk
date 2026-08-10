@@ -92,6 +92,8 @@ export const defaultPrefs: Prefs = {
   micDeviceId: "",
   captureMode: "push",
   panelLayout: "auto",
+  scrollSync: "independent",
+
   rowFontScale: 1,
   rowLineScale: 1,
   rowGapScale: 1,
