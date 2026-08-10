@@ -367,7 +367,10 @@ export function SuggestionStage({
   previousRoundLabel: string;
   detailLabels?: { show: string; hide: string; alt: string; points: string };
   className?: string;
+  /** Lets the workbench observe/drive this panel's scrolling. */
+  scrollRef?: React.Ref<HTMLDivElement>;
 }) {
+
   const current = rounds[0];
   const previous = React.useMemo(() => rounds.slice(1, 3), [rounds]);
   // Accordion: only one note expanded at a time, so the panel height stays put.
