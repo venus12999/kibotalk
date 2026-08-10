@@ -10,6 +10,8 @@ export type CaptureMode = "push" | "continuous";
 export type PanelLayout = "auto" | "row" | "column";
 /** Whether the two side panels scroll together or on their own. */
 export type ScrollSync = "linked" | "independent";
+/** Phone dock presentation: floating rounded card, or an edge-anchored bar. */
+export type DockStyle = "float" | "bar";
 export type Prefs = {
   uiLang: UiLang;
   conversationLang: ConvLang;
@@ -23,6 +25,12 @@ export type Prefs = {
   panelLayout: PanelLayout;
   /** Linked = the two side panels follow each other while scrolling. */
   scrollSync: ScrollSync;
+  /** Phone push-to-talk dock: floating card or bottom-edge bar. */
+  dockStyle: DockStyle;
+  /** Size multiplier for the phone dock controls. 1 = default. */
+  dockScale: number;
+  /** Collapsed dock hides hints and shrinks to bare talk buttons. */
+  dockCollapsed: boolean;
 
   /** Manual typography tuning for the side-by-side (row) layout. 1 = default. */
   rowFontScale: number;
@@ -99,6 +107,9 @@ export const defaultPrefs: Prefs = {
   captureMode: "push",
   panelLayout: "auto",
   scrollSync: "independent",
+  dockStyle: "float",
+  dockScale: 1,
+  dockCollapsed: false,
 
   rowFontScale: 1,
   rowLineScale: 1,
