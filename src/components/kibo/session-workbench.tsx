@@ -815,11 +815,11 @@ export function SessionWorkbench() {
       <div
         ref={dockRef}
         className={cn(
-          "glass-bar z-30 flex flex-col gap-2.5 px-3 py-3",
-          "fixed inset-x-2 bottom-2 shadow-lg",
+          "glass-bar z-30 flex flex-col gap-2 px-3 py-2",
+          "fixed inset-x-3 bottom-4 shadow-lg",
           "sm:sticky sm:inset-x-auto sm:bottom-0 sm:gap-2 sm:px-4 sm:py-2.5 sm:shadow-none",
         )}
-        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
       >
         {active && life !== "preparing" ? (
           prefs.captureMode === "push" ? (
