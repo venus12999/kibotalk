@@ -129,6 +129,9 @@ export function KiboProvider({ children }: { children: React.ReactNode }) {
     const apply = () => {
       const dark = prefs.theme === "dark" || (prefs.theme === "system" && mq?.matches === true);
       document.documentElement.classList.toggle("dark", dark);
+      // Keep the UA color-scheme in sync so Android Chrome doesn't apply its
+      // own auto-dark filter on top of our theme.
+      document.documentElement.style.colorScheme = dark ? "dark" : "light";
     };
     apply();
     if (prefs.theme !== "system" || !mq) return;
