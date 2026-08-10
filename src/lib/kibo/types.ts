@@ -31,6 +31,8 @@ export type Prefs = {
   dockScale: number;
   /** Collapsed dock hides hints and shrinks to bare talk buttons. */
   dockCollapsed: boolean;
+  /** How strongly the orb reacts to voice level. 1 = default amplitude. */
+  orbReactivity: number;
 
   /** Manual typography tuning for the side-by-side (row) layout. 1 = default. */
   rowFontScale: number;
