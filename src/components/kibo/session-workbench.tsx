@@ -701,7 +701,10 @@ export function SessionWorkbench() {
         const ideasView = (
           <SuggestionStage
             scrollRef={ideasScrollRef}
-            className="min-h-0 flex-1"
+            className={cn(
+              "min-h-0 flex-1",
+              wide && "h-auto min-h-[40dvh] max-h-[72dvh]",
+            )}
             fontScale={prefs.suggestionFontScale}
             rounds={rounds}
             streaming={streaming}
@@ -777,8 +780,9 @@ export function SessionWorkbench() {
 
                 {orb}
 
-                {/* Right: the three ideas floating in the blank space. */}
-                <section className="flex h-[56dvh] min-h-0 flex-col overflow-hidden">
+                {/* Right: the three ideas grow/shrink to their content, so they
+                    can be shorter than the dialog or taller when needed. */}
+                <section className="flex h-auto min-h-[40dvh] max-h-[76dvh] flex-col overflow-hidden">
                   <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     <Lightbulb className="size-3.5" />
                     {t("suggestions")}
