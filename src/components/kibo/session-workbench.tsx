@@ -526,6 +526,8 @@ export function SessionWorkbench() {
 
 
 
+      {/* One orb instead of two framed panels: transcript and suggestions share
+          a single spherical glass surface. */}
       <div
         style={
           prefs.panelLayout === "row"
@@ -536,27 +538,22 @@ export function SessionWorkbench() {
               } as React.CSSProperties)
             : undefined
         }
-        className={cn(
-          "grid min-h-0 flex-1 gap-3 sm:gap-4",
-          prefs.panelLayout === "row" &&
-            "grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-2 sm:gap-4",
-          prefs.panelLayout === "column" && "grid-cols-1",
-          (!prefs.panelLayout || prefs.panelLayout === "auto") && "lg:grid-cols-[1.15fr_1fr]",
-        )}
+        className="relative flex min-h-0 flex-1 flex-col"
       >
-
-        {/* Panel heights are fixed for the whole session: the transcript scrolls
-            inside instead of resizing the layout as the conversation grows. */}
-        <section
+        <div aria-hidden className="orb-aurora" />
+        <div
           className={cn(
-            "glass-transcript flex min-w-0 flex-col overflow-hidden p-3 sm:p-5",
-            prefs.panelLayout === "row" &&
-              "panel-compact h-[46dvh] p-2.5 sm:h-auto sm:min-h-[20rem] sm:p-5 lg:min-h-0",
-            prefs.panelLayout === "column" && "h-[34dvh] sm:h-[40dvh] sm:min-h-[12rem]",
-            (!prefs.panelLayout || prefs.panelLayout === "auto") &&
-              "h-[34dvh] sm:h-auto sm:min-h-[20rem] lg:min-h-0",
+            "orb-stage relative flex min-h-0 flex-1 gap-3 overflow-hidden p-4 sm:gap-5 sm:p-6",
+            prefs.panelLayout === "row" ? "panel-compact flex-row" : "flex-col",
           )}
         >
+        <section
+          className={cn(
+            "flex min-w-0 min-h-0 flex-col",
+            prefs.panelLayout === "row" ? "flex-1" : "flex-[1.1]",
+          )}
+        >
+
 
 
           <div className="flex items-center justify-between">
