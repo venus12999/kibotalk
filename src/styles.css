@@ -650,15 +650,19 @@
 /* Typing reveal: the tail of the streaming line fades in as tokens land. */
 @keyframes idea-type {
   from {
-    opacity: 0.35;
+    opacity: 0.2;
+    transform: translateY(3px);
+    filter: blur(2px);
   }
   to {
     opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
   }
 }
 
 @utility idea-type {
-  animation: idea-type 0.28s ease-out;
+  animation: idea-type 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 /* The oldest transcript line drifts up and fades out as it leaves. */
