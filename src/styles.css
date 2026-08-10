@@ -541,3 +541,13 @@
     var(--glass-shadow);
   backdrop-filter: var(--glass-filter);
 }
+
+/* Live-voice orb: soft pulse while the coach is speaking/streaming. */
+@utility orb-pulse {
+  animation: orb-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes orb-pulse {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.05); filter: brightness(1.08); }
+}
