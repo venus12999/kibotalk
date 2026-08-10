@@ -319,7 +319,7 @@
     var(--gradient-sheen);
   color: var(--foreground);
   border: 1px solid var(--glass-border-vivid);
-  border-radius: var(--glass-radius-sm);
+  border-radius: 1.75rem;
   box-shadow: var(--glass-shadow);
   backdrop-filter: var(--glass-filter-md);
 }
@@ -333,7 +333,7 @@
     var(--gradient-sheen);
   color: var(--foreground);
   border: 1px solid var(--glass-border-vivid);
-  border-radius: var(--glass-radius-sm);
+  border-radius: 1.75rem;
   box-shadow: var(--glass-shadow);
   backdrop-filter: var(--glass-filter-md);
 }
@@ -347,7 +347,7 @@
     var(--gradient-sheen);
   color: var(--primary-foreground);
   border: 1px solid var(--glass-border-vivid);
-  border-radius: var(--glass-radius-sm);
+  border-radius: 1.75rem;
   box-shadow: var(--shadow-glow-lg);
   backdrop-filter: var(--glass-filter-md);
 }
