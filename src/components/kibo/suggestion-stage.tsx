@@ -93,32 +93,48 @@ const NoteCard = React.memo(function NoteCard({
   const hasDetail = words.length > 0 || Boolean(candidate.meaning);
 
   return (
-    <li className={cn("relative p-4", NOTE_TONES[index % NOTE_TONES.length])}>
+    <li
+      className={cn(
+        "group relative flex items-start gap-3 py-3 pr-4 pl-3 transition-transform duration-300",
+        "rounded-[1.75rem] animate-scale-in",
+        NOTE_TONES[index % NOTE_TONES.length],
+      )}
+    >
+      {/* Orb marker: the gradient sphere replaces the old sticky-note spine. */}
       <span
         aria-hidden
-        className="absolute left-0 top-3 bottom-3 w-1 rounded-full bg-current opacity-25"
-      />
-      <p className="text-base leading-[2.1] font-semibold">
-        <RubyText candidate={candidate} limit={total} />
-        {caret ? (
-          <span className="ml-0.5 inline-block h-4 w-0.5 translate-y-0.5 animate-pulse bg-current align-middle" />
-        ) : null}
-      </p>
-      {candidate.meaning && !expanded ? (
-        <p className="mt-1.5 line-clamp-1 text-xs opacity-70">{candidate.meaning}</p>
-      ) : null}
+        className={cn(
+          "kibo-orb mt-0.5 flex size-7 shrink-0 items-center justify-center text-[11px] font-black text-foreground/70",
+          caret ? "animate-pulse" : "orb-float",
+        )}
+        style={{ animationDelay: `${index * 0.5}s` }}
+      >
+        {index + 1}
+      </span>
 
-      {hasDetail && !caret ? (
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-expanded={expanded}
-          className="mt-1.5 flex items-center gap-1 text-[11px] font-bold opacity-70 hover:opacity-100"
-        >
-          <ChevronDown className={cn("size-3 transition-transform", expanded && "rotate-180")} />
-          {expanded ? labels.hide : labels.show}
-        </button>
-      ) : null}
+      <div className="min-w-0 flex-1">
+        <p className="text-base leading-[2.1] font-semibold">
+          <RubyText candidate={candidate} limit={total} />
+          {caret ? (
+            <span className="ml-0.5 inline-block h-4 w-0.5 translate-y-0.5 animate-pulse bg-current align-middle" />
+          ) : null}
+        </p>
+        {candidate.meaning && !expanded ? (
+          <p className="mt-1.5 line-clamp-1 text-xs opacity-70">{candidate.meaning}</p>
+        ) : null}
+
+        {hasDetail && !caret ? (
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-expanded={expanded}
+            className="mt-1.5 flex items-center gap-1 rounded-full bg-current/10 px-2 py-0.5 text-[11px] font-bold opacity-70 transition hover:opacity-100 active:scale-95"
+          >
+            <ChevronDown className={cn("size-3 transition-transform", expanded && "rotate-180")} />
+            {expanded ? labels.hide : labels.show}
+          </button>
+        ) : null}
+
 
       {expanded ? (
         <div className="mt-2 space-y-2 border-t border-current/15 pt-2">
