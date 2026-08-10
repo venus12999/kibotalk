@@ -151,7 +151,7 @@ const NoteCard = React.memo(function NoteCard({
                 {words.map((w, i) => (
                   <li
                     key={i}
-                    className="rounded-md bg-current/10 px-1.5 py-0.5 text-[11px] font-semibold"
+                    className="rounded-full bg-current/10 px-2 py-0.5 text-[11px] font-semibold"
                   >
                     {w.t}
                     {w.r ? <span className="ml-1 opacity-60">{w.r}</span> : null}
@@ -162,7 +162,9 @@ const NoteCard = React.memo(function NoteCard({
           ) : null}
         </div>
       ) : null}
+      </div>
     </li>
+
   );
 });
 
