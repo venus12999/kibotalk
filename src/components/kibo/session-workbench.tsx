@@ -117,7 +117,7 @@ export function SessionWorkbench() {
   // Wide screens get the orb flanked by conversation (left) and ideas (right).
   const [wide, setWide] = React.useState(false);
   React.useEffect(() => {
-    const mql = window.matchMedia("(min-width: 1024px)");
+    const mql = window.matchMedia("(min-width: 768px)");
     const onChange = () => setWide(mql.matches);
     onChange();
     mql.addEventListener("change", onChange);
@@ -807,9 +807,9 @@ export function SessionWorkbench() {
             className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-5 py-4"
           >
             {wide ? (
-              <div className="grid w-full min-h-0 flex-1 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-6">
-                {/* Left: the conversation floating beside the orb. */}
-                <section className="orb-stage flex h-[56dvh] min-h-0 flex-col overflow-hidden p-4">
+              <div className="grid w-full min-h-0 flex-1 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 sm:gap-6">
+                {/* Left: the conversation floating in the blank space. */}
+                <section className="flex h-[56dvh] min-h-0 flex-col overflow-hidden">
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     {t("conversation")}
                   </p>
@@ -818,8 +818,8 @@ export function SessionWorkbench() {
 
                 {orb}
 
-                {/* Right: the three ideas. */}
-                <section className="orb-stage flex h-[56dvh] min-h-0 flex-col overflow-hidden p-4">
+                {/* Right: the three ideas floating in the blank space. */}
+                <section className="flex h-[56dvh] min-h-0 flex-col overflow-hidden">
                   <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     <Lightbulb className="size-3.5" />
                     {t("suggestions")}
@@ -830,31 +830,24 @@ export function SessionWorkbench() {
             ) : (
               <>
                 {orb}
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant={livePanel === "transcript" ? "default" : "soft"}
-                    size="sm"
-                    onClick={() => setLivePanel(livePanel === "transcript" ? "none" : "transcript")}
-                  >
-                    {t("conversation")}
-                  </Button>
-                  <Button
-                    variant={livePanel === "ideas" ? "default" : "soft"}
-                    size="sm"
-                    onClick={() => setLivePanel(livePanel === "ideas" ? "none" : "ideas")}
-                  >
-                    <Lightbulb className="size-4" />
-                    {t("suggestions")}
-                  </Button>
-                </div>
-
-                {livePanel !== "none" ? (
-                  <section className="orb-stage relative flex h-[40dvh] w-full min-h-0 flex-col overflow-hidden p-3 sm:p-5">
-                    {livePanel === "transcript" ? transcriptView : ideasView}
+                <div className="grid w-full min-h-0 flex-1 grid-cols-2 gap-3">
+                  <section className="flex h-[34dvh] min-h-0 flex-col overflow-hidden">
+                    <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      {t("conversation")}
+                    </p>
+                    {transcriptView}
                   </section>
-                ) : null}
+                  <section className="flex h-[34dvh] min-h-0 flex-col overflow-hidden">
+                    <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      <Lightbulb className="size-3" />
+                      {t("suggestions")}
+                    </p>
+                    {ideasView}
+                  </section>
+                </div>
               </>
             )}
+
           </main>
         );
       })()}
