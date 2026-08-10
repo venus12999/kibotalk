@@ -745,7 +745,11 @@ export function SessionWorkbench() {
                 )}
                 style={{
                   transform: transcriber.recording
-                    ? `scale(${1 + Math.min(transcriber.level, 1) * 0.45})`
+                    ? `scale(${
+                        1 +
+                        (0.06 + Math.min(transcriber.level, 1) * 0.45) *
+                          (prefs.orbReactivity ?? 1)
+                      })`
                     : undefined,
                 }}
               />
@@ -814,8 +818,9 @@ export function SessionWorkbench() {
                     {ideasView}
                   </section>
                 </div>
-                {/* Orb sits low and is partly tucked under the dock. */}
-                <div className="-mb-20 mt-auto scale-90">{orb}</div>
+                {/* Idle: orb centered. In session: it slides down a little and
+                    tucks slightly under the dock to free reading space. */}
+                <div className={active ? "-mb-8 mt-auto scale-90" : "m-auto"}>{orb}</div>
               </>
             )}
           </main>

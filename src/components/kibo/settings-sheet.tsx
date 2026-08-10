@@ -334,6 +334,26 @@ export function SettingsSheet({
             <p className="text-xs text-foreground/70">{t("dockSizeDescription")}</p>
           </div>
 
+          <div className="flex flex-col gap-3 border-b border-border py-4">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">{t("orbReactivity")}</p>
+              <p className="mt-0.5 text-xs text-foreground/70">{t("orbReactivityDescription")}</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Slider
+                className="min-w-0 flex-1"
+                min={0.5}
+                max={2.5}
+                step={0.1}
+                value={[prefs.orbReactivity ?? 1]}
+                onValueChange={([v]: number[]) => setPrefs({ orbReactivity: v ?? 1 })}
+              />
+              <span className="w-10 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+                {Math.round((prefs.orbReactivity ?? 1) * 100)}%
+              </span>
+            </div>
+          </div>
+
           {(prefs.panelLayout ?? "auto") === "row" ? (
             <div className="flex flex-col gap-3 border-b border-border py-4">
               <div className="min-w-0">
