@@ -737,7 +737,9 @@ export function SessionWorkbench() {
                   </ul>
                 )}
               </ScrollArea>
+              </>
             ) : (
+
               <SuggestionStage
                 className="min-h-0 flex-1"
                 rounds={rounds}
