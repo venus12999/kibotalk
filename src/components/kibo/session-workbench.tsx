@@ -823,7 +823,11 @@ export function SessionWorkbench() {
       })()}
 
       {/* Spacer so the floating phone dock never covers the last panel. */}
-      <div aria-hidden className="shrink-0 sm:hidden" style={{ height: dockHeight + 16 }} />
+      <div
+        aria-hidden
+        className="shrink-0 sm:hidden"
+        style={{ height: Math.max(dockHeight - 48, 8) }}
+      />
 
       {/* Phone: floating thumb-reach dock. Tablet/desktop: inline sticky bar. */}
       <div
