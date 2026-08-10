@@ -25,6 +25,10 @@ type Body = {
    * answer as one plain-text response instead.
    */
   stream?: boolean;
+  /** Who the user is, from their profile fields. */
+  profile?: string;
+  /** Kibo Memory entries kept across sessions. */
+  memory?: string[];
 };
 
 
@@ -71,6 +75,21 @@ export const Route = createFileRoute("/api/suggest")({
         }
 
 
+        // Kibo Memory: stable facts about the user that must survive sessions.
+        const profile = (body.profile ?? "").trim().slice(0, 600);
+        const memory = (Array.isArray(body.memory) ? body.memory : [])
+          .map((m) => String(m).trim())
+          .filter(Boolean)
+          .slice(0, 12);
+        const memoryBlock = [
+          profile ? `About the user: ${profile}` : "",
+          memory.length > 0
+            ? `Remembered facts about the user (use them when relevant, never contradict them, never read them out loud): ${memory.join(" | ")}`
+            : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
+
         const wantsStream = body.stream !== false;
 
         const upstream = await fetch("https://api.deepseek.com/chat/completions", {
@@ -97,6 +116,7 @@ export const Route = createFileRoute("/api/suggest")({
                   latest
                     ? `Reply directly to this newest line from the other person: "${latest}". Earlier turns are background context only — never answer an older line.`
                     : ``,
+                  memoryBlock,
                   briefing,
                   coachPrompt,
                   `Propose exactly 3 short, distinct, natural replies the user could say next, in ${target}.`,
