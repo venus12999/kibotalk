@@ -17,6 +17,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedMemoryRouteImport } from './routes/_authenticated/memory'
 import { Route as ApiSuggestRouteImport } from './routes/api/suggest'
 import { Route as ApiTranscribeRouteImport } from './routes/api/transcribe'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
@@ -64,6 +65,11 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMemoryRoute = AuthenticatedMemoryRouteImport.update({
+  id: '/memory',
+  path: '/memory',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const ApiSuggestRoute = ApiSuggestRouteImport.update({
   id: '/api/suggest',
   path: '/api/suggest',
@@ -99,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/memory': typeof AuthenticatedMemoryRoute
   '/api/suggest': typeof ApiSuggestRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -113,6 +120,7 @@ export interface FileRoutesByTo {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/memory': typeof AuthenticatedMemoryRoute
   '/api/suggest': typeof ApiSuggestRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -129,6 +137,7 @@ export interface FileRoutesById {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/memory': typeof AuthenticatedMemoryRoute
   '/api/suggest': typeof ApiSuggestRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -145,6 +154,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/admin'
+    | '/memory'
     | '/api/suggest'
     | '/api/transcribe'
     | '/auth/callback'
@@ -159,6 +169,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/admin'
+    | '/memory'
     | '/api/suggest'
     | '/api/transcribe'
     | '/auth/callback'
@@ -174,6 +185,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/admin'
+    | '/_authenticated/memory'
     | '/api/suggest'
     | '/api/transcribe'
     | '/auth/callback'
@@ -253,6 +265,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/memory': {
+      id: '/_authenticated/memory'
+      path: '/memory'
+      fullPath: '/memory'
+      preLoaderRoute: typeof AuthenticatedMemoryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/suggest': {
       id: '/api/suggest'
       path: '/api/suggest'
@@ -293,10 +312,12 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedMemoryRoute: typeof AuthenticatedMemoryRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedMemoryRoute: AuthenticatedMemoryRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

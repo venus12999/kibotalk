@@ -9,6 +9,10 @@ export type SuggestStreamInput = {
   conversationLang: string;
   uiLang: string;
   level: string;
+  /** Persistent "who am I" line built from the user's profile fields. */
+  profile?: string;
+  /** Compact Kibo Memory entries the coach should keep in mind. */
+  memory?: string[];
 };
 
 type RawCandidate = {

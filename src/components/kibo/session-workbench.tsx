@@ -5,7 +5,8 @@ import {
   type AiErrorKind,
 } from "@/lib/kibo/ai-error";
 
-import { HelpCircle, History, Lightbulb, Mic, Pause, Play, Settings, Square, User, Users } from "lucide-react";
+import { Brain, HelpCircle, History, Lightbulb, Mic, Pause, Play, Settings, Square, User, Users } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -34,6 +35,8 @@ import { UiLanguageMenu } from "./ui-language-menu";
 import { AccountMenu } from "./account-menu";
 import { HoldTalkButton } from "./hold-talk-button";
 import { VadDiagnostics } from "./vad-diagnostics";
+import { loadMemoryContext } from "@/lib/kibo/memory";
+import { useSession } from "@/lib/kibo/use-session";
 
 
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -107,6 +110,24 @@ export function SessionWorkbench() {
   turnsRef.current = turns;
   const prefsRef = React.useRef(prefs);
   prefsRef.current = prefs;
+
+  // Kibo Memory: stable facts about the user, loaded once and reused for every
+  // suggestion so the coach keeps them in mind across sessions.
+  const { user: authUser } = useSession();
+  const memoryRef = React.useRef<string[]>([]);
+  React.useEffect(() => {
+    if (!authUser?.id) {
+      memoryRef.current = [];
+      return;
+    }
+    let cancelled = false;
+    void loadMemoryContext(authUser.id).then((rows) => {
+      if (!cancelled) memoryRef.current = rows;
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser?.id]);
   const reqRef = React.useRef(0);
   const abortRef = React.useRef<AbortController | null>(null);
 
@@ -138,6 +159,8 @@ export function SessionWorkbench() {
     conversationLang: string;
     uiLang: string;
     level: string;
+    profile?: string;
+    memory?: string[];
   };
   /** The exact prompt + context of the last attempt, so a retry replays it. */
   const lastRequestRef = React.useRef<{ text: string; payload: SuggestPayload } | null>(null);
@@ -183,6 +206,14 @@ export function SessionWorkbench() {
           conversationLang: prefsRef.current.conversationLang,
           uiLang: prefsRef.current.uiLang,
           level: prefsRef.current.level,
+          profile: [
+            prefsRef.current.profileName && `name: ${prefsRef.current.profileName}`,
+            prefsRef.current.profileAbout,
+            prefsRef.current.profileGoal && `goal: ${prefsRef.current.profileGoal}`,
+          ]
+            .filter(Boolean)
+            .join("; "),
+          memory: memoryRef.current,
         };
       lastRequestRef.current = { text, payload };
 
@@ -465,6 +496,11 @@ export function SessionWorkbench() {
           <UiLanguageMenu />
           <AccountMenu />
 
+          <Button variant="soft" size="icon" asChild aria-label="Kibo 记忆" title="Kibo 记忆">
+            <Link to="/memory">
+              <Brain className="size-4" />
+            </Link>
+          </Button>
           <Button
             variant="soft"
             size="icon"
