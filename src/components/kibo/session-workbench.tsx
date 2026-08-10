@@ -805,7 +805,10 @@ export function SessionWorkbench() {
                 {statusLabel}
               </span>
             </div>
-            {caption}
+            {/* Narrow screens don't have a side conversation panel, so keep the
+                live caption below the orb. On wide screens the left panel already
+                shows the same transcript and we don't need a duplicate below. */}
+            {!wide ? caption : null}
             {error ? (
               <p className="rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
                 {error}

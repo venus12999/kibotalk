@@ -101,22 +101,22 @@ const NoteCard = React.memo(function NoteCard({
       )}
       style={{ animationDelay: `${index * 90}ms` }}
     >
-      {/* Orb marker: the gradient sphere replaces the old sticky-note spine. */}
+      {/* Index marker: plain bold number so the list stays compact. */}
       <span
         aria-hidden
-        className={cn("mt-1 shrink-0 text-xs font-black opacity-60", caret && "animate-pulse")}
+        className={cn("mt-0.5 shrink-0 text-xs font-black opacity-60", caret && "animate-pulse")}
       >
         {index + 1}
       </span>
 
       <div className="min-w-0 flex-1">
-        <p className="text-base leading-[2.1] font-semibold">
+        <p className="text-sm leading-snug font-semibold">
           {/* Re-keying on length replays the fade as each token lands. */}
           <span key={caret ? total : "done"} className={caret ? "idea-type" : undefined}>
             <RubyText candidate={candidate} limit={total} />
           </span>
           {caret ? (
-            <span className="ml-0.5 inline-block h-4 w-0.5 translate-y-0.5 animate-pulse bg-current align-middle" />
+            <span className="ml-0.5 inline-block h-3.5 w-0.5 translate-y-0.5 animate-pulse bg-current align-middle" />
           ) : null}
         </p>
 
@@ -398,7 +398,7 @@ export function SuggestionStage({
   return (
     <ScrollArea ref={scrollRef} className={className}>
       {/* Isolate streaming text updates from the rest of the page layout. */}
-      <div className="space-y-4 pr-3 [contain:content]">
+      <div className="space-y-3 pr-3 [contain:content]">
         <StatusBar
           status={status}
           errorMessage={errorMessage}
@@ -410,7 +410,7 @@ export function SuggestionStage({
           canRetry={canRetry}
         />
 
-        <ol className="space-y-3">
+        <ol className="space-y-2">
           {slots.map((i) => {
             const c = candidates[i];
             if (c) {
