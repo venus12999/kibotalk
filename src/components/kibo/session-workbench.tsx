@@ -91,11 +91,15 @@ export function SessionWorkbench() {
 
   const [aiAttempt, setAiAttempt] = React.useState(0);
   /** Live-voice stage: which pull-up panel is open under the orb. */
-  const [livePanel, setLivePanel] = React.useState<"none" | "transcript" | "ideas">("none");
+  const [livePanel, setLivePanel] = React.useState<"none" | "transcript" | "ideas">("ideas");
   // New ideas arriving should surface themselves, like a voice-mode caption card.
   React.useEffect(() => {
     if (streaming) setLivePanel((p) => (p === "transcript" ? p : "ideas"));
   }, [streaming]);
+  React.useEffect(() => {
+    if (rounds.length > 0) setLivePanel((p) => (p === "transcript" ? p : "ideas"));
+  }, [rounds.length]);
+
 
   const [settingsOpen, setSettingsOpen] = React.useState(false);
 
@@ -366,14 +370,43 @@ export function SessionWorkbench() {
     onError: handleError,
   });
 
-  React.useEffect(() => {
+  // Autoscroll: follow the newest caption, but pause the moment the user
+  // scrolls up to re-read something. Resuming happens when they return to the
+  // bottom (or tap the "jump to latest" pill).
+  const [following, setFollowing] = React.useState(true);
+  const followingRef = React.useRef(true);
+  followingRef.current = following;
+
+  const getViewport = React.useCallback(() => {
     const el = scrollRef.current?.querySelector("[data-radix-scroll-area-viewport]");
-    if (!(el instanceof HTMLElement)) return;
-    // Follow the conversation only while the user is already at the bottom, so
-    // scrolling up to re-read an earlier line is never yanked back down.
-    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
-    if (atBottom) el.scrollTop = el.scrollHeight;
-  }, [turns.length, life, interim]);
+    return el instanceof HTMLElement ? el : null;
+  }, []);
+
+  const scrollToLatest = React.useCallback(() => {
+    const el = getViewport();
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    setFollowing(true);
+  }, [getViewport]);
+
+  React.useEffect(() => {
+    const el = getViewport();
+    if (!el) return;
+    const onScroll = () => {
+      const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
+      if (atBottom !== followingRef.current) setFollowing(atBottom);
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [getViewport, livePanel]);
+
+  React.useEffect(() => {
+    const el = getViewport();
+    if (!el || !followingRef.current) return;
+    el.scrollTop = el.scrollHeight;
+  }, [turns, life, interim, livePanel, getViewport]);
+
 
   const startSession = async () => {
     reqRef.current += 1;
@@ -641,9 +674,20 @@ export function SessionWorkbench() {
         ) : null}
 
         {livePanel !== "none" ? (
-          <section className="orb-stage flex h-[40dvh] w-full min-h-0 flex-col overflow-hidden p-3 sm:p-5">
+          <section className="orb-stage relative flex h-[40dvh] w-full min-h-0 flex-col overflow-hidden p-3 sm:p-5">
             {livePanel === "transcript" ? (
+              <>
+              {!following && turns.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={scrollToLatest}
+                  className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-lg"
+                >
+                  {prefs.uiLang === "zh" ? "回到最新" : prefs.uiLang === "ja" ? "最新へ" : "Jump to latest"}
+                </button>
+              ) : null}
               <ScrollArea ref={scrollRef} className="min-h-0 flex-1">
+
                 {turns.length === 0 ? (
                   <p className="py-12 text-center text-sm text-muted-foreground">
                     {t("noTranscript")}
@@ -693,7 +737,9 @@ export function SessionWorkbench() {
                   </ul>
                 )}
               </ScrollArea>
+              </>
             ) : (
+
               <SuggestionStage
                 className="min-h-0 flex-1"
                 rounds={rounds}
