@@ -120,6 +120,9 @@
   --destructive-foreground: oklch(98.5% 0 0);
   --success: oklch(76.5% 0.177 163.223);
   --success-foreground: oklch(20% 0.02 160);
+  --transcript-other: oklch(80% 0.16 85);
+  --transcript-self: oklch(100% 0 0);
+
   --border: oklch(31% 0.012 80);
   --input: oklch(31% 0.012 80);
   --ring: oklch(79.5% 0.184 86.047);
