@@ -10,8 +10,6 @@ export type CaptureMode = "push" | "continuous";
 export type PanelLayout = "auto" | "row" | "column";
 /** Whether the two side panels scroll together or on their own. */
 export type ScrollSync = "linked" | "independent";
-
-
 export type Prefs = {
   uiLang: UiLang;
   conversationLang: ConvLang;
@@ -35,7 +33,6 @@ export type Prefs = {
   profileAbout: string;
   profileGoal: string;
   onboarded: boolean;
-
 };
 
 export type Turn = {
@@ -47,7 +44,6 @@ export type Turn = {
   /** Translation of `text` into the user's chosen translation language. */
   translation?: string;
 };
-
 
 /** One word/morpheme span of a suggested reply, with reading for ruby text. */
 export type Segment = {
@@ -63,7 +59,6 @@ export type Candidate = {
   meaning: string;
   segments?: Segment[];
 };
-
 
 export type Round = {
   id: string;
@@ -101,5 +96,4 @@ export const defaultPrefs: Prefs = {
   profileAbout: "",
   profileGoal: "",
   onboarded: false,
-
 };
