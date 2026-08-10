@@ -339,6 +339,7 @@ export function SuggestionStage({
   detailLabels,
   className,
   scrollRef,
+  fontScale = 1,
 }: {
   rounds: Round[];
   streaming: boolean;
@@ -356,6 +357,7 @@ export function SuggestionStage({
   className?: string;
   /** Lets the workbench observe/drive this panel's scrolling. */
   scrollRef?: React.Ref<HTMLDivElement>;
+  fontScale?: number;
 }) {
   const current = rounds[0];
   const previous = React.useMemo(() => rounds.slice(1, 3), [rounds]);
