@@ -114,6 +114,16 @@ export function SessionWorkbench() {
   const [error, setError] = React.useState("");
 
   const scrollRef = React.useRef<HTMLDivElement>(null);
+  // Wide screens get the orb flanked by conversation (left) and ideas (right).
+  const [wide, setWide] = React.useState(false);
+  React.useEffect(() => {
+    const mql = window.matchMedia("(min-width: 1024px)");
+    const onChange = () => setWide(mql.matches);
+    onChange();
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+
   const words = copy[prefs.uiLang] ?? copy.en;
   const guideLabel =
     prefs.uiLang === "zh" ? "使用指南" : prefs.uiLang === "ja" ? "使い方ガイド" : "How to use";
