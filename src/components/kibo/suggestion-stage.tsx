@@ -352,6 +352,8 @@ export function SuggestionStage({
   previousRoundLabel,
   detailLabels,
   className,
+  scrollRef,
+
 }: {
   rounds: Round[];
   streaming: boolean;
@@ -367,7 +369,10 @@ export function SuggestionStage({
   previousRoundLabel: string;
   detailLabels?: { show: string; hide: string; alt: string; points: string };
   className?: string;
+  /** Lets the workbench observe/drive this panel's scrolling. */
+  scrollRef?: React.Ref<HTMLDivElement>;
 }) {
+
   const current = rounds[0];
   const previous = React.useMemo(() => rounds.slice(1, 3), [rounds]);
   // Accordion: only one note expanded at a time, so the panel height stays put.
@@ -390,7 +395,7 @@ export function SuggestionStage({
   const slots = [0, 1, 2];
 
   return (
-    <ScrollArea className={className}>
+    <ScrollArea ref={scrollRef} className={className}>
       {/* Isolate streaming text updates from the rest of the page layout. */}
       <div className="space-y-4 pr-3 [contain:content]">
         <StatusBar

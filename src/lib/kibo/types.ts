@@ -8,6 +8,9 @@ export type Lifecycle = "idle" | "preparing" | "running" | "paused" | "stopped";
 export type CaptureMode = "push" | "continuous";
 /** How the transcript and suggestion panels are arranged. */
 export type PanelLayout = "auto" | "row" | "column";
+/** Whether the two side panels scroll together or on their own. */
+export type ScrollSync = "linked" | "independent";
+
 
 export type Prefs = {
   uiLang: UiLang;
@@ -20,6 +23,9 @@ export type Prefs = {
   micDeviceId: string;
   captureMode: CaptureMode;
   panelLayout: PanelLayout;
+  /** Linked = the two side panels follow each other while scrolling. */
+  scrollSync: ScrollSync;
+
   /** Manual typography tuning for the side-by-side (row) layout. 1 = default. */
   rowFontScale: number;
   rowLineScale: number;
@@ -86,6 +92,8 @@ export const defaultPrefs: Prefs = {
   micDeviceId: "",
   captureMode: "push",
   panelLayout: "auto",
+  scrollSync: "independent",
+
   rowFontScale: 1,
   rowLineScale: 1,
   rowGapScale: 1,

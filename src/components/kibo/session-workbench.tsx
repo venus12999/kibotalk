@@ -417,6 +417,38 @@ export function SessionWorkbench() {
     el.scrollTop = el.scrollHeight;
   }, [turns, life, interim, livePanel, getViewport]);
 
+  // Optional scroll linking: on wide screens the conversation (left) and the
+  // ideas (right) can follow each other proportionally, or stay independent.
+  const ideasScrollRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    if (!wide || (prefs.scrollSync ?? "independent") !== "linked") return;
+    const left = getViewport();
+    const right = ideasScrollRef.current?.querySelector("[data-radix-scroll-area-viewport]");
+    if (!left || !(right instanceof HTMLElement)) return;
+
+    let lock = false;
+    const mirror = (from: HTMLElement, to: HTMLElement) => () => {
+      if (lock) return;
+      const room = from.scrollHeight - from.clientHeight;
+      const target = to.scrollHeight - to.clientHeight;
+      if (room <= 0 || target <= 0) return;
+      lock = true;
+      to.scrollTop = (from.scrollTop / room) * target;
+      requestAnimationFrame(() => {
+        lock = false;
+      });
+    };
+    const onLeft = mirror(left, right);
+    const onRight = mirror(right, left);
+    left.addEventListener("scroll", onLeft, { passive: true });
+    right.addEventListener("scroll", onRight, { passive: true });
+    return () => {
+      left.removeEventListener("scroll", onLeft);
+      right.removeEventListener("scroll", onRight);
+    };
+  }, [wide, prefs.scrollSync, getViewport, livePanel]);
+
+
 
   const startSession = async () => {
     reqRef.current += 1;
@@ -648,7 +680,9 @@ export function SessionWorkbench() {
 
         const ideasView = (
           <SuggestionStage
+            scrollRef={ideasScrollRef}
             className="min-h-0 flex-1"
+
             rounds={rounds}
             streaming={streaming}
             status={aiStatus}
