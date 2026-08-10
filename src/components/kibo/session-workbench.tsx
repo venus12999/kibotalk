@@ -580,7 +580,11 @@ export function SessionWorkbench() {
         paddingTop: "max(0.75rem, env(safe-area-inset-top))",
       }}
     >
-      <header className="glass-bar grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
+      <header
+        className={`glass-bar grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3 ${
+          active ? "hidden sm:grid" : "grid"
+        }`}
+      >
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <span className="gradient-primary glow-sm flex size-9 shrink-0 items-center justify-center rounded-full text-primary-foreground">
             <Mic className="size-4" />
