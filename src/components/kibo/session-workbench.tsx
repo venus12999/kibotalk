@@ -130,6 +130,8 @@ export function SessionWorkbench() {
 
   const turnsRef = React.useRef<Turn[]>([]);
   turnsRef.current = turns;
+  const [exitingId, setExitingId] = React.useState<string | null>(null);
+  const exitingTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const prefsRef = React.useRef(prefs);
   prefsRef.current = prefs;
 
