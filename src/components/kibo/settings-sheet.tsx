@@ -326,10 +326,33 @@ export function SettingsSheet({
               </Button>
             </div>
           ) : null}
-
-
-
-
+          <div className="flex flex-col gap-3 border-b border-border py-4">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">{t("suggestionFontSize")}</p>
+              <p className="mt-0.5 text-xs text-foreground/70">{t("suggestionFontSizeDescription")}</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Slider
+                className="min-w-0 flex-1"
+                min={0.75}
+                max={1.5}
+                step={0.05}
+                value={[prefs.suggestionFontScale]}
+                onValueChange={([v]: number[]) => setPrefs({ suggestionFontScale: v ?? 1 })}
+              />
+              <span className="w-10 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+                {Math.round((prefs.suggestionFontScale ?? 1) * 100)}%
+              </span>
+            </div>
+            <Button
+              variant="soft"
+              size="sm"
+              className="self-start"
+              onClick={() => setPrefs({ suggestionFontScale: 1 })}
+            >
+              {t("resetTypography")}
+            </Button>
+          </div>
 
           <p className="pt-6 text-xs font-bold tracking-wide text-muted-foreground uppercase">
             {t("permissions")}
