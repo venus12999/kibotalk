@@ -64,7 +64,7 @@ const RubyText = React.memo(function RubyText({
  * it — no client-side replay buffer — so characters appear the moment their
  * tokens land.
  */
-const NOTE_TONES = ["note-glass-1", "note-glass-2", "note-glass-3"] as const;
+const NOTE_TONES = ["idea-tone-1", "idea-tone-2", "idea-tone-3"] as const;
 
 /** Build a compact detail view from data we already have: reading breakdown. */
 function keyWords(candidate: Candidate) {
@@ -95,7 +95,7 @@ const NoteCard = React.memo(function NoteCard({
   return (
     <li
       className={cn(
-        "group relative flex items-start gap-3 py-3 pr-4 pl-3 transition-transform duration-300",
+        "group relative flex items-start gap-2 transition-transform duration-300",
         NOTE_TONES[index % NOTE_TONES.length],
         "idea-rise",
       )}
@@ -104,11 +104,7 @@ const NoteCard = React.memo(function NoteCard({
       {/* Orb marker: the gradient sphere replaces the old sticky-note spine. */}
       <span
         aria-hidden
-        className={cn(
-          "kibo-orb mt-0.5 flex size-7 shrink-0 items-center justify-center text-[11px] font-black text-foreground/70",
-          caret ? "animate-pulse" : "orb-float",
-        )}
-        style={{ animationDelay: `${index * 0.5}s` }}
+        className={cn("mt-1 shrink-0 text-xs font-black opacity-60", caret && "animate-pulse")}
       >
         {index + 1}
       </span>
@@ -189,7 +185,7 @@ const PreviousRounds = React.memo(function PreviousRounds({
   return (
     <>
       {rounds.map((round) => (
-        <div key={round.id} className="rounded-md border border-border p-3.5">
+        <div key={round.id}>
           <p className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
             <Clock className="size-3" />
             {label}
@@ -243,10 +239,10 @@ const StatusBar = React.memo(function StatusBar({
 
   const tone =
     status === "error"
-      ? "border-destructive/30 bg-destructive/10 text-destructive"
+      ? "text-destructive"
       : status === "done"
-        ? "border-border bg-muted/40 text-muted-foreground"
-        : "border-primary/30 bg-primary/10 text-foreground";
+        ? "text-muted-foreground"
+        : "text-foreground/80";
 
   const icon =
     status === "error" ? (
@@ -277,7 +273,7 @@ const StatusBar = React.memo(function StatusBar({
       <div
         role="status"
         aria-live="polite"
-        className={cn("rounded-lg border px-3 py-2 text-xs", tone)}
+        className={cn("text-xs", tone)}
       >
         <div className="flex items-start gap-2">
           {icon}
@@ -317,7 +313,7 @@ const StatusBar = React.memo(function StatusBar({
       role="status"
       aria-live="polite"
       className={cn(
-        "flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold",
+        "flex items-center gap-2 text-xs font-semibold",
         tone,
       )}
     >
@@ -435,7 +431,7 @@ export function SuggestionStage({
             return (
               <li
                 key={i}
-                className="flex min-h-[3rem] items-center gap-3 px-3 py-3 text-xs text-muted-foreground"
+                className="flex min-h-[2rem] items-center gap-3 text-xs text-muted-foreground"
               >
                 <span className="flex gap-1" aria-hidden>
                   <i className="size-1.5 animate-pulse rounded-full bg-current opacity-40" />
