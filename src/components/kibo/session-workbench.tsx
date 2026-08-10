@@ -691,7 +691,7 @@ export function SessionWorkbench() {
           <SuggestionStage
             scrollRef={ideasScrollRef}
             className="min-h-0 flex-1"
-
+            fontScale={prefs.suggestionFontScale}
             rounds={rounds}
             streaming={streaming}
             status={aiStatus}
