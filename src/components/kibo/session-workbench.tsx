@@ -721,57 +721,6 @@ export function SessionWorkbench() {
           />
         );
 
-        const caption = (() => {
-          const last = turns.at(-1);
-          const liveSpeaker: "user" | "other" | null = interim.other
-            ? "other"
-            : interim.user
-              ? "user"
-              : (last?.speaker ?? null);
-          const liveText = interim.other || interim.user || last?.text || "";
-          const liveAt = interim.other || interim.user ? Date.now() : last?.at;
-          const live = Boolean(interim.other || interim.user);
-          return (
-            <div className="flex min-h-[4.5rem] w-full max-w-xl flex-col items-center gap-1 px-4">
-              {liveText ? (
-                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  <span
-                    className={cn(
-                      "rounded-full px-2 py-0.5",
-                      liveSpeaker === "user"
-                        ? "bg-primary/15 text-primary"
-                        : "bg-foreground/10 text-foreground/70",
-                    )}
-                  >
-                    {liveSpeaker === "user" ? t("me") : t("other")}
-                  </span>
-                  {liveAt ? (
-                    <time
-                      dateTime={new Date(liveAt).toISOString()}
-                      className="tabular-nums font-normal normal-case"
-                    >
-                      {new Date(liveAt).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        second: "2-digit",
-                      })}
-                    </time>
-                  ) : null}
-                  {live ? (
-                    <span aria-hidden className="size-1.5 animate-pulse rounded-full bg-primary" />
-                  ) : null}
-                </div>
-              ) : null}
-              <p
-                className="w-full whitespace-pre-wrap break-words text-balance text-center text-base leading-relaxed text-foreground/90"
-                aria-live="polite"
-              >
-                {liveText || t("noTranscript")}
-              </p>
-            </div>
-          );
-        })();
-
         const orb = (
           <div className="relative flex flex-col items-center gap-5">
             <div className="relative flex items-center justify-center">
