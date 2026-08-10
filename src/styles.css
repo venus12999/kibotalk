@@ -594,9 +594,35 @@
   animation: idea-type 0.28s ease-out;
 }
 
+/* The oldest transcript line drifts up and fades out as it leaves. */
+@keyframes line-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 8rem;
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-16px);
+    max-height: 0;
+    filter: blur(3px);
+  }
+}
+
+@utility line-exit {
+  animation: line-exit 0.4s cubic-bezier(0.4, 0, 1, 1) both;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .idea-rise,
-  .idea-type {
+  .idea-type,
+  .line-exit {
     animation: none;
+  }
+  .line-exit {
+    display: none;
   }
 }
