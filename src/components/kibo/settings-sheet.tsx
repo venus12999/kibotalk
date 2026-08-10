@@ -259,6 +259,30 @@ export function SettingsSheet({
               ]}
             />
           </div>
+          <div className="flex flex-col gap-2 border-b border-border py-4">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">{t("scrollSync")}</p>
+              <p className="mt-0.5 text-xs text-foreground/70">{t("scrollSyncDescription")}</p>
+            </div>
+            <PillGroup<"linked" | "independent">
+              label=""
+              value={prefs.scrollSync ?? "independent"}
+              onChange={(v) => setPrefs({ scrollSync: v })}
+              options={[
+                {
+                  value: "independent",
+                  label: t("scrollIndependent"),
+                  description: t("scrollIndependentDescription"),
+                },
+                {
+                  value: "linked",
+                  label: t("scrollLinked"),
+                  description: t("scrollLinkedDescription"),
+                },
+              ]}
+            />
+          </div>
+
           {(prefs.panelLayout ?? "auto") === "row" ? (
             <div className="flex flex-col gap-3 border-b border-border py-4">
               <div className="min-w-0">
