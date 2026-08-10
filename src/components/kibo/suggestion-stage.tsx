@@ -97,7 +97,7 @@ const NoteCard = React.memo(function NoteCard({
       className={cn(
         "group relative flex items-start gap-3 py-3 pr-4 pl-3 transition-transform duration-300",
         NOTE_TONES[index % NOTE_TONES.length],
-        "!rounded-[1.75rem] animate-scale-in",
+        "animate-scale-in",
       )}
     >
       {/* Orb marker: the gradient sphere replaces the old sticky-note spine. */}
