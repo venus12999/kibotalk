@@ -97,8 +97,9 @@ const NoteCard = React.memo(function NoteCard({
       className={cn(
         "group relative flex items-start gap-3 py-3 pr-4 pl-3 transition-transform duration-300",
         NOTE_TONES[index % NOTE_TONES.length],
-        "animate-scale-in",
+        "idea-rise",
       )}
+      style={{ animationDelay: `${index * 90}ms` }}
     >
       {/* Orb marker: the gradient sphere replaces the old sticky-note spine. */}
       <span
@@ -114,11 +115,15 @@ const NoteCard = React.memo(function NoteCard({
 
       <div className="min-w-0 flex-1">
         <p className="text-base leading-[2.1] font-semibold">
-          <RubyText candidate={candidate} limit={total} />
+          {/* Re-keying on length replays the fade as each token lands. */}
+          <span key={caret ? total : "done"} className={caret ? "idea-type" : undefined}>
+            <RubyText candidate={candidate} limit={total} />
+          </span>
           {caret ? (
             <span className="ml-0.5 inline-block h-4 w-0.5 translate-y-0.5 animate-pulse bg-current align-middle" />
           ) : null}
         </p>
+
         {candidate.meaning && !expanded ? (
           <p className="mt-1.5 line-clamp-1 text-xs opacity-70">{candidate.meaning}</p>
         ) : null}
