@@ -117,7 +117,7 @@ export function SessionWorkbench() {
   // Wide screens get the orb flanked by conversation (left) and ideas (right).
   const [wide, setWide] = React.useState(false);
   React.useEffect(() => {
-    const mql = window.matchMedia("(min-width: 1024px)");
+    const mql = window.matchMedia("(min-width: 768px)");
     const onChange = () => setWide(mql.matches);
     onChange();
     mql.addEventListener("change", onChange);
