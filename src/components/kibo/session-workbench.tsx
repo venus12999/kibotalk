@@ -703,7 +703,9 @@ export function SessionWorkbench() {
 
           />
         </section>
+        </div>
       </div>
+
 
       {/* Spacer so the floating phone dock never covers the last panel. */}
       <div aria-hidden className="shrink-0 sm:hidden" style={{ height: dockHeight + 16 }} />
