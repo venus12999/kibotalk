@@ -1,5 +1,13 @@
 import * as React from "react";
-import { Brain, ChevronLeft, ChevronRight, Languages, MessageSquare, Settings2, Sparkles } from "lucide-react";
+import {
+  Brain,
+  ChevronLeft,
+  ChevronRight,
+  Languages,
+  MessageSquare,
+  Settings2,
+  Sparkles,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
@@ -171,7 +179,9 @@ export function OnboardingTour({ onOpenGuide }: { onOpenGuide?: () => void }) {
               else setStep((s) => s - 1);
             }}
           >
-            {step === 0 ? c.skip : (
+            {step === 0 ? (
+              c.skip
+            ) : (
               <>
                 <ChevronLeft className="size-4" /> {c.back}
               </>
@@ -198,7 +208,9 @@ export function OnboardingTour({ onOpenGuide }: { onOpenGuide?: () => void }) {
                 else setStep((s) => s + 1);
               }}
             >
-              {last ? c.done : (
+              {last ? (
+                c.done
+              ) : (
                 <>
                   {c.next} <ChevronRight className="size-4" />
                 </>

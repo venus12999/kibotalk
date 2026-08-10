@@ -65,8 +65,7 @@ describe("parseCandidates — formats the model actually emits", () => {
   });
 
   test("ignores prose the model puts before the JSON", () => {
-    const buffer =
-      'Here are three replies:\n{"targetText":"Yes, please.","meaning":"好的。"}';
+    const buffer = 'Here are three replies:\n{"targetText":"Yes, please.","meaning":"好的。"}';
     expect(texts(buffer)).toEqual(["Yes, please."]);
   });
 
@@ -83,8 +82,7 @@ describe("parseCandidates — mid-stream partials", () => {
   });
 
   test("keeps completed objects while the next one streams in", () => {
-    const buffer =
-      '{"targetText":"Done one","meaning":"一"}\n{"targetText":"Half tw';
+    const buffer = '{"targetText":"Done one","meaning":"一"}\n{"targetText":"Half tw';
     expect(texts(buffer)).toEqual(["Done one", "Half tw"]);
   });
 
@@ -95,7 +93,6 @@ describe("parseCandidates — mid-stream partials", () => {
   test("waits for the next frame when a unicode escape is half written", () => {
     expect(texts('{"targetText":"Line\\u00')).toEqual([]);
   });
-
 
   test("grows monotonically as deltas arrive", () => {
     const full = '{"targetText":"Sounds good to me.","meaning":"我同意。"}';

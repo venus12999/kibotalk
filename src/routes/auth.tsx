@@ -9,10 +9,8 @@ import { AppBackground } from "@/components/kibo/app-background";
 import logoAsset from "@/assets/kibotalk-logo.png.asset.json";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (
-    search: Record<string, unknown>,
-  ): { next?: string } => ({
-    next: typeof search['next'] === "string" ? (search['next'] as string) : "",
+  validateSearch: (search: Record<string, unknown>): { next?: string } => ({
+    next: typeof search["next"] === "string" ? (search["next"] as string) : "",
   }),
 
   head: () => ({
@@ -45,9 +43,7 @@ function AuthPage() {
   const nextPath = safeNext(next ?? "");
   const goHome = React.useCallback(
     (replace = false) =>
-      nextPath
-        ? navigate({ href: nextPath, replace })
-        : navigate({ to: "/", replace }),
+      nextPath ? navigate({ href: nextPath, replace }) : navigate({ to: "/", replace }),
     [navigate, nextPath],
   );
   const [mode, setMode] = React.useState<"signin" | "signup" | "verify" | "forgot">("signin");
@@ -148,7 +144,9 @@ function AuthPage() {
       const { error: err } = await supabase.auth.resend({
         type: "signup",
         email: cleanEmail,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ""}` },
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ""}`,
+        },
       });
       if (err) throw err;
       setNotice(`新的验证链接已发送至 ${cleanEmail}。`);
@@ -203,7 +201,9 @@ function AuthPage() {
         const { data, error: err } = await supabase.auth.signUp({
           email: cleanEmail,
           password: cleanPassword,
-          options: { emailRedirectTo: `${window.location.origin}/auth/callback${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ""}` },
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ""}`,
+          },
         });
         if (err) {
           if (/already registered|already exists|User already/i.test(err.message)) {

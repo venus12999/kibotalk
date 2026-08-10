@@ -17,9 +17,27 @@ import {
 import { useKibo } from "@/lib/kibo/store";
 
 const copy = {
-  zh: { signIn: "登录 / 云同步", signOut: "退出登录", synced: "已云同步", syncing: "同步中…", memory: "我的资料与记忆" },
-  ja: { signIn: "ログイン / 同期", signOut: "ログアウト", synced: "クラウド同期済み", syncing: "同期中…", memory: "プロフィールと記憶" },
-  en: { signIn: "Sign in / sync", signOut: "Sign out", synced: "Synced to cloud", syncing: "Syncing…", memory: "Profile & memory" },
+  zh: {
+    signIn: "登录 / 云同步",
+    signOut: "退出登录",
+    synced: "已云同步",
+    syncing: "同步中…",
+    memory: "我的资料与记忆",
+  },
+  ja: {
+    signIn: "ログイン / 同期",
+    signOut: "ログアウト",
+    synced: "クラウド同期済み",
+    syncing: "同期中…",
+    memory: "プロフィールと記憶",
+  },
+  en: {
+    signIn: "Sign in / sync",
+    signOut: "Sign out",
+    synced: "Synced to cloud",
+    syncing: "Syncing…",
+    memory: "Profile & memory",
+  },
 } as const;
 
 export function AccountMenu() {
@@ -37,7 +55,12 @@ export function AccountMenu() {
 
   if (!user) {
     return (
-      <Button variant="soft" size="icon" aria-label={words.signIn} onClick={() => void navigate({ to: "/auth" })}>
+      <Button
+        variant="soft"
+        size="icon"
+        aria-label={words.signIn}
+        onClick={() => void navigate({ to: "/auth" })}
+      >
         <LogIn className="size-4" />
       </Button>
     );

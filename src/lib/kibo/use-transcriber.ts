@@ -104,7 +104,11 @@ export function useTranscriber({
   const [holding, setHolding] = React.useState<Speaker | null>(null);
 
   const ctxRef = React.useRef<AudioContext | null>(null);
+  /** Silent sink: ScriptProcessor only ticks when connected, but routing the
+   *  microphone to the speakers would cause feedback/echo on phones. */
+  const sinkRef = React.useRef<GainNode | null>(null);
   const pipesRef = React.useRef<Pipeline[]>([]);
+
   const pausedRef = React.useRef(false);
   const userPausedRef = React.useRef(false);
   const inFlightRef = React.useRef(0);
@@ -266,11 +270,14 @@ export function useTranscriber({
 
   const teardown = React.useCallback(() => {
     for (const pipe of pipesRef.current) {
+      pipe.node.onaudioprocess = null;
       pipe.node.disconnect();
       pipe.source.disconnect();
       pipe.stream.getTracks().forEach((track) => track.stop());
     }
     pipesRef.current = [];
+    sinkRef.current?.disconnect();
+    sinkRef.current = null;
     void ctxRef.current?.close().catch(() => undefined);
     ctxRef.current = null;
   }, []);
@@ -381,6 +388,12 @@ export function useTranscriber({
     const ctx = new AudioCtx!();
     await ctx.resume().catch(() => undefined);
     ctxRef.current = ctx;
+    // Muted sink: keeps the ScriptProcessor ticking without playing the
+    // microphone back through the phone speaker (echo / howling on mobile).
+    const sink = ctx.createGain();
+    sink.gain.value = 0;
+    sink.connect(ctx.destination);
+    sinkRef.current = sink;
     userPausedRef.current = false;
     // Push-to-talk starts silent: audio is only kept while a button is held.
     pausedRef.current = modeRef.current === "push";
@@ -388,6 +401,7 @@ export function useTranscriber({
     const attach = (stream: MediaStream, speaker: Speaker, ambiguous: boolean) => {
       const source = ctx.createMediaStreamSource(stream);
       const node = ctx.createScriptProcessor(4096, 1, 1);
+
       const pipe: Pipeline = {
         speaker,
         ambiguous,
@@ -474,7 +488,16 @@ export function useTranscriber({
       };
 
       source.connect(node);
-      node.connect(ctx.destination);
+      node.connect(sink);
+      // A headset unplug, a phone call, or iOS revoking the mic ends the track;
+      // without this the UI keeps claiming it is recording silence forever.
+      stream.getAudioTracks().forEach((track) => {
+        track.addEventListener("ended", () => {
+          if (pipesRef.current.includes(pipe)) {
+            cbRef.current.onError("microphone");
+          }
+        });
+      });
       pipesRef.current.push(pipe);
     };
 
@@ -535,6 +558,25 @@ export function useTranscriber({
   }, [flushAll, teardown]);
 
   React.useEffect(() => () => teardown(), [teardown]);
+
+  // iOS Safari and Android Chrome suspend the AudioContext when the tab is
+  // backgrounded, the screen locks, or a call interrupts audio. Coming back
+  // leaves a "recording" session that captures nothing — resume it.
+  React.useEffect(() => {
+    const resume = () => {
+      const ctx = ctxRef.current;
+      if (!ctx || document.visibilityState !== "visible") return;
+      if (ctx.state === "suspended") void ctx.resume().catch(() => undefined);
+    };
+    document.addEventListener("visibilitychange", resume);
+    window.addEventListener("focus", resume);
+    window.addEventListener("pageshow", resume);
+    return () => {
+      document.removeEventListener("visibilitychange", resume);
+      window.removeEventListener("focus", resume);
+      window.removeEventListener("pageshow", resume);
+    };
+  }, []);
 
   return {
     start,

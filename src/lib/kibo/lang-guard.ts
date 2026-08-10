@@ -6,7 +6,8 @@ import type { ConvLang } from "./types";
  * language is pinned; those characters can never belong to the chosen
  * conversation language, so the segment is discarded instead of shown.
  */
-const FOREIGN = /[\uAC00-\uD7AF\u1100-\u11FF\u0400-\u04FF\u0600-\u06FF\u0900-\u097F\u0E00-\u0E7F\u0590-\u05FF]/;
+const FOREIGN =
+  /[\uAC00-\uD7AF\u1100-\u11FF\u0400-\u04FF\u0600-\u06FF\u0900-\u097F\u0E00-\u0E7F\u0590-\u05FF]/;
 const CJK = /[\u4E00-\u9FFF\u3400-\u4DBF]/;
 const KANA = /[\u3040-\u30FF]/;
 const LATIN = /[A-Za-z]/;

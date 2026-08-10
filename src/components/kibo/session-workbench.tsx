@@ -834,10 +834,7 @@ export function SessionWorkbench() {
         )}
         style={
           {
-            paddingBottom:
-              dockStyle === "bar"
-                ? "max(0.5rem, env(safe-area-inset-bottom))"
-                : "max(0.5rem, env(safe-area-inset-bottom))",
+            paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
             "--dock-scale": String(dockScale),
           } as React.CSSProperties
         }
