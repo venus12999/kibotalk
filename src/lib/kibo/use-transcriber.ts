@@ -319,11 +319,11 @@ export function useTranscriber({
   const start = React.useCallback(async () => {
     if (pipesRef.current.length > 0) return true;
 
-    const wantMic = audioSource === "microphone" || audioSource === "both";
     // Android Chrome / iOS Safari expose no getDisplayMedia — fall back to mic.
     const canCaptureSystem = typeof navigator?.mediaDevices?.getDisplayMedia === "function";
     const wantSystem =
       canCaptureSystem && (audioSource === "system" || audioSource === "both");
+    const wantMic = audioSource === "microphone" || audioSource === "both" || !wantSystem;
 
     let micStream: MediaStream | null = null;
     let sysStream: MediaStream | null = null;
