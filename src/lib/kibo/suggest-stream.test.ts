@@ -132,3 +132,48 @@ describe("parseCandidates — plain-text fallback", () => {
     expect(parseCandidates('{"targetText":"","meaning":"空"}')).toEqual([]);
   });
 });
+
+describe('parseCandidates — the {"replies":[…]} array the model now returns', () => {
+  const full = JSON.stringify({
+    replies: [
+      {
+        targetText: "まあまあだったよ。",
+        meaning: "直接回答。",
+        segments: [{ t: "まあまあ", r: "", role: "content" }],
+      },
+      { targetText: "結論は出なかったんだ。", meaning: "表明立场。" },
+      { targetText: "君はどう思う？", meaning: "反问对方。" },
+    ],
+  });
+
+  test("splits the array into exactly three independent candidates", () => {
+    const out = parseCandidates(full);
+    expect(out).toHaveLength(3);
+    expect(out.map((c) => c.text)).toEqual([
+      "まあまあだったよ。",
+      "結論は出なかったんだ。",
+      "君はどう思う？",
+    ]);
+    // Each candidate keeps its own meaning, so slot 1/2/3 never share text.
+    expect(out.map((c) => c.meaning)).toEqual(["直接回答。", "表明立场。", "反问对方。"]);
+    expect(out[0]?.segments).toEqual([{ t: "まあまあ", role: "content" }]);
+    // No candidate leaks the next one's JSON tail into its text.
+    expect(out.every((c) => !c.text.includes('"'))).toBe(true);
+  });
+
+  test("streaming prefixes never collapse the three slots into one", () => {
+    let maxSeen = 0;
+    for (let i = 1; i <= full.length; i++) {
+      const out = parseCandidates(full.slice(0, i));
+      expect(out.length).toBeLessThanOrEqual(3);
+      // The count only ever grows as more of the array arrives.
+      expect(out.length).toBeGreaterThanOrEqual(maxSeen);
+      maxSeen = out.length;
+    }
+    expect(maxSeen).toBe(3);
+  });
+
+  test("a fenced array is read the same way", () => {
+    expect(texts("```json\n" + full + "\n```")).toHaveLength(3);
+  });
+});
