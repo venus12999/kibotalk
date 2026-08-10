@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Brain, ImagePlus, Loader2, Pin, PinOff, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { AppBackground } from "@/components/kibo/app-background";
+import { ProfileCard } from "@/components/kibo/profile-card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { KiboProvider } from "@/lib/kibo/store";
@@ -215,6 +216,8 @@ function MemoryPage() {
             </p>
           </div>
         </header>
+
+        <ProfileCard />
 
         <section className="paper-sheet space-y-3 rounded-2xl p-4">
           <h2 className="text-sm font-semibold">添加一条记忆</h2>
