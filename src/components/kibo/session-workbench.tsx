@@ -370,14 +370,43 @@ export function SessionWorkbench() {
     onError: handleError,
   });
 
-  React.useEffect(() => {
+  // Autoscroll: follow the newest caption, but pause the moment the user
+  // scrolls up to re-read something. Resuming happens when they return to the
+  // bottom (or tap the "jump to latest" pill).
+  const [following, setFollowing] = React.useState(true);
+  const followingRef = React.useRef(true);
+  followingRef.current = following;
+
+  const getViewport = React.useCallback(() => {
     const el = scrollRef.current?.querySelector("[data-radix-scroll-area-viewport]");
-    if (!(el instanceof HTMLElement)) return;
-    // Follow the conversation only while the user is already at the bottom, so
-    // scrolling up to re-read an earlier line is never yanked back down.
-    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
-    if (atBottom) el.scrollTop = el.scrollHeight;
-  }, [turns.length, life, interim]);
+    return el instanceof HTMLElement ? el : null;
+  }, []);
+
+  const scrollToLatest = React.useCallback(() => {
+    const el = getViewport();
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    setFollowing(true);
+  }, [getViewport]);
+
+  React.useEffect(() => {
+    const el = getViewport();
+    if (!el) return;
+    const onScroll = () => {
+      const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
+      if (atBottom !== followingRef.current) setFollowing(atBottom);
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [getViewport, livePanel]);
+
+  React.useEffect(() => {
+    const el = getViewport();
+    if (!el || !followingRef.current) return;
+    el.scrollTop = el.scrollHeight;
+  }, [turns, life, interim, livePanel, getViewport]);
+
 
   const startSession = async () => {
     reqRef.current += 1;
