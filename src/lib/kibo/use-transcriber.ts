@@ -561,6 +561,26 @@ export function useTranscriber({
 
   React.useEffect(() => () => teardown(), [teardown]);
 
+  // iOS Safari and Android Chrome suspend the AudioContext when the tab is
+  // backgrounded, the screen locks, or a call interrupts audio. Coming back
+  // leaves a "recording" session that captures nothing — resume it.
+  React.useEffect(() => {
+    const resume = () => {
+      const ctx = ctxRef.current;
+      if (!ctx || document.visibilityState !== "visible") return;
+      if (ctx.state === "suspended") void ctx.resume().catch(() => undefined);
+    };
+    document.addEventListener("visibilitychange", resume);
+    window.addEventListener("focus", resume);
+    window.addEventListener("pageshow", resume);
+    return () => {
+      document.removeEventListener("visibilitychange", resume);
+      window.removeEventListener("focus", resume);
+      window.removeEventListener("pageshow", resume);
+    };
+  }, []);
+
+
   return {
     start,
     stop,
