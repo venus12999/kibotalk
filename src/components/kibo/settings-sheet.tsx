@@ -10,7 +10,6 @@ import type {
   ConvLang,
   DockStyle,
   Level,
-  PanelLayout,
   Theme,
   UiLang,
 } from "@/lib/kibo/types";
