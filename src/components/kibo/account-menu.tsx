@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { LogIn, LogOut, User as UserIcon, Cloud, Loader2, Shield } from "lucide-react";
+import { LogIn, LogOut, User as UserIcon, Cloud, Loader2, Shield, Brain } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { checkIsAdmin } from "@/lib/kibo/admin.functions";
@@ -17,9 +17,9 @@ import {
 import { useKibo } from "@/lib/kibo/store";
 
 const copy = {
-  zh: { signIn: "登录 / 云同步", signOut: "退出登录", synced: "已云同步", syncing: "同步中…" },
-  ja: { signIn: "ログイン / 同期", signOut: "ログアウト", synced: "クラウド同期済み", syncing: "同期中…" },
-  en: { signIn: "Sign in / sync", signOut: "Sign out", synced: "Synced to cloud", syncing: "Syncing…" },
+  zh: { signIn: "登录 / 云同步", signOut: "退出登录", synced: "已云同步", syncing: "同步中…", memory: "我的资料与记忆" },
+  ja: { signIn: "ログイン / 同期", signOut: "ログアウト", synced: "クラウド同期済み", syncing: "同期中…", memory: "プロフィールと記憶" },
+  en: { signIn: "Sign in / sync", signOut: "Sign out", synced: "Synced to cloud", syncing: "Syncing…", memory: "Profile & memory" },
 } as const;
 
 export function AccountMenu() {
@@ -59,6 +59,10 @@ export function AccountMenu() {
           {syncing ? words.syncing : words.synced}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
+        <DropdownMenuItem className="gap-2" onClick={() => void navigate({ to: "/memory" })}>
+          <Brain className="size-3.5" />
+          {words.memory}
+        </DropdownMenuItem>
         {adminInfo?.isAdmin && (
           <DropdownMenuItem className="gap-2" onClick={() => void navigate({ to: "/admin" })}>
             <Shield className="size-3.5" />
