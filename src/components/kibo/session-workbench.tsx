@@ -650,16 +650,23 @@ export function SessionWorkbench() {
 
         </section>
 
+        <div
+          aria-hidden
+          className={cn(
+            "shrink-0 bg-gradient-to-r from-transparent via-border/70 to-transparent",
+            prefs.panelLayout === "row"
+              ? "w-px bg-gradient-to-b"
+              : "h-px",
+          )}
+        />
+
         <section
           className={cn(
-            "paper-sheet flex min-w-0 flex-col overflow-hidden p-3 sm:p-5",
-            prefs.panelLayout === "row" &&
-              "panel-compact h-[46dvh] p-2.5 sm:h-auto sm:min-h-[18rem] sm:p-5 lg:min-h-0",
-            prefs.panelLayout === "column" && "h-[38dvh] sm:h-[40dvh] sm:min-h-[12rem]",
-            (!prefs.panelLayout || prefs.panelLayout === "auto") &&
-              "h-[38dvh] sm:h-auto sm:min-h-[18rem] lg:min-h-0",
+            "flex min-w-0 min-h-0 flex-col",
+            prefs.panelLayout === "row" ? "flex-1" : "flex-1",
           )}
         >
+
 
 
           <h2 className="text-sm font-bold">{t("suggestions")}</h2>
