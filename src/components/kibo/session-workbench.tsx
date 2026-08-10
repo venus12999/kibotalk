@@ -569,11 +569,54 @@ export function SessionWorkbench() {
         </div>
 
         {/* Caption: the newest line, exactly like a live-voice transcript. */}
-        <p className="min-h-[3.5rem] max-w-xl px-4 text-center text-base leading-relaxed text-foreground/90">
-          {interim.other || interim.user
-            ? interim.other || interim.user
-            : (turns.at(-1)?.text ?? t("noTranscript"))}
-        </p>
+        {(() => {
+          const last = turns.at(-1);
+          const liveSpeaker: "user" | "other" | null = interim.other
+            ? "other"
+            : interim.user
+              ? "user"
+              : (last?.speaker ?? null);
+          const liveText = interim.other || interim.user || last?.text || "";
+          const liveAt = interim.other || interim.user ? Date.now() : last?.at;
+          const live = Boolean(interim.other || interim.user);
+          return (
+            <div className="flex min-h-[4.5rem] w-full max-w-xl flex-col items-center gap-1 px-4">
+              {liveText ? (
+                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5",
+                      liveSpeaker === "user"
+                        ? "bg-primary/15 text-primary"
+                        : "bg-foreground/10 text-foreground/70",
+                    )}
+                  >
+                    {liveSpeaker === "user" ? t("me") : t("other")}
+                  </span>
+                  {liveAt ? (
+                    <time dateTime={new Date(liveAt).toISOString()} className="tabular-nums font-normal normal-case">
+                      {new Date(liveAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                      })}
+                    </time>
+                  ) : null}
+                  {live ? (
+                    <span aria-hidden className="size-1.5 animate-pulse rounded-full bg-primary" />
+                  ) : null}
+                </div>
+              ) : null}
+              <p
+                className="w-full whitespace-pre-wrap break-words text-balance text-center text-base leading-relaxed text-foreground/90"
+                aria-live="polite"
+              >
+                {liveText || t("noTranscript")}
+              </p>
+            </div>
+          );
+        })()}
+
 
         <div className="flex items-center gap-2">
           <Button
@@ -623,10 +666,22 @@ export function SessionWorkbench() {
                               : "bubble-other text-card-foreground",
                           )}
                         >
-                          <p className="text-[11px] font-semibold opacity-70">
-                            {turn.speaker === "user" ? t("me") : t("other")}
+                          <div className="flex items-baseline gap-2 text-[11px] font-semibold opacity-70">
+                            <span>{turn.speaker === "user" ? t("me") : t("other")}</span>
+                            <time
+                              dateTime={new Date(turn.at).toISOString()}
+                              className="tabular-nums font-normal"
+                            >
+                              {new Date(turn.at).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </time>
+                          </div>
+                          <p className="mt-0.5 whitespace-pre-wrap break-words text-sm leading-relaxed">
+                            {turn.text}
                           </p>
-                          <p className="mt-0.5 text-sm leading-relaxed">{turn.text}</p>
+
                           {turn.translation ? (
                             <p className="mt-1 border-t border-current/15 pt-1 text-xs leading-relaxed opacity-75">
                               {turn.translation}
