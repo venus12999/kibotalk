@@ -630,12 +630,18 @@ export function SessionWorkbench() {
           prefs.uiLang === "zh" ? "回到最新" : prefs.uiLang === "ja" ? "最新へ" : "Jump to latest";
 
         // Only the two most recent turns stay on screen: every new line pushes
-        // the oldest one out, and the text floats without any bubble.
-        const visibleTurns = turns.slice(-2);
+        // the oldest one out, and the text floats without any bubble. The line
+        // that was pushed out lingers briefly to fade out and drift upward.
+        const recentTurns = turns.slice(-2);
+        const exitingTurn =
+          exitingId && !recentTurns.some((x) => x.id === exitingId)
+            ? turns.find((x) => x.id === exitingId)
+            : undefined;
+        const visibleTurns = exitingTurn ? [exitingTurn, ...recentTurns] : recentTurns;
         const transcriptView = (
           <div className="relative flex min-h-0 flex-1 flex-col justify-end">
             <ScrollArea ref={scrollRef} className="min-h-0 flex-1">
-              {visibleTurns.length === 0 ? (
+              {recentTurns.length === 0 ? (
                 <p className="py-12 text-center text-sm text-muted-foreground">
                   {t("noTranscript")}
                 </p>
@@ -645,12 +651,13 @@ export function SessionWorkbench() {
                     <li
                       key={turn.id}
                       className={cn(
-                        "idea-rise",
+                        turn.id === exitingId ? "line-exit" : "idea-rise",
                         turn.speaker === "user"
                           ? "text-right text-transcript-self [text-shadow:0_1px_3px_oklch(0%_0_0/0.22)]"
                           : "text-left text-transcript-other",
                       )}
                     >
+
                       <div
                         className={cn(
                           "flex items-baseline gap-2 text-[11px] font-semibold opacity-70",
