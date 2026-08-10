@@ -27,9 +27,10 @@ const extOf = (file: File) => {
 };
 
 const objectPath = (userId: string, ext: string) => {
-  const id = typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const id =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   return ext ? `${userId}/${id}.${ext}` : `${userId}/${id}`;
 };
 
@@ -157,8 +158,5 @@ export async function loadMemoryContext(userId: string, limit = 12): Promise<str
 /** Mark the memories that were actually fed to a suggestion as used. */
 export async function touchMemories(ids: string[]) {
   if (ids.length === 0) return;
-  await supabase
-    .from("memories")
-    .update({ last_used_at: new Date().toISOString() })
-    .in("id", ids);
+  await supabase.from("memories").update({ last_used_at: new Date().toISOString() }).in("id", ids);
 }
