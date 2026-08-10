@@ -270,14 +270,18 @@ export function useTranscriber({
 
   const teardown = React.useCallback(() => {
     for (const pipe of pipesRef.current) {
+      pipe.node.onaudioprocess = null;
       pipe.node.disconnect();
       pipe.source.disconnect();
       pipe.stream.getTracks().forEach((track) => track.stop());
     }
     pipesRef.current = [];
+    sinkRef.current?.disconnect();
+    sinkRef.current = null;
     void ctxRef.current?.close().catch(() => undefined);
     ctxRef.current = null;
   }, []);
+
 
   const flushPipe = React.useCallback(
     (pipe: Pipeline, minSpeechMs = MIN_SPEECH_MS, reason: FlushReason = "manual") => {
