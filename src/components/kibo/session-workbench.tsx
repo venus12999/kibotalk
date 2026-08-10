@@ -674,8 +674,8 @@ export function SessionWorkbench() {
                       <p className="mt-1 whitespace-pre-wrap break-words text-base font-semibold leading-relaxed">
                         {turn.text}
                       </p>
-                      {turn.translation ? (
-                        <p className="mt-1 text-xs leading-relaxed opacity-75">
+                      {turn.speaker === "other" && turn.translation ? (
+                        <p className="mt-1 text-xs italic leading-relaxed opacity-70">
                           {turn.translation}
                         </p>
                       ) : null}
