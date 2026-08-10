@@ -28,6 +28,8 @@ export type Prefs = {
   rowFontScale: number;
   rowLineScale: number;
   rowGapScale: number;
+  /** Scale the suggestion font size up or down to fit the screen. 1 = default. */
+  suggestionFontScale: number;
   /** Who the user is — fed to the coach so replies sound like them. */
   profileName: string;
   profileAbout: string;
@@ -43,7 +45,6 @@ export type Prefs = {
   profileStuck: string[];
   onboarded: boolean;
 };
-
 
 export type Turn = {
   id: string;
@@ -102,6 +103,7 @@ export const defaultPrefs: Prefs = {
   rowFontScale: 1,
   rowLineScale: 1,
   rowGapScale: 1,
+  suggestionFontScale: 1,
   profileName: "",
   profileAbout: "",
   profileGoal: "",

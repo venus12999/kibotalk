@@ -4,7 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { PillGroup } from "./pill-group";
 import { useKibo, langLabel, levelLabel } from "@/lib/kibo/store";
-import type { AudioSource, CaptureMode, ConvLang, Level, PanelLayout, Theme, UiLang } from "@/lib/kibo/types";
+import type {
+  AudioSource,
+  CaptureMode,
+  ConvLang,
+  Level,
+  PanelLayout,
+  Theme,
+  UiLang,
+} from "@/lib/kibo/types";
 
 const translateCopy = {
   zh: { label: "翻译语言", hint: "把对方说的话翻译成这个语言显示" },
@@ -32,12 +40,9 @@ function Row({
         <p className={danger ? "text-sm font-semibold text-destructive" : "text-sm font-semibold"}>
           {title}
         </p>
-        {description ? (
-          <p className="mt-1 text-xs text-muted-foreground">{description}</p>
-        ) : null}
+        {description ? <p className="mt-1 text-xs text-muted-foreground">{description}</p> : null}
       </div>
       <div className="w-full min-w-0 sm:w-auto sm:shrink-0">{children}</div>
-
     </div>
   );
 }
@@ -74,7 +79,6 @@ export function SettingsSheet({
       }),
     );
   }, []);
-
 
   React.useEffect(() => {
     if (!open) return;
@@ -198,8 +202,16 @@ export function SettingsSheet({
               value={prefs.audioSource}
               onChange={(v) => setPrefs({ audioSource: v })}
               options={[
-                { value: "microphone", label: t("microphone"), description: t("microphoneDescription") },
-                { value: "system", label: t("systemAudio"), description: t("systemAudioDescription") },
+                {
+                  value: "microphone",
+                  label: t("microphone"),
+                  description: t("microphoneDescription"),
+                },
+                {
+                  value: "system",
+                  label: t("systemAudio"),
+                  description: t("systemAudioDescription"),
+                },
                 { value: "both", label: t("bothAudio"), description: t("bothAudioDescription") },
               ]}
             />
@@ -308,7 +320,9 @@ export function SettingsSheet({
                       max={max}
                       step={0.05}
                       value={[value]}
-                      onValueChange={([v]: number[]) => setPrefs({ [key]: v ?? 1 } as Partial<typeof prefs>)}
+                      onValueChange={([v]: number[]) =>
+                        setPrefs({ [key]: v ?? 1 } as Partial<typeof prefs>)
+                      }
                     />
                     <span className="w-10 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
                       {Math.round(value * 100)}%
@@ -326,10 +340,35 @@ export function SettingsSheet({
               </Button>
             </div>
           ) : null}
-
-
-
-
+          <div className="flex flex-col gap-3 border-b border-border py-4">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">{t("suggestionFontSize")}</p>
+              <p className="mt-0.5 text-xs text-foreground/70">
+                {t("suggestionFontSizeDescription")}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Slider
+                className="min-w-0 flex-1"
+                min={0.75}
+                max={1.5}
+                step={0.05}
+                value={[prefs.suggestionFontScale]}
+                onValueChange={([v]: number[]) => setPrefs({ suggestionFontScale: v ?? 1 })}
+              />
+              <span className="w-10 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+                {Math.round((prefs.suggestionFontScale ?? 1) * 100)}%
+              </span>
+            </div>
+            <Button
+              variant="soft"
+              size="sm"
+              className="self-start"
+              onClick={() => setPrefs({ suggestionFontScale: 1 })}
+            >
+              {t("resetTypography")}
+            </Button>
+          </div>
 
           <p className="pt-6 text-xs font-bold tracking-wide text-muted-foreground uppercase">
             {t("permissions")}

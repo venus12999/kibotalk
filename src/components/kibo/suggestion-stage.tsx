@@ -339,6 +339,7 @@ export function SuggestionStage({
   detailLabels,
   className,
   scrollRef,
+  fontScale = 1,
 }: {
   rounds: Round[];
   streaming: boolean;
@@ -356,6 +357,7 @@ export function SuggestionStage({
   className?: string;
   /** Lets the workbench observe/drive this panel's scrolling. */
   scrollRef?: React.Ref<HTMLDivElement>;
+  fontScale?: number;
 }) {
   const current = rounds[0];
   const previous = React.useMemo(() => rounds.slice(1, 3), [rounds]);
@@ -381,7 +383,10 @@ export function SuggestionStage({
   return (
     <ScrollArea ref={scrollRef} className={className}>
       {/* Isolate streaming text updates from the rest of the page layout. */}
-      <div className="space-y-3 pr-3 [contain:content]">
+      <div
+        className="suggest-scaled space-y-3 pr-3 [contain:content]"
+        style={{ "--suggest-scale": String(fontScale) } as React.CSSProperties}
+      >
         <StatusBar
           status={status}
           errorMessage={errorMessage}
