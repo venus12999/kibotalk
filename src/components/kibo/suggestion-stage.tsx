@@ -383,7 +383,10 @@ export function SuggestionStage({
   return (
     <ScrollArea ref={scrollRef} className={className}>
       {/* Isolate streaming text updates from the rest of the page layout. */}
-      <div className="space-y-3 pr-3 [contain:content]">
+      <div
+        className="suggest-scaled space-y-3 pr-3 [contain:content]"
+        style={{ "--suggest-scale": String(fontScale) } as React.CSSProperties}
+      >
         <StatusBar
           status={status}
           errorMessage={errorMessage}
