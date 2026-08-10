@@ -112,6 +112,7 @@ export const defaultPrefs: Prefs = {
   dockStyle: "float",
   dockScale: 1,
   dockCollapsed: false,
+  orbReactivity: 1,
 
   rowFontScale: 1,
   rowLineScale: 1,
