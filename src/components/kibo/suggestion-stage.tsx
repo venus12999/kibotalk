@@ -395,7 +395,7 @@ export function SuggestionStage({
   const slots = [0, 1, 2];
 
   return (
-    <ScrollArea className={className}>
+    <ScrollArea ref={scrollRef} className={className}>
       {/* Isolate streaming text updates from the rest of the page layout. */}
       <div className="space-y-4 pr-3 [contain:content]">
         <StatusBar
