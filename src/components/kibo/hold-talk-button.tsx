@@ -192,8 +192,25 @@ export function HoldTalkButton({
         e.preventDefault();
         begin(e.pointerId, "pointer");
       }}
+      onKeyDown={(e) => {
+        // Desktop keyboard: hold Space / Enter to talk (auto-repeat ignored).
+        if (e.key !== " " && e.key !== "Enter") return;
+        e.preventDefault();
+        if (e.repeat || pointerRef.current !== null) return;
+        if (inert) {
+          hapticReject();
+          return;
+        }
+        begin(-1, "pointer");
+      }}
+      onKeyUp={(e) => {
+        if (e.key !== " " && e.key !== "Enter") return;
+        e.preventDefault();
+        release(-1, "pointer");
+      }}
       onContextMenu={(e) => e.preventDefault()}
       onDragStart={(e) => e.preventDefault()}
+
     >
       {/* press ripple */}
       {pressKey > 0 ? (
