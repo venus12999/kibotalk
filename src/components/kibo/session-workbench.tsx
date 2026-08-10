@@ -745,7 +745,11 @@ export function SessionWorkbench() {
                 )}
                 style={{
                   transform: transcriber.recording
-                    ? `scale(${1 + Math.min(transcriber.level, 1) * 0.45})`
+                    ? `scale(${
+                        1 +
+                        (0.06 + Math.min(transcriber.level, 1) * 0.45) *
+                          (prefs.orbReactivity ?? 1)
+                      })`
                     : undefined,
                 }}
               />
