@@ -10,6 +10,7 @@ export type CaptureMode = "push" | "continuous";
 export type PanelLayout = "auto" | "row" | "column";
 /** Whether the two side panels scroll together or on their own. */
 export type ScrollSync = "linked" | "independent";
+export type MemoryImageStatus = "idle" | "uploading" | "attached" | "error";
 
 
 export type Prefs = {

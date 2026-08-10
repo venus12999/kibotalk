@@ -88,6 +88,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          image_url: string | null
           kind: Database["public"]["Enums"]["memory_kind"]
           last_used_at: string | null
           pinned: boolean
@@ -98,6 +99,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          image_url?: string | null
           kind?: Database["public"]["Enums"]["memory_kind"]
           last_used_at?: string | null
           pinned?: boolean
@@ -108,6 +110,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          image_url?: string | null
           kind?: Database["public"]["Enums"]["memory_kind"]
           last_used_at?: string | null
           pinned?: boolean
