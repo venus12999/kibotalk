@@ -30,6 +30,7 @@ import { MemoSuggestionStage as SuggestionStage } from "./suggestion-stage";
 import { SettingsSheet } from "./settings-sheet";
 import { HistorySheet } from "./history-sheet";
 import { GuideSheet } from "./guide-sheet";
+import { OnboardingTour } from "./onboarding-tour";
 import { UiLanguageMenu } from "./ui-language-menu";
 import { AccountMenu } from "./account-menu";
 import { HoldTalkButton } from "./hold-talk-button";
@@ -1009,6 +1010,7 @@ export function SessionWorkbench() {
 
       <SettingsSheet open={settingsOpen} onOpenChange={setSettingsOpen} locked={active} />
       <GuideSheet open={guideOpen} onOpenChange={setGuideOpen} />
+      <OnboardingTour onOpenGuide={() => setGuideOpen(true)} />
       <HistorySheet open={historyOpen} onOpenChange={setHistoryOpen} />
     </div>
   );
