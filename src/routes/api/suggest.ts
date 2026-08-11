@@ -17,10 +17,11 @@ const LEVEL_HINT: Record<string, string> = {
  * slow reply can never hold up the other two.
  */
 const ANGLES = [
-  "Answer the newest line directly and concretely.",
-  "Reply by asking a natural follow-up question back.",
-  "Reply with a softer, hesitant or alternative stance.",
+  "Take the AFFIRMATIVE / positive stance: if the newest line is a yes-no or 'do you have…' question, answer yes and add one concrete detail. Otherwise answer directly and concretely.",
+  "Take the OPPOSITE stance of slot 1: if the newest line is a yes-no or 'do you have…' question, answer NO / not yet honestly, then add one short recovery (willing to learn, related experience). Never repeat a yes-type answer.",
+  "Take a THIRD, different route: partial / conditional answer, or ask a natural clarifying question back. It must not duplicate the stance of slot 1 or slot 2.",
 ] as const;
+
 
 type Body = {
   turns?: { speaker: "user" | "other"; text: string }[];
