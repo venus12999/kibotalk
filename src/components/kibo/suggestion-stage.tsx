@@ -134,35 +134,11 @@ const NoteCard = React.memo(function NoteCard({
             ) : null}
           </span>
         </p>
-
-        {candidate.meaning && !expanded ? (
-          <p className="mt-1.5 line-clamp-1 text-xs opacity-70">{candidate.meaning}</p>
-        ) : null}
-
-        {hasDetail && !caret ? (
-          <button
-            type="button"
-            onClick={onToggle}
-            aria-expanded={expanded}
-            className="mt-1.5 flex items-center gap-1 rounded-full bg-current/10 px-2 py-0.5 text-[11px] font-bold opacity-70 transition hover:opacity-100 active:scale-95"
-          >
-            <ChevronDown className={cn("size-3 transition-transform", expanded && "rotate-180")} />
-            {expanded ? labels.hide : labels.show}
-          </button>
-        ) : null}
-
-        {expanded && candidate.meaning ? (
-          <div className="mt-2 space-y-2 border-t border-current/15 pt-2">
-            <div>
-              <p className="text-[11px] font-bold opacity-60">{labels.alt}</p>
-              <p className="text-xs opacity-85">{candidate.meaning}</p>
-            </div>
-          </div>
-        ) : null}
       </div>
     </li>
   );
 });
+
 
 /** Past rounds are static; keep them out of the streaming render path. */
 const PreviousRounds = React.memo(function PreviousRounds({
