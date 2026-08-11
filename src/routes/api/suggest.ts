@@ -45,7 +45,9 @@ export const Route = createFileRoute("/api/suggest")({
 
         const { getAiModels } = await import("@/lib/kibo/model-config.server");
         const { getCoachPrompt } = await import("@/lib/kibo/coach-prompt.server");
+        const emotionMod = import("@/lib/kibo/emotion.server");
         const [aiModels, coachPrompt] = await Promise.all([getAiModels(), getCoachPrompt()]);
+
 
         const target = LANG_NAME[body.conversationLang ?? "en"] ?? "English";
         const ui = LANG_NAME[body.uiLang ?? "en"] ?? "English";
