@@ -10,6 +10,15 @@ const PHRASES: Record<string, string[]> = {
     "So basically…",
     "That's a really interesting point.",
     "Let me put it this way…",
+    "Right, so…",
+    "How should I say this…",
+    "Well, it depends, actually.",
+    "Give me a second to phrase that.",
+    "I've thought about this before, actually.",
+    "That's a fair question.",
+    "To be honest with you…",
+    "Just to make sure I understood you…",
+    "Let me back up a little.",
   ],
   ja: [
     "えーと…",
@@ -19,6 +28,15 @@ const PHRASES: Record<string, string[]> = {
     "つまり、そういうことですね。",
     "正確に伝えたいので、少し待ってください。",
     "それは興味深い点ですね。",
+    "なんと言いますか…",
+    "ちょっと言葉を選びますね。",
+    "そうですね、場合によりますが…",
+    "実は前から考えていたことなんです。",
+    "確認させていただくと…",
+    "正直に申し上げますと…",
+    "順番にお話ししますね。",
+    "難しい質問ですね。",
+    "ええ、ありますよ。",
   ],
   zh: [
     "这个嘛……",
@@ -28,8 +46,18 @@ const PHRASES: Record<string, string[]> = {
     "其实吧……",
     "你这么一说，挺有意思的。",
     "我整理一下思路。",
+    "怎么说呢……",
+    "这个要看情况。",
+    "老实说……",
+    "我确认一下你的意思。",
+    "我从头讲一下吧。",
+    "这个问题问得挺关键的。",
+    "让我组织一下语言。",
+    "说起来还真有点复杂。",
+    "对，我之前也想过这个。",
   ],
 };
+
 
 const LABELS: Record<string, { title: string; hint: string }> = {
   en: { title: "Stalling phrase", hint: "Say this to buy time" },
@@ -49,7 +77,10 @@ export function StallingTip({
   uiLang: string;
   className?: string;
 }) {
-  const phrases = PHRASES[lang] ?? PHRASES["en"] ?? [];
+  const bank = PHRASES[lang] ?? PHRASES["en"] ?? [];
+  // A fresh shuffled order every time the tip comes up, so the same phrase
+  // isn't the one the user always reads.
+  const [order, setOrder] = React.useState<number[]>(() => bank.map((_, i) => i));
   const [index, setIndex] = React.useState(0);
   const [visible, setVisible] = React.useState(false);
 
@@ -58,19 +89,26 @@ export function StallingTip({
       setVisible(false);
       return;
     }
-    // Fade in on the first appearance.
-    const fadeIn = setTimeout(() => setVisible(true), 60);
-    return () => clearTimeout(fadeIn);
+    setVisible(true);
   }, [show]);
 
   React.useEffect(() => {
     if (!show) return;
+    const shuffled = bank.map((_, i) => i);
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!];
+    }
+    setOrder(shuffled);
     setIndex(0);
     const interval = setInterval(() => {
-      setIndex((i) => (i + 1) % phrases.length);
-    }, 2200);
+      setIndex((i) => (i + 1) % (shuffled.length || 1));
+    }, 2600);
     return () => clearInterval(interval);
-  }, [show, phrases.length]);
+  }, [show, bank]);
+
+  const phrases = order.map((i) => bank[i] ?? "");
+
 
   const label = LABELS[uiLang] ??
     LABELS["en"] ?? { title: "Stalling phrase", hint: "Say this to buy time" };

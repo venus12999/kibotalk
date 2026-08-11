@@ -363,8 +363,9 @@ export function SessionWorkbench() {
         return;
       }
 
-      // Transcription is done; from here the AI status takes over the stalling UI.
-      setOtherFinished(false);
+      // Keep the stalling phrase up: it stays until the first reply token lands,
+      // so it doesn't flash off between transcription and the AI stream.
+
 
       // Show the line in the user's chosen translation language.
       const { conversationLang, translateLang } = prefsRef.current;
@@ -392,6 +393,13 @@ export function SessionWorkbench() {
     const last = [...turnsRef.current].reverse().find((x) => x.speaker === "other");
     if (last) runSuggestions(last.text);
   }, [runSuggestions]);
+
+  // The stalling phrase disappears only once real reply text is on screen.
+  const firstIdeaText = rounds[0]?.candidates?.some((c) => (c.text ?? "").trim().length > 0);
+  React.useEffect(() => {
+    if (firstIdeaText) setOtherFinished(false);
+  }, [firstIdeaText]);
+
 
   // Changing the target language or level invalidates suggestions written for
   // the old settings — clear them instead of showing stale advice.
@@ -765,10 +773,10 @@ export function SessionWorkbench() {
                 (otherFinished ||
                   aiStatus === "connecting" ||
                   aiStatus === "retrying" ||
-                  (aiStatus === "streaming" &&
-                    (!rounds[0] || rounds[0].candidates.length === 0))) &&
+                  (aiStatus === "streaming" && !firstIdeaText)) &&
                 transcriber.holding === null
               }
+
               lang={prefs.conversationLang}
               uiLang={prefs.uiLang}
               className="absolute -top-16 z-10 sm:-top-20"
