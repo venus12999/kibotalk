@@ -363,8 +363,9 @@ export function SessionWorkbench() {
         return;
       }
 
-      // Transcription is done; from here the AI status takes over the stalling UI.
-      setOtherFinished(false);
+      // Keep the stalling phrase up: it stays until the first reply token lands,
+      // so it doesn't flash off between transcription and the AI stream.
+
 
       // Show the line in the user's chosen translation language.
       const { conversationLang, translateLang } = prefsRef.current;
