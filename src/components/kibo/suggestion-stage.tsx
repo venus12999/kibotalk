@@ -58,26 +58,20 @@ const NoteCard = React.memo(function NoteCard({
   candidate,
   caret,
   index,
-  expanded,
-  onToggle,
-  labels,
   scrolling = false,
 }: {
   candidate: Candidate;
   caret: boolean;
   index: number;
-  expanded: boolean;
-  onToggle: () => void;
-  labels: { show: string; hide: string; alt: string; points: string };
   /** Long lines only drift while the user is holding the talk button. */
   scrolling?: boolean;
 }) {
   const total = candidate.text.length;
-  const hasDetail = Boolean(candidate.meaning);
   const { viewportRef, textRef, distance } = useMarquee(candidate.text, scrolling);
   // Roughly 34px per second: slow enough to read along with.
   const duration = Math.max(6, Math.round(distance / 34));
   const marquee = scrolling && distance > 0;
+
 
   return (
     <li
