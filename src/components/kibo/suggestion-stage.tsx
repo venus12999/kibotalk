@@ -413,12 +413,14 @@ export function SuggestionStage({
         <ol className="space-y-2">
           {slots.map((i) => {
             const c = candidates[i];
-            if (c) {
+            if (c && c.text) {
               return (
                 <NoteCard
                   key={i}
                   candidate={c}
-                  caret={streaming && i === last}
+                  // Each slot streams on its own, so every visible one types.
+                  caret={streaming}
+
                   index={i}
                   expanded={openIndex === i}
                   onToggle={() => setOpenIndex((prev) => (prev === i ? null : i))}
