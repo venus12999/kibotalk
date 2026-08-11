@@ -318,6 +318,7 @@ export function SuggestionStage({
   className,
   scrollRef,
   fontScale = 1,
+  scrolling = false,
 }: {
   rounds: Round[];
   streaming: boolean;
