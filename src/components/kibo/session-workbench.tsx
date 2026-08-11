@@ -772,13 +772,8 @@ export function SessionWorkbench() {
         const orb = (
           <div className="relative flex flex-col items-center gap-5">
             <StallingTip
-              show={
-                (otherFinished ||
-                  aiStatus === "connecting" ||
-                  aiStatus === "retrying" ||
-                  (aiStatus === "streaming" && !firstIdeaText)) &&
-                transcriber.holding === null
-              }
+              show={otherFinished && transcriber.holding === null}
+
 
               lang={prefs.conversationLang}
               uiLang={prefs.uiLang}
