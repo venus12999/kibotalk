@@ -352,16 +352,21 @@ export function SuggestionStage({
         className="suggest-scaled w-full max-w-full min-w-0 space-y-3 overflow-x-hidden pr-3 [contain:content]"
         style={{ "--suggest-scale": String(fontScale) } as React.CSSProperties}
       >
-        <StatusBar
-          status={status}
-          errorMessage={errorMessage}
-          errorTitle={errorTitle}
-          errorAdvice={errorAdvice}
-          attempt={attempt}
-          labels={statusLabels}
-          onRetry={onRetry}
-          canRetry={canRetry}
-        />
+        {/* The status row keeps its slot even when idle, so the three ideas
+            never jump upwards mid-read when the status clears. */}
+        <div className="min-h-4">
+          <StatusBar
+            status={status}
+            errorMessage={errorMessage}
+            errorTitle={errorTitle}
+            errorAdvice={errorAdvice}
+            attempt={attempt}
+            labels={statusLabels}
+            onRetry={onRetry}
+            canRetry={canRetry}
+          />
+        </div>
+
 
         <ol className="space-y-2">
           {slots.map((i) => {
