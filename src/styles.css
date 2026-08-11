@@ -676,3 +676,14 @@
     display: none;
   }
 }
+
+/* Furigana above Japanese replies: small, dimmed, never adds line height. */
+.suggest-scaled ruby {
+  ruby-position: over;
+}
+.suggest-scaled rt {
+  font-size: calc(0.5em);
+  font-weight: 600;
+  opacity: 0.65;
+  line-height: 1;
+}
