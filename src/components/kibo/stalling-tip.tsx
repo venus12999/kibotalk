@@ -49,7 +49,7 @@ export function StallingTip({
   uiLang: string;
   className?: string;
 }) {
-  const phrases = PHRASES[lang] ?? PHRASES["en"];
+  const phrases = PHRASES[lang] ?? PHRASES["en"] ?? [];
   const [index, setIndex] = React.useState(0);
   const [visible, setVisible] = React.useState(false);
 
@@ -72,7 +72,7 @@ export function StallingTip({
     return () => clearInterval(interval);
   }, [show, phrases.length]);
 
-  const label = LABELS[uiLang] ?? LABELS["en"];
+  const label = LABELS[uiLang] ?? LABELS["en"] ?? { title: "Stalling phrase", hint: "Say this to buy time" };
 
   return (
     <div
