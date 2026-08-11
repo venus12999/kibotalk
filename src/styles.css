@@ -626,6 +626,23 @@
   animation: idea-type 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* Long replies stay on one line and drift slowly so they can be read to the end. */
+@keyframes idea-marquee {
+  0%,
+  10% {
+    transform: translateX(0);
+  }
+  90%,
+  100% {
+    transform: translateX(calc(-1 * var(--marquee-distance, 0px)));
+  }
+}
+
+@utility idea-marquee {
+  animation: idea-marquee var(--marquee-duration, 10s) linear infinite alternate;
+}
+
+
 /* The oldest transcript line drifts up and fades out as it leaves. */
 @keyframes line-exit {
   from {
