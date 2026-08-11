@@ -12,9 +12,25 @@ type Props = {
   icon: React.ReactNode;
   /** 0..1 input level, drives the live meter while held. */
   level: number;
+  /** Desktop shortcut: hold this letter key to talk (e.g. "a"). */
+  hotkey?: string;
   onBegin: () => void;
   onEnd: () => void;
 };
+
+/** Typing in a field or dialog must never trigger the talk shortcut. */
+function isTypingTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  return (
+    tag === "INPUT" ||
+    tag === "TEXTAREA" ||
+    tag === "SELECT" ||
+    target.isContentEditable ||
+    Boolean(target.closest("[role='dialog'],[contenteditable='true']"))
+  );
+}
+
 
 /**
  * Push-to-talk button tuned for touch: single-pointer only, no scrolling or
@@ -28,6 +44,8 @@ export function HoldTalkButton({
   activeLabel,
   icon,
   level,
+  hotkey,
+
   onBegin,
   onEnd,
 }: Props) {
@@ -162,6 +180,35 @@ export function HoldTalkButton({
     };
   }, [begin, release]);
 
+  /**
+   * Desktop shortcut: hold a letter key anywhere on the page to talk. Uses its
+   * own synthetic pointer id so it can't collide with mouse or Space presses.
+   */
+  const HOTKEY_ID = -2;
+  React.useEffect(() => {
+    if (!hotkey) return;
+    const key = hotkey.toLowerCase();
+    const down = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== key) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || isTypingTarget(e.target)) return;
+      e.preventDefault();
+      if (e.repeat || pointerRef.current !== null) return;
+      begin(HOTKEY_ID, "pointer");
+    };
+    const up = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== key) return;
+      release(HOTKEY_ID, "pointer");
+    };
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+    };
+  }, [hotkey, begin, release]);
+
+
+
   return (
     <button
       ref={buttonRef}
@@ -246,7 +293,14 @@ export function HoldTalkButton({
           {icon}
         </span>
         {active ? activeLabel : label}
+        {/* Keyboard hint: desktop only, where a physical key actually exists. */}
+        {hotkey ? (
+          <kbd className="hidden rounded border border-current/25 px-1 text-[10px] font-bold opacity-60 sm:inline">
+            {hotkey.toUpperCase()}
+          </kbd>
+        ) : null}
       </span>
+
       {active ? (
         <span className="relative text-[11px] font-medium tabular-nums opacity-80">
           {elapsed.toFixed(1)}s
