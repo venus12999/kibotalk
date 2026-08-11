@@ -123,7 +123,20 @@ const NoteCard = React.memo(function NoteCard({
                   : undefined
               }
             >
-              {candidate.text}
+              {/* Japanese replies carry furigana; English/Chinese never do. */}
+              {candidate.segments && candidate.segments.length > 0
+                ? candidate.segments.map((s, si) =>
+                    s.r ? (
+                      <ruby key={si}>
+                        {s.t}
+                        <rt>{s.r}</rt>
+                      </ruby>
+                    ) : (
+                      <React.Fragment key={si}>{s.t}</React.Fragment>
+                    ),
+                  )
+                : candidate.text}
+
             </span>
             {caret ? (
               <span className="ml-0.5 inline-block h-3.5 w-0.5 translate-y-0.5 animate-pulse bg-current align-middle" />
