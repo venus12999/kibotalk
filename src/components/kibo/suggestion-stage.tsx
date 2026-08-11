@@ -145,7 +145,6 @@ const NoteCard = React.memo(function NoteCard({
   );
 });
 
-
 /** Past rounds are static; keep them out of the streaming render path. */
 const PreviousRounds = React.memo(function PreviousRounds({
   rounds,
