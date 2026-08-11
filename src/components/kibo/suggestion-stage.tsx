@@ -12,56 +12,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { Candidate, Round, Segment } from "@/lib/kibo/types";
 
-function clipSegments(segments: Segment[], limit: number): Segment[] {
-  const out: Segment[] = [];
-  let used = 0;
-  for (const seg of segments) {
-    if (used >= limit) break;
-    const room = limit - used;
-    if (seg.t.length <= room) {
-      out.push(seg);
-      used += seg.t.length;
-    } else {
-      out.push({ ...seg, t: seg.t.slice(0, room), r: "" });
-      break;
-    }
-  }
-  return out;
-}
-
-/** Reply text with per-span readings rendered as ruby annotations. */
-const RubyText = React.memo(function RubyText({
-  candidate,
-  limit,
-}: {
-  candidate: Candidate;
-  limit: number;
-}) {
-  if (!candidate.segments || candidate.segments.length === 0) {
-    return <>{candidate.text.slice(0, limit)}</>;
-  }
-  const segments = clipSegments(candidate.segments, limit);
-  return (
-    <>
-      {segments.map((seg, i) =>
-        seg.r ? (
-          <ruby
-            key={i}
-            className={cn("inline-block align-bottom", seg.role === "particle" && "opacity-80")}
-          >
-            {seg.t}
-            <rt className="text-[0.6em] font-medium opacity-70">{seg.r}</rt>
-          </ruby>
-        ) : (
-          <span key={i} className={seg.role === "particle" ? "opacity-80" : undefined}>
-            {seg.t}
-          </span>
-        ),
-      )}
-    </>
-  );
-});
-
 /**
  * One sticky note. Text is rendered exactly as far as the stream has delivered
  * it — no client-side replay buffer — so characters appear the moment their
@@ -69,9 +19,31 @@ const RubyText = React.memo(function RubyText({
  */
 const NOTE_TONES = ["idea-tone-1", "idea-tone-2", "idea-tone-3"] as const;
 
-/** Build a compact detail view from data we already have: reading breakdown. */
-function keyWords(candidate: Candidate) {
-  return (candidate.segments ?? []).filter((s) => s.role !== "punct" && s.t.trim().length > 0);
+/**
+ * Long replies stay on one line and drift slowly left-and-right so the reader
+ * can follow the sentence instead of losing it off the right edge.
+ */
+function useMarquee(text: string) {
+  const viewportRef = React.useRef<HTMLSpanElement | null>(null);
+  const textRef = React.useRef<HTMLSpanElement | null>(null);
+  const [distance, setDistance] = React.useState(0);
+
+  React.useLayoutEffect(() => {
+    const viewport = viewportRef.current;
+    const inner = textRef.current;
+    if (!viewport || !inner) return;
+    const measure = () => {
+      const overflow = inner.scrollWidth - viewport.clientWidth;
+      setDistance(overflow > 8 ? overflow + 8 : 0);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(viewport);
+    ro.observe(inner);
+    return () => ro.disconnect();
+  }, [text]);
+
+  return { viewportRef, textRef, distance };
 }
 
 const NoteCard = React.memo(function NoteCard({
@@ -89,11 +61,11 @@ const NoteCard = React.memo(function NoteCard({
   onToggle: () => void;
   labels: { show: string; hide: string; alt: string; points: string };
 }) {
-  const total = candidate.segments?.length
-    ? candidate.segments.reduce((n, s) => n + s.t.length, 0)
-    : candidate.text.length;
-  const words = keyWords(candidate);
-  const hasDetail = words.length > 0 || Boolean(candidate.meaning);
+  const total = candidate.text.length;
+  const hasDetail = Boolean(candidate.meaning);
+  const { viewportRef, textRef, distance } = useMarquee(candidate.text);
+  // Roughly 34px per second: slow enough to read along with.
+  const duration = Math.max(6, Math.round(distance / 34));
 
   return (
     <li
@@ -113,17 +85,35 @@ const NoteCard = React.memo(function NoteCard({
       </span>
 
       <div className="min-w-0 flex-1">
-        <p className="text-sm leading-snug font-semibold [overflow-wrap:anywhere] break-words whitespace-normal">
-          {/* Re-keying on length replays the fade as each token lands. */}
+        <p className="text-sm leading-snug font-semibold">
           <span
-            key={caret ? total : "done"}
-            className={cn("inline [overflow-wrap:anywhere]", caret && "idea-type")}
+            ref={viewportRef}
+            className="block w-full overflow-hidden whitespace-nowrap [mask-image:linear-gradient(to_right,transparent_0,black_10px,black_calc(100%-14px),transparent_100%)]"
           >
-            <RubyText candidate={candidate} limit={total} />
+            {/* Re-keying on length replays the fade as each token lands. */}
+            <span
+              ref={textRef}
+              key={caret ? total : "done"}
+              className={cn(
+                "inline-block whitespace-nowrap",
+                caret && "idea-type",
+                !caret && distance > 0 && "idea-marquee",
+              )}
+              style={
+                !caret && distance > 0
+                  ? ({
+                      "--marquee-distance": `${distance}px`,
+                      "--marquee-duration": `${duration}s`,
+                    } as React.CSSProperties)
+                  : undefined
+              }
+            >
+              {candidate.text}
+            </span>
+            {caret ? (
+              <span className="ml-0.5 inline-block h-3.5 w-0.5 translate-y-0.5 animate-pulse bg-current align-middle" />
+            ) : null}
           </span>
-          {caret ? (
-            <span className="ml-0.5 inline-block h-3.5 w-0.5 translate-y-0.5 animate-pulse bg-current align-middle" />
-          ) : null}
         </p>
 
         {candidate.meaning && !expanded ? (
@@ -142,36 +132,19 @@ const NoteCard = React.memo(function NoteCard({
           </button>
         ) : null}
 
-        {expanded ? (
+        {expanded && candidate.meaning ? (
           <div className="mt-2 space-y-2 border-t border-current/15 pt-2">
-            {candidate.meaning ? (
-              <div>
-                <p className="text-[11px] font-bold opacity-60">{labels.alt}</p>
-                <p className="text-xs opacity-85">{candidate.meaning}</p>
-              </div>
-            ) : null}
-            {words.length ? (
-              <div>
-                <p className="text-[11px] font-bold opacity-60">{labels.points}</p>
-                <ul className="mt-1 flex flex-wrap gap-1">
-                  {words.map((w, i) => (
-                    <li
-                      key={i}
-                      className="rounded-full bg-current/10 px-2 py-0.5 text-[11px] font-semibold"
-                    >
-                      {w.t}
-                      {w.r ? <span className="ml-1 opacity-60">{w.r}</span> : null}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
+            <div>
+              <p className="text-[11px] font-bold opacity-60">{labels.alt}</p>
+              <p className="text-xs opacity-85">{candidate.meaning}</p>
+            </div>
           </div>
         ) : null}
       </div>
     </li>
   );
 });
+
 
 /** Past rounds are static; keep them out of the streaming render path. */
 const PreviousRounds = React.memo(function PreviousRounds({
