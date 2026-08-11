@@ -54,7 +54,6 @@ function useMarquee(text: string, active: boolean) {
   return { viewportRef, textRef, distance };
 }
 
-
 const NoteCard = React.memo(function NoteCard({
   candidate,
   caret,
@@ -79,7 +78,6 @@ const NoteCard = React.memo(function NoteCard({
   // Roughly 34px per second: slow enough to read along with.
   const duration = Math.max(6, Math.round(distance / 34));
   const marquee = scrolling && distance > 0;
-
 
   return (
     <li
@@ -123,7 +121,19 @@ const NoteCard = React.memo(function NoteCard({
                   : undefined
               }
             >
-              {candidate.text}
+              {/* Japanese replies carry furigana; English/Chinese never do. */}
+              {candidate.segments && candidate.segments.length > 0
+                ? candidate.segments.map((s, si) =>
+                    s.r ? (
+                      <ruby key={si}>
+                        {s.t}
+                        <rt>{s.r}</rt>
+                      </ruby>
+                    ) : (
+                      <React.Fragment key={si}>{s.t}</React.Fragment>
+                    ),
+                  )
+                : candidate.text}
             </span>
             {caret ? (
               <span className="ml-0.5 inline-block h-3.5 w-0.5 translate-y-0.5 animate-pulse bg-current align-middle" />
@@ -357,7 +367,6 @@ export function SuggestionStage({
 }) {
   const current = rounds[0];
   const previous = React.useMemo(() => rounds.slice(1, 3), [rounds]);
-  // Accordion: only one note expanded at a time, so the panel height stays put.
   const [openIndex, setOpenIndex] = React.useState<number | null>(null);
   const roundId = current?.id;
   React.useEffect(() => {
@@ -371,9 +380,9 @@ export function SuggestionStage({
   };
 
   const candidates = current?.candidates ?? [];
-  const last = candidates.length - 1;
   // Three slots always exist: the panel keeps one stable height whether the
   // ideas are still streaming in or already complete.
+
   const slots = [0, 1, 2];
 
   return (
@@ -400,12 +409,14 @@ export function SuggestionStage({
         <ol className="space-y-2">
           {slots.map((i) => {
             const c = candidates[i];
-            if (c) {
+            if (c && c.text) {
               return (
                 <NoteCard
                   key={i}
                   candidate={c}
-                  caret={streaming && i === last}
+                  // Each slot streams on its own, so every visible one types.
+                  caret={streaming}
+
                   index={i}
                   expanded={openIndex === i}
                   onToggle={() => setOpenIndex((prev) => (prev === i ? null : i))}

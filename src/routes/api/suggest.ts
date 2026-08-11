@@ -12,6 +12,16 @@ const LEVEL_HINT: Record<string, string> = {
   advanced: "Use fluent, nuanced, idiomatic sentences.",
 };
 
+/**
+ * The three slots are generated in parallel, each with its own angle, so one
+ * slow reply can never hold up the other two.
+ */
+const ANGLES = [
+  "Answer the newest line directly and concretely.",
+  "Reply by asking a natural follow-up question back.",
+  "Reply with a softer, hesitant or alternative stance.",
+] as const;
+
 type Body = {
   turns?: { speaker: "user" | "other"; text: string }[];
   /** The exact line the reply must answer — the message just received. */
@@ -48,9 +58,12 @@ export const Route = createFileRoute("/api/suggest")({
         const emotionMod = import("@/lib/kibo/emotion.server");
         const [aiModels, coachPrompt] = await Promise.all([getAiModels(), getCoachPrompt()]);
 
-
-        const target = LANG_NAME[body.conversationLang ?? "en"] ?? "English";
+        const convLang = body.conversationLang ?? "en";
+        const target = LANG_NAME[convLang] ?? "English";
         const ui = LANG_NAME[body.uiLang ?? "en"] ?? "English";
+        // Furigana is only meaningful for Japanese; English and Chinese never
+        // get readings, which also keeps their answers shorter and faster.
+        const wantsRuby = convLang === "ja";
         const transcript = body.turns
           .slice(-12)
           .map((t) => `${t.speaker === "user" ? "ME" : "OTHER"}: ${t.text}`)
@@ -84,7 +97,6 @@ export const Route = createFileRoute("/api/suggest")({
           /* emotion library is an enhancement; never block a suggestion */
         }
 
-
         // Kibo Memory: stable facts about the user that must survive sessions.
         const profile = (body.profile ?? "").trim().slice(0, 600);
         const memory = (Array.isArray(body.memory) ? body.memory : [])
@@ -100,69 +112,85 @@ export const Route = createFileRoute("/api/suggest")({
           .filter(Boolean)
           .join(" ");
 
+        const shape = wantsRuby
+          ? `Answer with ONE JSON object and nothing else — no markdown fence, no prose: {"targetText":"<the reply in ${target}>","meaning":"<one short line in ${ui}>","segments":[{"t":"<surface chunk>","r":"<hiragana reading, only for chunks containing kanji; omit otherwise>"}]}. The segments joined by "t" must equal targetText exactly.`
+          : `Answer with ONE JSON object and nothing else — no markdown fence, no prose: {"targetText":"<the reply in ${target}>","meaning":"<one short line in ${ui}>"}. No other keys — no readings, no pinyin, no furigana.`;
+
+        const system = (angle: string) =>
+          [
+            `You are a real-time conversation coach. The user is speaking ${target} with another person.`,
+            `The transcript is ordered oldest to newest; the LAST "OTHER" line is the message that was just received.`,
+            latest
+              ? `Reply directly to this newest line from the other person: "${latest}". Earlier turns are background context only — never answer an older line.`
+              : ``,
+            memoryBlock,
+            briefing,
+            coachPrompt,
+            `Propose exactly ONE short, natural reply the user could say next, in ${target}.`,
+            `Angle for this reply: ${angle}`,
+            LEVEL_HINT[body.level ?? "beginner"] ?? "",
+            shape,
+            `Keep targetText under 30 characters and meaning under 20 characters.`,
+          ]
+            .filter(Boolean)
+            .join(" ");
+
+        const userContent = transcript
+          ? `${transcript}\n\n[Reply to the newest OTHER line: ${latest || "(none)"}]`
+          : "(the conversation just started)";
+
         const wantsStream = body.stream !== false;
 
-        const upstream = await fetch("https://api.deepseek.com/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            model: aiModels.suggest,
-            stream: wantsStream,
+        const call = (angle: string) =>
+          fetch("https://api.deepseek.com/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+              model: aiModels.suggest,
+              stream: wantsStream,
+              // DeepSeek v4 flash reasons before answering by default, which
+              // delays the first visible token — the coach must be instant.
+              thinking: { type: "disabled" },
+              temperature: 0.7,
+              max_tokens: wantsRuby ? 260 : 140,
+              messages: [
+                { role: "system", content: system(angle) },
+                { role: "user", content: userContent },
+              ],
+            }),
+          });
 
-            // DeepSeek v4 flash reasons before answering by default, which
-            // delays the first visible token — the coach must be instant.
-            thinking: { type: "disabled" },
-            temperature: 0.7,
-            max_tokens: 420,
-            messages: [
-              {
-                role: "system",
-                content: [
-                  `You are a real-time conversation coach. The user is speaking ${target} with another person.`,
-                  `The transcript is ordered oldest to newest; the LAST "OTHER" line is the message that was just received.`,
-                  latest
-                    ? `Reply directly to this newest line from the other person: "${latest}". Earlier turns are background context only — never answer an older line.`
-                    : ``,
-                  memoryBlock,
-                  briefing,
-                  coachPrompt,
-                  `Propose exactly 3 short, distinct, natural replies the user could say next, in ${target}. The three must take clearly different angles (for example: direct answer / question back / softer or alternative stance) — never stop after one.`,
-                  LEVEL_HINT[body.level ?? "beginner"] ?? "",
-                  `Answer with ONE JSON object and nothing else — no markdown fence, no prose: {"replies":[ /* exactly 3 items */ ]}.`,
-                  `Each item shape exactly: {"targetText":"<the reply in ${target}>","meaning":"<one short line in ${ui}>"}. No other keys — no readings, no pinyin, no furigana.`,
-                  `Keep every targetText under 30 characters and every meaning under 20 characters so the three appear instantly.`,
-                ].join(" "),
+        // Three independent generations start at the same moment.
+        const settled = await Promise.allSettled(ANGLES.map((a) => call(a)));
+        const responses = settled.map((s) => (s.status === "fulfilled" ? s.value : null));
+        const ok = responses.filter((r): r is Response => !!r && r.ok);
 
-              },
-              {
-                role: "user",
-                content: transcript
-                  ? `${transcript}\n\n[Reply to the newest OTHER line: ${latest || "(none)"}]`
-                  : "(the conversation just started)",
-              },
-            ],
-          }),
-        });
-
-        if (upstream.status === 429) return new Response("rate_limited", { status: 429 });
-        if (upstream.status === 402) return new Response("credits_exhausted", { status: 402 });
-        if (!upstream.ok || !upstream.body) {
-          const detail = await upstream.text().catch(() => "");
+        if (ok.length === 0) {
+          const first = responses.find((r) => r !== null);
+          if (first?.status === 429) return new Response("rate_limited", { status: 429 });
+          if (first?.status === 402) return new Response("credits_exhausted", { status: 402 });
+          const detail = first ? await first.text().catch(() => "") : "";
           return new Response(detail.slice(0, 300) || "AI request failed", {
-            status: upstream.status || 502,
+            status: first?.status || 502,
           });
         }
 
-        // Non-streaming clients get the finished answer in one plain-text body.
+        // Non-streaming clients get all finished replies in one plain body.
+        // The client parser splits on `"targetText"`, so concatenation is enough.
         if (!wantsStream) {
-          const json = (await upstream.json().catch(() => null)) as {
-            choices?: { message?: { content?: string } }[];
-          } | null;
-          const content = json?.choices?.[0]?.message?.content ?? "";
-          return new Response(content, {
+          const parts = await Promise.all(
+            responses.map(async (r) => {
+              if (!r || !r.ok) return "";
+              const json = (await r.json().catch(() => null)) as {
+                choices?: { message?: { content?: string } }[];
+              } | null;
+              return json?.choices?.[0]?.message?.content ?? "";
+            }),
+          );
+          return new Response(parts.filter(Boolean).join("\n"), {
             headers: {
               "Content-Type": "text/plain; charset=utf-8",
               "Cache-Control": "no-store",
@@ -170,55 +198,70 @@ export const Route = createFileRoute("/api/suggest")({
           });
         }
 
-        // Re-emit only the text deltas as SSE so the client can render token by token.
-        const reader = upstream.body.getReader();
-        const decoder = new TextDecoder();
-
+        // Merge the three upstream streams into one SSE, tagging every delta
+        // with its slot so the client can fill the notes independently.
         const encoder = new TextEncoder();
-        let buffer = "";
 
         const stream = new ReadableStream({
-          async pull(controller) {
-            let done: boolean;
-            let value: Uint8Array | undefined;
-            try {
-              ({ done, value } = await reader.read());
-            } catch {
-              // Upstream dropped mid-answer: end the SSE cleanly so the client
-              // keeps whatever it already rendered instead of seeing a failure.
-              controller.enqueue(encoder.encode("event: done\ndata: {}\n\n"));
-              controller.close();
-              return;
-            }
-            if (done) {
-              controller.enqueue(encoder.encode("event: done\ndata: {}\n\n"));
-              controller.close();
-              return;
-            }
+          start(controller) {
+            // Flush headers + an opening frame immediately so proxies release
+            // the response before the model has produced anything.
+            controller.enqueue(encoder.encode(": open\n\n"));
 
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop() ?? "";
-            for (const line of lines) {
-              const trimmed = line.trim();
-              if (!trimmed.startsWith("data:")) continue;
-              const payload = trimmed.slice(5).trim();
-              if (!payload || payload === "[DONE]") continue;
+            const pump = async (res: Response | null, index: number) => {
+              if (!res || !res.ok || !res.body) return;
+              const reader = res.body.getReader();
+              const decoder = new TextDecoder();
+              let buffer = "";
               try {
-                const json = JSON.parse(payload) as {
-                  choices?: { delta?: { content?: string } }[];
-                };
-                const delta = json.choices?.[0]?.delta?.content;
-                if (delta) {
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ delta })}\n\n`));
+                while (true) {
+                  const { done, value } = await reader.read();
+                  if (done) break;
+                  buffer += decoder.decode(value, { stream: true });
+                  const lines = buffer.split("\n");
+                  buffer = lines.pop() ?? "";
+                  for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (!trimmed.startsWith("data:")) continue;
+                    const payload = trimmed.slice(5).trim();
+                    if (!payload || payload === "[DONE]") continue;
+                    try {
+                      const json = JSON.parse(payload) as {
+                        choices?: { delta?: { content?: string } }[];
+                      };
+                      const delta = json.choices?.[0]?.delta?.content;
+                      if (delta) {
+                        controller.enqueue(
+                          encoder.encode(`data: ${JSON.stringify({ i: index, delta })}\n\n`),
+                        );
+                      }
+                    } catch {
+                      /* ignore partial frames */
+                    }
+                  }
                 }
               } catch {
-                /* ignore partial frames */
+                /* one slot dropping must not kill the other two */
+              } finally {
+                try {
+                  await reader.cancel();
+                } catch {
+                  /* already closed */
+                }
               }
-            }
+            };
+
+            void Promise.all(responses.map((r, i) => pump(r, i))).finally(() => {
+              try {
+                controller.enqueue(encoder.encode("event: done\ndata: {}\n\n"));
+                controller.close();
+              } catch {
+                /* client already went away */
+              }
+            });
           },
-          cancel(reason) {
-            return reader.cancel(reason);
+          cancel() {
+            for (const r of responses) void r?.body?.cancel().catch(() => {});
           },
         });
 
