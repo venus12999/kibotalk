@@ -241,21 +241,21 @@ export function SessionWorkbench() {
       profile: !prefsRef.current.useProfileContext
         ? ""
         : [
-        prefsRef.current.profileName && `name: ${prefsRef.current.profileName}`,
-        prefsRef.current.profileAbout,
-        prefsRef.current.profileGoal && `goal: ${prefsRef.current.profileGoal}`,
-        prefsRef.current.profileRole && `role: ${prefsRef.current.profileRole}`,
-        prefsRef.current.profileAge && `age: ${prefsRef.current.profileAge}`,
-        prefsRef.current.profileNativeLang && `native: ${prefsRef.current.profileNativeLang}`,
-        prefsRef.current.profileCity && `city: ${prefsRef.current.profileCity}`,
-        prefsRef.current.profileGoals.length > 0 &&
-          `goals: ${prefsRef.current.profileGoals.join(", ")}`,
-        prefsRef.current.profileScenes.length > 0 &&
-          `scenes: ${prefsRef.current.profileScenes.join(", ")}`,
-        prefsRef.current.profileTones.length > 0 &&
-          `tone: ${prefsRef.current.profileTones.join(", ")}`,
-        prefsRef.current.profileStuck.length > 0 &&
-          `when stuck: ${prefsRef.current.profileStuck.join(", ")}`,
+            prefsRef.current.profileName && `name: ${prefsRef.current.profileName}`,
+            prefsRef.current.profileAbout,
+            prefsRef.current.profileGoal && `goal: ${prefsRef.current.profileGoal}`,
+            prefsRef.current.profileRole && `role: ${prefsRef.current.profileRole}`,
+            prefsRef.current.profileAge && `age: ${prefsRef.current.profileAge}`,
+            prefsRef.current.profileNativeLang && `native: ${prefsRef.current.profileNativeLang}`,
+            prefsRef.current.profileCity && `city: ${prefsRef.current.profileCity}`,
+            prefsRef.current.profileGoals.length > 0 &&
+              `goals: ${prefsRef.current.profileGoals.join(", ")}`,
+            prefsRef.current.profileScenes.length > 0 &&
+              `scenes: ${prefsRef.current.profileScenes.join(", ")}`,
+            prefsRef.current.profileTones.length > 0 &&
+              `tone: ${prefsRef.current.profileTones.join(", ")}`,
+            prefsRef.current.profileStuck.length > 0 &&
+              `when stuck: ${prefsRef.current.profileStuck.join(", ")}`,
           ]
             .filter(Boolean)
             .join("; "),

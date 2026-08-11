@@ -526,7 +526,8 @@ export const dict = {
     openSystemSettings: "Open system settings",
     personalization: "Personalization",
     useProfileContext: "Use my profile",
-    useProfileContextDescription: "Let the coach use your role, scenes, and tone when suggesting replies.",
+    useProfileContextDescription:
+      "Let the coach use your role, scenes, and tone when suggesting replies.",
     useMemoryContext: "Use my memories",
     useMemoryContextDescription: "Reference your saved long-term memories when generating ideas.",
     manageMemory: "Profile & memories",
