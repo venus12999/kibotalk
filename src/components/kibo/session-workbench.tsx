@@ -773,10 +773,10 @@ export function SessionWorkbench() {
                 (otherFinished ||
                   aiStatus === "connecting" ||
                   aiStatus === "retrying" ||
-                  (aiStatus === "streaming" &&
-                    (!rounds[0] || rounds[0].candidates.length === 0))) &&
+                  (aiStatus === "streaming" && !firstIdeaText)) &&
                 transcriber.holding === null
               }
+
               lang={prefs.conversationLang}
               uiLang={prefs.uiLang}
               className="absolute -top-16 z-10 sm:-top-20"
