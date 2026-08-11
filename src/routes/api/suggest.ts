@@ -116,7 +116,7 @@ export const Route = createFileRoute("/api/suggest")({
             // delays the first visible token — the coach must be instant.
             thinking: { type: "disabled" },
             temperature: 0.7,
-            max_tokens: 1200,
+            max_tokens: 420,
             messages: [
               {
                 role: "system",
@@ -132,14 +132,10 @@ export const Route = createFileRoute("/api/suggest")({
                   `Propose exactly 3 short, distinct, natural replies the user could say next, in ${target}. The three must take clearly different angles (for example: direct answer / question back / softer or alternative stance) — never stop after one.`,
                   LEVEL_HINT[body.level ?? "beginner"] ?? "",
                   `Answer with ONE JSON object and nothing else — no markdown fence, no prose: {"replies":[ /* exactly 3 items */ ]}.`,
-                  `Each item shape: {"targetText":"<the reply in ${target}>","meaning":"<one-line explanation in ${ui}>","segments":[{"t":"<surface>","r":"<reading>","role":"content|particle|punct"}]}`,
-                  `segments must tile targetText exactly in order when the "t" values are concatenated.`,
-                  target === "Japanese"
-                    ? `"r" is hiragana furigana for kanji spans; use "" when the span is already kana or punctuation.`
-                    : target === "Simplified Chinese"
-                      ? `"r" is the pinyin with tone marks for each span; use "" for punctuation.`
-                      : `"r" is "" for every span in English.`,
+                  `Each item shape exactly: {"targetText":"<the reply in ${target}>","meaning":"<one short line in ${ui}>"}. No other keys — no readings, no pinyin, no furigana.`,
+                  `Keep every targetText under 30 characters and every meaning under 20 characters so the three appear instantly.`,
                 ].join(" "),
+
               },
               {
                 role: "user",
