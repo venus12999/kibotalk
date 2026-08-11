@@ -201,7 +201,21 @@ export async function streamSuggestions(
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let sse = "";
-  let text = "";
+  // One buffer per slot: the three replies are generated in parallel upstream,
+  // so a slow one never blocks the others from rendering.
+  const slots = ["", "", ""];
+  // Older servers send untagged deltas containing all three replies at once.
+  let legacy = false;
+
+  const readSlots = (): Candidate[] => {
+    if (legacy) return parseCandidates(slots[0] ?? "");
+    const parsed = slots.map((s) => parseCandidates(s)[0] ?? { text: "", meaning: "" });
+    // Trim trailing empty slots so nothing renders before it exists.
+    let end = parsed.length;
+    while (end > 0 && !parsed[end - 1]?.text) end -= 1;
+    return parsed.slice(0, end);
+  };
+  const filled = (list: Candidate[]) => list.filter((c) => c.text.length > 0);
 
   let emitted: Candidate[] = [];
   let frame = 0;
@@ -211,7 +225,7 @@ export async function streamSuggestions(
     frame = 0;
     if (!dirty) return;
     dirty = false;
-    const merged = reconcile(emitted, parseCandidates(text));
+    const merged = reconcile(emitted, readSlots());
     if (merged) {
       emitted = merged;
       onUpdate(merged);
@@ -227,7 +241,7 @@ export async function streamSuggestions(
   // silence as an explicit timeout instead of waiting forever.
   const readWithTimeout = async () => {
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const ms = text ? 20000 : 30000;
+    const ms = slots.some(Boolean) ? 20000 : 30000;
     try {
       return await Promise.race([
         reader.read(),
@@ -255,11 +269,15 @@ export async function streamSuggestions(
         const line = f.split("\n").find((l) => l.startsWith("data:"));
         if (!line) continue;
         try {
-          const { delta } = JSON.parse(line.slice(5).trim()) as { delta?: string };
-          if (delta) {
-            text += delta;
-            markDirty();
+          const { delta, i } = JSON.parse(line.slice(5).trim()) as { delta?: string; i?: number };
+          if (!delta) continue;
+          if (typeof i === "number" && i >= 0 && i < slots.length) {
+            slots[i] += delta;
+          } else {
+            legacy = true;
+            slots[0] += delta;
           }
+          markDirty();
         } catch {
           /* ignore */
         }
@@ -274,7 +292,7 @@ export async function streamSuggestions(
     }
   }
 
-  const final = reconcile(emitted, parseCandidates(text)) ?? emitted;
+  const final = filled(reconcile(emitted, readSlots()) ?? emitted);
   // The stream ended without a single usable suggestion (some mobile networks
   // and WebViews silently swallow event-stream frames): ask again without
   // streaming so the user still gets ideas instead of an empty card.
@@ -285,3 +303,4 @@ export async function streamSuggestions(
   }
   return final;
 }
+
