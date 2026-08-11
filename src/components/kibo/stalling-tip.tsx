@@ -77,7 +77,10 @@ export function StallingTip({
   uiLang: string;
   className?: string;
 }) {
-  const phrases = PHRASES[lang] ?? PHRASES["en"] ?? [];
+  const bank = PHRASES[lang] ?? PHRASES["en"] ?? [];
+  // A fresh shuffled order every time the tip comes up, so the same phrase
+  // isn't the one the user always reads.
+  const [order, setOrder] = React.useState<number[]>(() => bank.map((_, i) => i));
   const [index, setIndex] = React.useState(0);
   const [visible, setVisible] = React.useState(false);
 
@@ -86,19 +89,26 @@ export function StallingTip({
       setVisible(false);
       return;
     }
-    // Fade in on the first appearance.
-    const fadeIn = setTimeout(() => setVisible(true), 60);
-    return () => clearTimeout(fadeIn);
+    setVisible(true);
   }, [show]);
 
   React.useEffect(() => {
     if (!show) return;
+    const shuffled = bank.map((_, i) => i);
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!];
+    }
+    setOrder(shuffled);
     setIndex(0);
     const interval = setInterval(() => {
-      setIndex((i) => (i + 1) % phrases.length);
-    }, 2200);
+      setIndex((i) => (i + 1) % (shuffled.length || 1));
+    }, 2600);
     return () => clearInterval(interval);
-  }, [show, phrases.length]);
+  }, [show, bank]);
+
+  const phrases = order.map((i) => bank[i] ?? "");
+
 
   const label = LABELS[uiLang] ??
     LABELS["en"] ?? { title: "Stalling phrase", hint: "Say this to buy time" };
