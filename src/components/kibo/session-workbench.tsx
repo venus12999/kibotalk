@@ -425,6 +425,7 @@ export function SessionWorkbench() {
     activeSpeaker: speaker,
     onInterim: handleInterim,
     onFinal: handleFinal,
+    onSegmentEnd: handleSegmentEnd,
     onError: handleError,
   });
 
