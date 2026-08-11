@@ -49,6 +49,10 @@ export type Prefs = {
   profileScenes: string[];
   profileTones: string[];
   profileStuck: string[];
+  /** Let the coach read the profile fields when generating ideas. */
+  useProfileContext: boolean;
+  /** Let the coach read saved long-term memories. */
+  useMemoryContext: boolean;
   onboarded: boolean;
 };
 
@@ -124,5 +128,7 @@ export const defaultPrefs: Prefs = {
   profileTones: [],
   profileStuck: [],
 
+  useProfileContext: true,
+  useMemoryContext: true,
   onboarded: false,
 };

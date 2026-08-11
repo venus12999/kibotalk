@@ -2,6 +2,10 @@ import * as React from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Link } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
 import { PillGroup } from "./pill-group";
 import { useKibo, langLabel, levelLabel } from "@/lib/kibo/store";
 import type {
@@ -68,7 +72,7 @@ export function SettingsSheet({
   onOpenChange: (v: boolean) => void;
   locked: boolean;
 }) {
-  const { prefs, setPrefs, t, clearHistory, reset } = useKibo();
+  const { prefs, setPrefs, t, clearHistory, reset, history, user } = useKibo();
   const systemAudioSupported = useSystemAudioSupport();
   React.useEffect(() => {
     if (!systemAudioSupported && prefs.audioSource !== "microphone") {
@@ -124,6 +128,39 @@ export function SettingsSheet({
       setMicPermission("denied");
     }
   }, [refreshDevices]);
+
+  const [newPassword, setNewPassword] = React.useState("");
+  const [accountNote, setAccountNote] = React.useState("");
+  const [dataNote, setDataNote] = React.useState("");
+
+  const exportSessions = React.useCallback(() => {
+    if (history.length === 0) {
+      setDataNote(t("nothingToExport"));
+      return;
+    }
+    const blob = new Blob([JSON.stringify(history, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `kibotalk-sessions-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setDataNote(t("exported"));
+  }, [history, t]);
+
+  const savePassword = React.useCallback(async () => {
+    if (newPassword.trim().length < 6) {
+      setAccountNote(t("passwordTooShort"));
+      return;
+    }
+    const { error } = await supabase.auth.updateUser({ password: newPassword.trim() });
+    setAccountNote(error ? error.message : t("passwordUpdated"));
+    if (!error) setNewPassword("");
+  }, [newPassword, t]);
+
+  const signOutEverywhere = React.useCallback(async () => {
+    await supabase.auth.signOut({ scope: "global" });
+  }, []);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -376,8 +413,74 @@ export function SettingsSheet({
           </Row>
 
           <p className="pt-6 text-xs font-bold tracking-wide text-muted-foreground uppercase">
+            {t("personalization")}
+          </p>
+          <Row title={t("useProfileContext")} description={t("useProfileContextDescription")}>
+            <Switch
+              checked={prefs.useProfileContext}
+              onCheckedChange={(v) => setPrefs({ useProfileContext: v })}
+            />
+          </Row>
+          <Row title={t("useMemoryContext")} description={t("useMemoryContextDescription")}>
+            <Switch
+              checked={prefs.useMemoryContext}
+              onCheckedChange={(v) => setPrefs({ useMemoryContext: v })}
+            />
+          </Row>
+          <Row title={t("manageMemory")}>
+            <Button variant="soft" size="sm" asChild>
+              <Link to="/memory" onClick={() => onOpenChange(false)}>
+                {t("openMemory")}
+              </Link>
+            </Button>
+          </Row>
+
+          <p className="pt-6 text-xs font-bold tracking-wide text-muted-foreground uppercase">
+            {t("accountSecurity")}
+          </p>
+          <Row title={t("signedInAs")}>
+            <span className="text-sm break-all text-muted-foreground">
+              {user?.email ?? t("notSignedIn")}
+            </span>
+          </Row>
+          <Row title={t("changePassword")} description={t("changePasswordDescription")}>
+            <div className="flex w-full gap-2 sm:w-72">
+              <Input
+                type="password"
+                autoComplete="new-password"
+                placeholder={t("newPassword")}
+                value={newPassword}
+                disabled={!user}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+              <Button variant="soft" size="sm" disabled={!user} onClick={() => void savePassword()}>
+                {t("save")}
+              </Button>
+            </div>
+          </Row>
+          {accountNote ? (
+            <p className="-mt-2 pb-2 text-xs text-muted-foreground">{accountNote}</p>
+          ) : null}
+          <Row title={t("signOutAll")} description={t("signOutAllDescription")}>
+            <Button
+              variant="soft"
+              size="sm"
+              disabled={!user}
+              onClick={() => void signOutEverywhere()}
+            >
+              {t("signOutAllAction")}
+            </Button>
+          </Row>
+
+          <p className="pt-6 text-xs font-bold tracking-wide text-muted-foreground uppercase">
             {t("dataPrivacy")}
           </p>
+          <Row title={t("exportData")} description={t("exportDataDescription")}>
+            <Button variant="soft" size="sm" onClick={exportSessions}>
+              {t("exportAction")}
+            </Button>
+          </Row>
+          {dataNote ? <p className="-mt-2 pb-2 text-xs text-muted-foreground">{dataNote}</p> : null}
           <Row title={t("clearHistory")} description={t("clearHistoryDescription")} danger>
             <Button variant="soft" size="sm" onClick={clearHistory}>
               {t("clearHistory")}

@@ -151,7 +151,7 @@ export function SessionWorkbench() {
   const { user: authUser } = useSession();
   const memoryRef = React.useRef<string[]>([]);
   React.useEffect(() => {
-    if (!authUser?.id) {
+    if (!authUser?.id || !prefs.useMemoryContext) {
       memoryRef.current = [];
       return;
     }
@@ -162,7 +162,7 @@ export function SessionWorkbench() {
     return () => {
       cancelled = true;
     };
-  }, [authUser?.id]);
+  }, [authUser?.id, prefs.useMemoryContext]);
   const reqRef = React.useRef(0);
   const abortRef = React.useRef<AbortController | null>(null);
 
@@ -238,26 +238,28 @@ export function SessionWorkbench() {
       conversationLang: prefsRef.current.conversationLang,
       uiLang: prefsRef.current.uiLang,
       level: prefsRef.current.level,
-      profile: [
-        prefsRef.current.profileName && `name: ${prefsRef.current.profileName}`,
-        prefsRef.current.profileAbout,
-        prefsRef.current.profileGoal && `goal: ${prefsRef.current.profileGoal}`,
-        prefsRef.current.profileRole && `role: ${prefsRef.current.profileRole}`,
-        prefsRef.current.profileAge && `age: ${prefsRef.current.profileAge}`,
-        prefsRef.current.profileNativeLang && `native: ${prefsRef.current.profileNativeLang}`,
-        prefsRef.current.profileCity && `city: ${prefsRef.current.profileCity}`,
-        prefsRef.current.profileGoals.length > 0 &&
-          `goals: ${prefsRef.current.profileGoals.join(", ")}`,
-        prefsRef.current.profileScenes.length > 0 &&
-          `scenes: ${prefsRef.current.profileScenes.join(", ")}`,
-        prefsRef.current.profileTones.length > 0 &&
-          `tone: ${prefsRef.current.profileTones.join(", ")}`,
-        prefsRef.current.profileStuck.length > 0 &&
-          `when stuck: ${prefsRef.current.profileStuck.join(", ")}`,
-      ]
-        .filter(Boolean)
-        .join("; "),
-      memory: memoryRef.current,
+      profile: !prefsRef.current.useProfileContext
+        ? ""
+        : [
+            prefsRef.current.profileName && `name: ${prefsRef.current.profileName}`,
+            prefsRef.current.profileAbout,
+            prefsRef.current.profileGoal && `goal: ${prefsRef.current.profileGoal}`,
+            prefsRef.current.profileRole && `role: ${prefsRef.current.profileRole}`,
+            prefsRef.current.profileAge && `age: ${prefsRef.current.profileAge}`,
+            prefsRef.current.profileNativeLang && `native: ${prefsRef.current.profileNativeLang}`,
+            prefsRef.current.profileCity && `city: ${prefsRef.current.profileCity}`,
+            prefsRef.current.profileGoals.length > 0 &&
+              `goals: ${prefsRef.current.profileGoals.join(", ")}`,
+            prefsRef.current.profileScenes.length > 0 &&
+              `scenes: ${prefsRef.current.profileScenes.join(", ")}`,
+            prefsRef.current.profileTones.length > 0 &&
+              `tone: ${prefsRef.current.profileTones.join(", ")}`,
+            prefsRef.current.profileStuck.length > 0 &&
+              `when stuck: ${prefsRef.current.profileStuck.join(", ")}`,
+          ]
+            .filter(Boolean)
+            .join("; "),
+      memory: prefsRef.current.useMemoryContext ? memoryRef.current : [],
     };
     lastRequestRef.current = { text, payload };
 
