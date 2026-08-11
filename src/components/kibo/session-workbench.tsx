@@ -910,6 +910,8 @@ export function SessionWorkbench() {
                       who === "other" ? <Users className="size-4" /> : <User className="size-4" />
                     }
                     level={transcriber.level}
+                    hotkey={who === "other" ? "a" : "d"}
+
                     onBegin={() => transcriber.beginTurn(who)}
                     onEnd={() => transcriber.endTurn()}
                   />
