@@ -44,6 +44,8 @@ export function HoldTalkButton({
   activeLabel,
   icon,
   level,
+  hotkey,
+
   onBegin,
   onEnd,
 }: Props) {
