@@ -128,7 +128,9 @@ export const Route = createFileRoute("/api/suggest")({
             briefing,
             coachPrompt,
             `Propose exactly ONE short, natural reply the user could say next, in ${target}.`,
+            `The three suggestions shown to the user must cover genuinely different stances (yes / no / partial-or-question), so stay strictly inside your assigned angle even if another stance feels more likely.`,
             `Angle for this reply: ${angle}`,
+
             LEVEL_HINT[body.level ?? "beginner"] ?? "",
             shape,
             `Keep targetText under 30 characters and meaning under 20 characters.`,
