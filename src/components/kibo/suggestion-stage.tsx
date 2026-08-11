@@ -387,7 +387,10 @@ export function SuggestionStage({
   const slots = [0, 1, 2];
 
   return (
-    <ScrollArea ref={scrollRef} className={className}>
+    <ScrollArea
+      ref={scrollRef}
+      className={cn("[&_[data-radix-scroll-area-viewport]>div]:!block", className)}
+    >
       {/* Isolate streaming text updates from the rest of the page layout. */}
       <div
         className="suggest-scaled w-full max-w-full min-w-0 space-y-3 overflow-x-hidden pr-3 [contain:content]"
