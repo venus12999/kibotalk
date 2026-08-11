@@ -220,6 +220,9 @@ export function SessionWorkbench() {
     setStreaming(true);
     setAiError("");
     setAiStatus(replay ? "retrying" : "connecting");
+    // Fallback latch: if the segment-end hook didn't fire, keep the stalling
+    // phrase on screen for the whole wait instead of flashing later.
+    setOtherFinished(true);
     setAiAttempt((n) => (replay ? n + 1 : 0));
     // Only the round for the newest line stays on screen: suggestions written
     // for an older message are stale the moment the context moves on.
