@@ -383,8 +383,9 @@ export function SuggestionStage({
   };
 
   const candidates = current?.candidates ?? [];
-  const last = candidates.length - 1;
+  // Three slots always exist: the panel keeps one stable height whether the
   // ideas are still streaming in or already complete.
+
   const slots = [0, 1, 2];
 
   return (
