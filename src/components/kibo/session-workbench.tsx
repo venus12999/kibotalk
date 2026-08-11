@@ -804,7 +804,7 @@ export function SessionWorkbench() {
         return (
           <main className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-5 py-4">
             {wide ? (
-              <div className="grid w-full min-h-0 flex-1 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 sm:gap-6">
+              <div className="grid w-full min-h-0 flex-1 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-4 sm:gap-6">
                 {/* Left: the conversation floating in the blank space. */}
                 <section className="flex h-[56dvh] min-h-0 flex-col overflow-hidden">
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -813,7 +813,7 @@ export function SessionWorkbench() {
                   {transcriptView}
                 </section>
 
-                {orb}
+                <div className="self-center">{orb}</div>
 
                 {/* Right: the three ideas grow/shrink to their content, so they
                     can be shorter than the dialog or taller when needed. */}
