@@ -371,7 +371,6 @@ export function SuggestionStage({
   const current = rounds[0];
   const previous = React.useMemo(() => rounds.slice(1, 3), [rounds]);
   // Accordion: only one note expanded at a time, so the panel height stays put.
-  const [openIndex, setOpenIndex] = React.useState<number | null>(null);
   const roundId = current?.id;
   React.useEffect(() => {
     setOpenIndex(null);
