@@ -337,6 +337,8 @@ export function SuggestionStage({
   /** Lets the workbench observe/drive this panel's scrolling. */
   scrollRef?: React.Ref<HTMLDivElement>;
   fontScale?: number;
+  /** Long replies only drift horizontally while the talk button is held. */
+  scrolling?: boolean;
 }) {
   const current = rounds[0];
   const previous = React.useMemo(() => rounds.slice(1, 3), [rounds]);
