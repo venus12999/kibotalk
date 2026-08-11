@@ -12,9 +12,25 @@ type Props = {
   icon: React.ReactNode;
   /** 0..1 input level, drives the live meter while held. */
   level: number;
+  /** Desktop shortcut: hold this letter key to talk (e.g. "a"). */
+  hotkey?: string;
   onBegin: () => void;
   onEnd: () => void;
 };
+
+/** Typing in a field or dialog must never trigger the talk shortcut. */
+function isTypingTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  return (
+    tag === "INPUT" ||
+    tag === "TEXTAREA" ||
+    tag === "SELECT" ||
+    target.isContentEditable ||
+    Boolean(target.closest("[role='dialog'],[contenteditable='true']"))
+  );
+}
+
 
 /**
  * Push-to-talk button tuned for touch: single-pointer only, no scrolling or
