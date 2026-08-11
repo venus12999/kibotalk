@@ -301,6 +301,8 @@ export function useTranscriber({
         recordSegment({ speaker, speechMs, silenceMs, reason, sent });
       }
       if (sent) {
+        // Tell the UI the speaker just finished a turn, even before transcription returns.
+        cbRef.current.onSegmentEnd?.(speaker);
         // Clear the live bubble of whichever side owned the partials.
         cbRef.current.onInterim("", speaker);
         void sendSegment(chunks, sampleRate, speaker);
