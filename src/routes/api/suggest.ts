@@ -45,7 +45,9 @@ export const Route = createFileRoute("/api/suggest")({
 
         const { getAiModels } = await import("@/lib/kibo/model-config.server");
         const { getCoachPrompt } = await import("@/lib/kibo/coach-prompt.server");
+        const emotionMod = import("@/lib/kibo/emotion.server");
         const [aiModels, coachPrompt] = await Promise.all([getAiModels(), getCoachPrompt()]);
+
 
         const target = LANG_NAME[body.conversationLang ?? "en"] ?? "English";
         const ui = LANG_NAME[body.uiLang ?? "en"] ?? "English";
@@ -66,15 +68,22 @@ export const Route = createFileRoute("/api/suggest")({
         // real communication need instead of just answering the words.
         let briefing = "";
         try {
-          const { loadEmotionLibrary, matchEmotions, emotionBriefing } =
-            await import("@/lib/kibo/emotion.server");
-          const rows = await loadEmotionLibrary();
-          const myLast = [...body.turns].reverse().find((t) => t.speaker === "user")?.text ?? "";
-          const matches = matchEmotions(`${latest}\n${myLast}`, rows, 3);
-          briefing = emotionBriefing(matches);
+          const { loadEmotionLibrary, matchEmotions, emotionBriefing } = await emotionMod;
+          // A cold library read must never hold up the first token: if it is not
+          // ready fast, skip the briefing and let the cache warm for next time.
+          const rows = await Promise.race([
+            loadEmotionLibrary(),
+            new Promise<null>((r) => setTimeout(() => r(null), 200)),
+          ]);
+          if (rows) {
+            const myLast = [...body.turns].reverse().find((t) => t.speaker === "user")?.text ?? "";
+            const matches = matchEmotions(`${latest}\n${myLast}`, rows, 3);
+            briefing = emotionBriefing(matches);
+          }
         } catch {
           /* emotion library is an enhancement; never block a suggestion */
         }
+
 
         // Kibo Memory: stable facts about the user that must survive sessions.
         const profile = (body.profile ?? "").trim().slice(0, 600);
@@ -107,7 +116,7 @@ export const Route = createFileRoute("/api/suggest")({
             // delays the first visible token — the coach must be instant.
             thinking: { type: "disabled" },
             temperature: 0.7,
-            max_tokens: 1200,
+            max_tokens: 420,
             messages: [
               {
                 role: "system",
@@ -123,14 +132,10 @@ export const Route = createFileRoute("/api/suggest")({
                   `Propose exactly 3 short, distinct, natural replies the user could say next, in ${target}. The three must take clearly different angles (for example: direct answer / question back / softer or alternative stance) — never stop after one.`,
                   LEVEL_HINT[body.level ?? "beginner"] ?? "",
                   `Answer with ONE JSON object and nothing else — no markdown fence, no prose: {"replies":[ /* exactly 3 items */ ]}.`,
-                  `Each item shape: {"targetText":"<the reply in ${target}>","meaning":"<one-line explanation in ${ui}>","segments":[{"t":"<surface>","r":"<reading>","role":"content|particle|punct"}]}`,
-                  `segments must tile targetText exactly in order when the "t" values are concatenated.`,
-                  target === "Japanese"
-                    ? `"r" is hiragana furigana for kanji spans; use "" when the span is already kana or punctuation.`
-                    : target === "Simplified Chinese"
-                      ? `"r" is the pinyin with tone marks for each span; use "" for punctuation.`
-                      : `"r" is "" for every span in English.`,
+                  `Each item shape exactly: {"targetText":"<the reply in ${target}>","meaning":"<one short line in ${ui}>"}. No other keys — no readings, no pinyin, no furigana.`,
+                  `Keep every targetText under 30 characters and every meaning under 20 characters so the three appear instantly.`,
                 ].join(" "),
+
               },
               {
                 role: "user",
