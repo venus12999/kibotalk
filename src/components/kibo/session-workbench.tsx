@@ -762,7 +762,8 @@ export function SessionWorkbench() {
           <div className="relative flex flex-col items-center gap-5">
             <StallingTip
               show={
-                (aiStatus === "connecting" ||
+                (otherFinished ||
+                  aiStatus === "connecting" ||
                   aiStatus === "retrying" ||
                   (aiStatus === "streaming" &&
                     (!rounds[0] || rounds[0].candidates.length === 0))) &&
