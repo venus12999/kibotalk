@@ -6,11 +6,11 @@ import {
   CheckCircle2,
   Loader2,
   RotateCw,
-  ChevronDown,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { Candidate, Round } from "@/lib/kibo/types";
+
 
 /**
  * One sticky note. Text is rendered exactly as far as the stream has delivered
@@ -58,26 +58,20 @@ const NoteCard = React.memo(function NoteCard({
   candidate,
   caret,
   index,
-  expanded,
-  onToggle,
-  labels,
   scrolling = false,
 }: {
   candidate: Candidate;
   caret: boolean;
   index: number;
-  expanded: boolean;
-  onToggle: () => void;
-  labels: { show: string; hide: string; alt: string; points: string };
   /** Long lines only drift while the user is holding the talk button. */
   scrolling?: boolean;
 }) {
   const total = candidate.text.length;
-  const hasDetail = Boolean(candidate.meaning);
   const { viewportRef, textRef, distance } = useMarquee(candidate.text, scrolling);
   // Roughly 34px per second: slow enough to read along with.
   const duration = Math.max(6, Math.round(distance / 34));
   const marquee = scrolling && distance > 0;
+
 
   return (
     <li
@@ -140,35 +134,11 @@ const NoteCard = React.memo(function NoteCard({
             ) : null}
           </span>
         </p>
-
-        {candidate.meaning && !expanded ? (
-          <p className="mt-1.5 line-clamp-1 text-xs opacity-70">{candidate.meaning}</p>
-        ) : null}
-
-        {hasDetail && !caret ? (
-          <button
-            type="button"
-            onClick={onToggle}
-            aria-expanded={expanded}
-            className="mt-1.5 flex items-center gap-1 rounded-full bg-current/10 px-2 py-0.5 text-[11px] font-bold opacity-70 transition hover:opacity-100 active:scale-95"
-          >
-            <ChevronDown className={cn("size-3 transition-transform", expanded && "rotate-180")} />
-            {expanded ? labels.hide : labels.show}
-          </button>
-        ) : null}
-
-        {expanded && candidate.meaning ? (
-          <div className="mt-2 space-y-2 border-t border-current/15 pt-2">
-            <div>
-              <p className="text-[11px] font-bold opacity-60">{labels.alt}</p>
-              <p className="text-xs opacity-85">{candidate.meaning}</p>
-            </div>
-          </div>
-        ) : null}
       </div>
     </li>
   );
 });
+
 
 /** Past rounds are static; keep them out of the streaming render path. */
 const PreviousRounds = React.memo(function PreviousRounds({
@@ -339,7 +309,6 @@ export function SuggestionStage({
   canRetry = true,
   emptyHint,
   previousRoundLabel,
-  detailLabels,
   className,
   scrollRef,
   fontScale = 1,
@@ -357,7 +326,6 @@ export function SuggestionStage({
   canRetry?: boolean;
   emptyHint: string;
   previousRoundLabel: string;
-  detailLabels?: { show: string; hide: string; alt: string; points: string };
   className?: string;
   /** Lets the workbench observe/drive this panel's scrolling. */
   scrollRef?: React.Ref<HTMLDivElement>;
@@ -367,21 +335,10 @@ export function SuggestionStage({
 }) {
   const current = rounds[0];
   const previous = React.useMemo(() => rounds.slice(1, 3), [rounds]);
-  const [openIndex, setOpenIndex] = React.useState<number | null>(null);
-  const roundId = current?.id;
-  React.useEffect(() => {
-    setOpenIndex(null);
-  }, [roundId]);
-  const labels = detailLabels ?? {
-    show: "Show details",
-    hide: "Hide",
-    alt: "Alternative phrasing",
-    points: "Key words",
-  };
-
   const candidates = current?.candidates ?? [];
   // Three slots always exist: the panel keeps one stable height whether the
   // ideas are still streaming in or already complete.
+
 
   const slots = [0, 1, 2];
 
@@ -416,15 +373,12 @@ export function SuggestionStage({
                   candidate={c}
                   // Each slot streams on its own, so every visible one types.
                   caret={streaming}
-
                   index={i}
-                  expanded={openIndex === i}
-                  onToggle={() => setOpenIndex((prev) => (prev === i ? null : i))}
-                  labels={labels}
                   scrolling={scrolling}
                 />
               );
             }
+
             // Nothing to show yet: stay invisible until ideas actually arrive.
             if (!streaming) return null;
             return (
