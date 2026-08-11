@@ -618,7 +618,7 @@ export function SessionWorkbench() {
     >
       <header
         className={`glass-bar grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3 ${
-          active ? "hidden sm:grid" : "grid"
+          active ? "hidden" : "grid"
         }`}
       >
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
