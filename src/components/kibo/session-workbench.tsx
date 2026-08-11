@@ -738,6 +738,18 @@ export function SessionWorkbench() {
 
         const orb = (
           <div className="relative flex flex-col items-center gap-5">
+            <StallingTip
+              show={
+                (aiStatus === "connecting" ||
+                  aiStatus === "retrying" ||
+                  (aiStatus === "streaming" &&
+                    (!rounds[0] || rounds[0].candidates.length === 0))) &&
+                transcriber.holding === null
+              }
+              lang={prefs.conversationLang}
+              uiLang={prefs.uiLang}
+              className="absolute -top-16 z-10 sm:-top-20"
+            />
             <div className="relative flex items-center justify-center">
               <div aria-hidden className="orb-aurora" />
               <div
