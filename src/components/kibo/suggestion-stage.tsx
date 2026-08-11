@@ -23,28 +23,37 @@ const NOTE_TONES = ["idea-tone-1", "idea-tone-2", "idea-tone-3"] as const;
  * Long replies stay on one line and drift slowly left-and-right so the reader
  * can follow the sentence instead of losing it off the right edge.
  */
-function useMarquee(text: string) {
+function useMarquee(text: string, active: boolean) {
   const viewportRef = React.useRef<HTMLSpanElement | null>(null);
   const textRef = React.useRef<HTMLSpanElement | null>(null);
   const [distance, setDistance] = React.useState(0);
 
   React.useLayoutEffect(() => {
     const viewport = viewportRef.current;
-    const inner = textRef.current;
-    if (!viewport || !inner) return;
+    if (!viewport) return;
     const measure = () => {
-      const overflow = inner.scrollWidth - viewport.clientWidth;
+      const inner = textRef.current;
+      // The inner span can report its own width, so fall back to the viewport's
+      // own scroll overflow — whichever detects the overflow wins.
+      const innerWidth = inner ? Math.max(inner.scrollWidth, inner.offsetWidth) : 0;
+      const overflow = Math.max(innerWidth, viewport.scrollWidth) - viewport.clientWidth;
       setDistance(overflow > 8 ? overflow + 8 : 0);
     };
     measure();
+    // Fonts/streaming can settle a frame later.
+    const raf = requestAnimationFrame(measure);
     const ro = new ResizeObserver(measure);
     ro.observe(viewport);
-    ro.observe(inner);
-    return () => ro.disconnect();
-  }, [text]);
+    if (textRef.current) ro.observe(textRef.current);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+  }, [text, active]);
 
   return { viewportRef, textRef, distance };
 }
+
 
 const NoteCard = React.memo(function NoteCard({
   candidate,
