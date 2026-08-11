@@ -373,15 +373,12 @@ export function SuggestionStage({
                   candidate={c}
                   // Each slot streams on its own, so every visible one types.
                   caret={streaming}
-
                   index={i}
-                  expanded={openIndex === i}
-                  onToggle={() => setOpenIndex((prev) => (prev === i ? null : i))}
-                  labels={labels}
                   scrolling={scrolling}
                 />
               );
             }
+
             // Nothing to show yet: stay invisible until ideas actually arrive.
             if (!streaming) return null;
             return (
