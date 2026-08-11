@@ -44,6 +44,7 @@ import { UiLanguageMenu } from "./ui-language-menu";
 import { AccountMenu } from "./account-menu";
 import { HoldTalkButton } from "./hold-talk-button";
 import { VadDiagnostics } from "./vad-diagnostics";
+import { StallingTip } from "./stalling-tip";
 import { loadMemoryContext } from "@/lib/kibo/memory";
 import { useSession } from "@/lib/kibo/use-session";
 
