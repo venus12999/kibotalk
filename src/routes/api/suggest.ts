@@ -17,10 +17,11 @@ const LEVEL_HINT: Record<string, string> = {
  * slow reply can never hold up the other two.
  */
 const ANGLES = [
-  "Answer the newest line directly and concretely.",
-  "Reply by asking a natural follow-up question back.",
-  "Reply with a softer, hesitant or alternative stance.",
+  "Take the AFFIRMATIVE / positive stance: if the newest line is a yes-no or 'do you have…' question, answer yes and add one concrete detail. Otherwise answer directly and concretely.",
+  "Take the OPPOSITE stance of slot 1: if the newest line is a yes-no or 'do you have…' question, answer NO / not yet honestly, then add one short recovery (willing to learn, related experience). Never repeat a yes-type answer.",
+  "Take a THIRD, different route: partial / conditional answer, or ask a natural clarifying question back. It must not duplicate the stance of slot 1 or slot 2.",
 ] as const;
+
 
 type Body = {
   turns?: { speaker: "user" | "other"; text: string }[];
@@ -127,7 +128,9 @@ export const Route = createFileRoute("/api/suggest")({
             briefing,
             coachPrompt,
             `Propose exactly ONE short, natural reply the user could say next, in ${target}.`,
+            `The three suggestions shown to the user must cover genuinely different stances (yes / no / partial-or-question), so stay strictly inside your assigned angle even if another stance feels more likely.`,
             `Angle for this reply: ${angle}`,
+
             LEVEL_HINT[body.level ?? "beginner"] ?? "",
             shape,
             `Keep targetText under 30 characters and meaning under 20 characters.`,
