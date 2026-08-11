@@ -98,7 +98,11 @@ const NoteCard = React.memo(function NoteCard({
             <span
               ref={textRef}
               key={caret ? total : "done"}
-              className={cn("inline-block whitespace-nowrap", caret && "idea-type", marquee && "idea-marquee")}
+              className={cn(
+                "inline-block whitespace-nowrap",
+                caret && "idea-type",
+                marquee && "idea-marquee",
+              )}
               style={
                 marquee
                   ? ({
