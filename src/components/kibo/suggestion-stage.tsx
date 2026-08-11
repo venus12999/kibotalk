@@ -54,7 +54,6 @@ function useMarquee(text: string, active: boolean) {
   return { viewportRef, textRef, distance };
 }
 
-
 const NoteCard = React.memo(function NoteCard({
   candidate,
   caret,
@@ -79,7 +78,6 @@ const NoteCard = React.memo(function NoteCard({
   // Roughly 34px per second: slow enough to read along with.
   const duration = Math.max(6, Math.round(distance / 34));
   const marquee = scrolling && distance > 0;
-
 
   return (
     <li
@@ -136,7 +134,6 @@ const NoteCard = React.memo(function NoteCard({
                     ),
                   )
                 : candidate.text}
-
             </span>
             {caret ? (
               <span className="ml-0.5 inline-block h-3.5 w-0.5 translate-y-0.5 animate-pulse bg-current align-middle" />
