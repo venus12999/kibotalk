@@ -120,8 +120,8 @@ export function useTranscriber({
   modeRef.current = mode;
   if (mode === "continuous") speakerRef.current = activeSpeaker;
 
-  const cbRef = React.useRef({ onInterim, onFinal, onError, language });
-  cbRef.current = { onInterim, onFinal, onError, language };
+  const cbRef = React.useRef({ onInterim, onFinal, onSegmentEnd, onError, language });
+  cbRef.current = { onInterim, onFinal, onSegmentEnd, onError, language };
 
   // Diagnostics are sampled on a timer instead of on every audio callback, so
   // the panel stays live without re-rendering the workbench ~10x per second.
