@@ -75,10 +75,11 @@ const NoteCard = React.memo(function NoteCard({
 }) {
   const total = candidate.text.length;
   const hasDetail = Boolean(candidate.meaning);
-  const { viewportRef, textRef, distance } = useMarquee(candidate.text);
+  const { viewportRef, textRef, distance } = useMarquee(candidate.text, scrolling);
   // Roughly 34px per second: slow enough to read along with.
   const duration = Math.max(6, Math.round(distance / 34));
-  const marquee = scrolling && !caret && distance > 0;
+  const marquee = scrolling && distance > 0;
+
 
   return (
     <li
