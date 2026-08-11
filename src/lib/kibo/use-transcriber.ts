@@ -15,6 +15,8 @@ type Options = {
   activeSpeaker: Speaker;
   onInterim: (text: string, speaker: Speaker) => void;
   onFinal: (text: string, speaker: Speaker) => void;
+  /** Fires the moment a segment is closed by silence/max/button release, before transcription finishes. */
+  onSegmentEnd?: (speaker: Speaker) => void;
   onError: (message: string) => void;
 };
 
