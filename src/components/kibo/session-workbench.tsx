@@ -394,6 +394,13 @@ export function SessionWorkbench() {
     if (last) runSuggestions(last.text);
   }, [runSuggestions]);
 
+  // The stalling phrase disappears only once real reply text is on screen.
+  const firstIdeaText = rounds[0]?.candidates?.some((c) => (c.text ?? "").trim().length > 0);
+  React.useEffect(() => {
+    if (firstIdeaText) setOtherFinished(false);
+  }, [firstIdeaText]);
+
+
   // Changing the target language or level invalidates suggestions written for
   // the old settings — clear them instead of showing stale advice.
   const contextKey = `${prefs.conversationLang}|${prefs.level}`;
