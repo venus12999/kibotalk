@@ -309,7 +309,6 @@ export function SuggestionStage({
   canRetry = true,
   emptyHint,
   previousRoundLabel,
-  detailLabels,
   className,
   scrollRef,
   fontScale = 1,
@@ -327,7 +326,6 @@ export function SuggestionStage({
   canRetry?: boolean;
   emptyHint: string;
   previousRoundLabel: string;
-  detailLabels?: { show: string; hide: string; alt: string; points: string };
   className?: string;
   /** Lets the workbench observe/drive this panel's scrolling. */
   scrollRef?: React.Ref<HTMLDivElement>;
@@ -337,21 +335,10 @@ export function SuggestionStage({
 }) {
   const current = rounds[0];
   const previous = React.useMemo(() => rounds.slice(1, 3), [rounds]);
-  const [openIndex, setOpenIndex] = React.useState<number | null>(null);
-  const roundId = current?.id;
-  React.useEffect(() => {
-    setOpenIndex(null);
-  }, [roundId]);
-  const labels = detailLabels ?? {
-    show: "Show details",
-    hide: "Hide",
-    alt: "Alternative phrasing",
-    points: "Key words",
-  };
-
   const candidates = current?.candidates ?? [];
   // Three slots always exist: the panel keeps one stable height whether the
   // ideas are still streaming in or already complete.
+
 
   const slots = [0, 1, 2];
 
