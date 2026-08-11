@@ -15,12 +15,32 @@ const LEVEL_HINT: Record<string, string> = {
 /**
  * The three slots are generated in parallel, each with its own angle, so one
  * slow reply can never hold up the other two.
+ *
+ * Each angle adapts to the KIND of the newest line — a closed yes/no question,
+ * an open "tell me / list" request, or a plain statement — so the user never
+ * gets three vague variations of the same "yes".
  */
 const ANGLES = [
-  "Take the AFFIRMATIVE / positive stance: if the newest line is a yes-no or 'do you have…' question, answer yes and add one concrete detail. Otherwise answer directly and concretely.",
-  "Take the OPPOSITE stance of slot 1: if the newest line is a yes-no or 'do you have…' question, answer NO / not yet honestly, then add one short recovery (willing to learn, related experience). Never repeat a yes-type answer.",
-  "Take a THIRD, different route: partial / conditional answer, or ask a natural clarifying question back. It must not duplicate the stance of slot 1 or slot 2.",
+  [
+    "SLOT 1.",
+    "If the newest line is a CLOSED yes/no question: answer YES clearly, then one concrete supporting detail (where, how long, what exactly).",
+    "If it is an OPEN / enumeration request (tell me about…, what can you do, give examples, why): give the strongest single item with a concrete specific — never a generic 'I can do many things'.",
+    "If it is a statement or small talk: respond directly and concretely to its content.",
+  ].join(" "),
+  [
+    "SLOT 2 — must contrast with slot 1.",
+    "If the newest line is a CLOSED yes/no question: answer NO / not yet honestly, then one short recovery (adjacent experience, willing to learn fast). Never produce a yes-type answer here.",
+    "If it is an OPEN / enumeration request: answer in a structured list of 2-3 short points instead of one item.",
+    "If it is a statement or small talk: reply from a different angle — your own reaction, feeling or a related fact.",
+  ].join(" "),
+  [
+    "SLOT 3 — must differ from both slot 1 and slot 2.",
+    "If the newest line is a CLOSED yes/no question: give a PARTIAL / conditional answer (a little, in a similar role, depends on the system) or ask one natural clarifying question back.",
+    "If it is an OPEN / enumeration request: ask a scoping question back (which part matters most to you?) or answer with one concrete story/example.",
+    "If it is a statement or small talk: keep the conversation moving with a natural follow-up question.",
+  ].join(" "),
 ] as const;
+
 
 
 type Body = {
