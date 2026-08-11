@@ -6,11 +6,11 @@ import {
   CheckCircle2,
   Loader2,
   RotateCw,
-  ChevronDown,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { Candidate, Round } from "@/lib/kibo/types";
+
 
 /**
  * One sticky note. Text is rendered exactly as far as the stream has delivered
