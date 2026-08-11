@@ -668,6 +668,7 @@
 @media (prefers-reduced-motion: reduce) {
   .idea-rise,
   .idea-type,
+  .idea-marquee,
   .line-exit {
     animation: none;
   }
