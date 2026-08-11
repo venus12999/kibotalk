@@ -293,7 +293,14 @@ export function HoldTalkButton({
           {icon}
         </span>
         {active ? activeLabel : label}
+        {/* Keyboard hint: desktop only, where a physical key actually exists. */}
+        {hotkey ? (
+          <kbd className="hidden rounded border border-current/25 px-1 text-[10px] font-bold opacity-60 sm:inline">
+            {hotkey.toUpperCase()}
+          </kbd>
+        ) : null}
       </span>
+
       {active ? (
         <span className="relative text-[11px] font-medium tabular-nums opacity-80">
           {elapsed.toFixed(1)}s
