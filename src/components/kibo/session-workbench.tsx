@@ -330,6 +330,14 @@ export function SessionWorkbench() {
     if (last) runSuggestions(last.text, last.payload);
   }, [runSuggestions]);
 
+  const handleSegmentEnd = React.useCallback((speaker: "user" | "other") => {
+    if (speaker === "other") {
+      // The other person just stopped talking; transcription is still in flight.
+      // Show a stalling phrase until the reply stream starts.
+      setOtherFinished(true);
+    }
+  }, []);
+
   const handleFinal = React.useCallback(
     (text: string, speaker: "user" | "other") => {
       const turn = makeTurn(speaker, text);
@@ -350,9 +358,13 @@ export function SessionWorkbench() {
 
       // The user answered on their own — drop whatever was still generating.
       if (speaker === "user") {
+        setOtherFinished(false);
         cancelSuggestions();
         return;
       }
+
+      // Transcription is done; from here the AI status takes over the stalling UI.
+      setOtherFinished(false);
 
       // Show the line in the user's chosen translation language.
       const { conversationLang, translateLang } = prefsRef.current;
