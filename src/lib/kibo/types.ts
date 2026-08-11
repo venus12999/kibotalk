@@ -1,7 +1,6 @@
 export type UiLang = "ja" | "en" | "zh";
 export type ConvLang = "ja" | "en" | "zh";
 export type Level = "beginner" | "intermediate" | "advanced";
-export type Theme = "system" | "light" | "dark";
 export type AudioSource = "microphone" | "system" | "both";
 export type Lifecycle = "idle" | "preparing" | "running" | "paused" | "stopped";
 /** How turns are captured: hold a button, or listen non-stop and ask manually. */
@@ -18,7 +17,6 @@ export type Prefs = {
   /** Language the other person's lines are translated into for the user. */
   translateLang: ConvLang;
   level: Level;
-  theme: Theme;
   audioSource: AudioSource;
   micDeviceId: string;
   captureMode: CaptureMode;
@@ -101,7 +99,6 @@ export const defaultPrefs: Prefs = {
   translateLang: "en",
   level: "beginner",
 
-  theme: "system",
   audioSource: "microphone",
   micDeviceId: "",
   captureMode: "push",

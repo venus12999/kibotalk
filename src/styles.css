@@ -102,45 +102,6 @@
   --sidebar-ring: oklch(79.5% 0.184 86.047);
 }
 
-.dark {
-  color-scheme: dark;
-  --background: oklch(17.5% 0.008 80);
-  --foreground: oklch(93.5% 0.012 90);
-  --card: oklch(21% 0.009 80);
-  --card-foreground: oklch(93.5% 0.012 90);
-  --popover: oklch(21% 0.009 80);
-  --popover-foreground: oklch(93.5% 0.012 90);
-  --primary: oklch(85.2% 0.199 91.936);
-  --primary-foreground: oklch(30% 0.07 60);
-  --primary-soft: oklch(28% 0.03 75);
-  --primary-soft-strong: oklch(33% 0.05 75);
-  --secondary: oklch(26% 0.011 80);
-  --secondary-foreground: oklch(93.5% 0.012 90);
-  --muted: oklch(24% 0.01 80);
-  --muted-foreground: oklch(70% 0.017 85);
-  --accent: oklch(30% 0.04 75);
-  --accent-foreground: oklch(83.7% 0.128 66.29);
-  --destructive: oklch(63% 0.2 25);
-  --destructive-foreground: oklch(98.5% 0 0);
-  --success: oklch(76.5% 0.177 163.223);
-  --success-foreground: oklch(20% 0.02 160);
-  --transcript-other: oklch(80% 0.16 85);
-  --transcript-self: oklch(100% 0 0);
-
-  --border: oklch(31% 0.012 80);
-  --input: oklch(31% 0.012 80);
-  --ring: oklch(79.5% 0.184 86.047);
-  --shadow-panel: 0 1px 2px oklch(0% 0 0 / 0.4), 0 16px 40px -20px oklch(0% 0 0 / 0.7);
-  --sidebar: oklch(21% 0.009 80);
-  --sidebar-foreground: oklch(93.5% 0.012 90);
-  --sidebar-primary: oklch(85.2% 0.199 91.936);
-  --sidebar-primary-foreground: oklch(30% 0.07 60);
-  --sidebar-accent: oklch(26% 0.011 80);
-  --sidebar-accent-foreground: oklch(93.5% 0.012 90);
-  --sidebar-border: oklch(31% 0.012 80);
-  --sidebar-ring: oklch(79.5% 0.184 86.047);
-}
-
 /*
  * Glass design tokens — the single source of truth for every translucent
  * surface, gradient, blur and shadow in the app. Components must never
@@ -190,24 +151,6 @@
   );
 }
 
-.dark {
-  --glass-quiet: oklch(28% 0.02 80 / 0.38);
-  --glass: oklch(28% 0.02 80 / 0.55);
-  --glass-strong: oklch(30% 0.025 80 / 0.72);
-  --glass-border: oklch(100% 0 0 / 0.14);
-  --glass-border-vivid: oklch(100% 0 0 / 0.22);
-  --glass-shadow: 0 1px 0 oklch(100% 0 0 / 0.08) inset, 0 20px 50px -24px oklch(0% 0 0 / 0.75);
-  --shadow-glow-sm: 0 8px 20px -14px oklch(0% 0 0 / 0.8);
-  --shadow-glow: 0 10px 26px -14px oklch(0% 0 0 / 0.85);
-  --shadow-glow-lg: 0 14px 32px -18px oklch(0% 0 0 / 0.9);
-  --gradient-sheen: linear-gradient(
-    160deg,
-    oklch(100% 0 0 / 0.12) 0%,
-    oklch(100% 0 0 / 0.02) 45%,
-    oklch(100% 0 0 / 0.08) 100%
-  );
-}
-
 /*
  * Reply-idea text tones. Bare text over a blurred backdrop, so each theme gets
  * its own trio: darkened ambers on light, brightened ambers on dark, plus a
@@ -218,13 +161,6 @@
   --idea-2: oklch(56% 0.17 48);
   --idea-3: oklch(34% 0.03 80);
   --idea-halo: 0 1px 10px color-mix(in oklab, var(--background) 80%, transparent);
-}
-
-.dark {
-  --idea-1: oklch(88% 0.16 92);
-  --idea-2: oklch(83% 0.14 58);
-  --idea-3: oklch(93% 0.02 90);
-  --idea-halo: 0 1px 12px color-mix(in oklab, oklch(0% 0 0) 70%, transparent);
 }
 
 @layer base {

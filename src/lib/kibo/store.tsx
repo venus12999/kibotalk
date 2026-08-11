@@ -123,20 +123,12 @@ export function KiboProvider({ children }: { children: React.ReactNode }) {
     return () => window.clearTimeout(id);
   }, [prefs, userId]);
 
+  // Light mode only: keep the UA color-scheme pinned so Android/Windows Chrome
+  // never force-darkens our surfaces.
   React.useEffect(() => {
-    const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
-    const apply = () => {
-      const dark = prefs.theme === "dark" || (prefs.theme === "system" && mq?.matches === true);
-      document.documentElement.classList.toggle("dark", dark);
-      // Keep the UA color-scheme in sync so Android Chrome doesn't apply its
-      // own auto-dark filter on top of our theme.
-      document.documentElement.style.colorScheme = dark ? "dark" : "light";
-    };
-    apply();
-    if (prefs.theme !== "system" || !mq) return;
-    mq.addEventListener("change", apply);
-    return () => mq.removeEventListener("change", apply);
-  }, [prefs.theme]);
+    document.documentElement.classList.remove("dark");
+    document.documentElement.style.colorScheme = "light";
+  }, []);
 
   const value = React.useMemo<Ctx>(
     () => ({

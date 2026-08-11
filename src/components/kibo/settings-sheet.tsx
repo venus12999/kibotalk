@@ -10,7 +10,6 @@ import type {
   ConvLang,
   DockStyle,
   Level,
-  Theme,
   UiLang,
 } from "@/lib/kibo/types";
 
@@ -146,18 +145,6 @@ export function SettingsSheet({
                 { value: "ja", label: "日本語" },
                 { value: "en", label: "EN" },
                 { value: "zh", label: "中文" },
-              ]}
-            />
-          </Row>
-          <Row title={t("theme")}>
-            <PillGroup<Theme>
-              label=""
-              value={prefs.theme}
-              onChange={(v) => setPrefs({ theme: v })}
-              options={[
-                { value: "system", label: t("system") },
-                { value: "light", label: t("light") },
-                { value: "dark", label: t("dark") },
               ]}
             />
           </Row>

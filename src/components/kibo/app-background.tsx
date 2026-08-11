@@ -16,7 +16,7 @@ export function AppBackground() {
       />
       {/* Warm gradient wash + soft vignette to keep glass panels readable. */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary-soft/70 via-transparent to-accent/60" />
-      <div className="absolute inset-0 bg-background/25 dark:bg-background/70" />
+      <div className="absolute inset-0 bg-background/25" />
       <div className="absolute -top-32 -left-24 size-[38rem] rounded-full bg-primary/35 blur-3xl" />
       <div className="absolute -right-28 bottom-[-10rem] size-[34rem] rounded-full bg-accent-foreground/20 blur-3xl" />
     </div>
