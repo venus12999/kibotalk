@@ -68,15 +68,22 @@ export const Route = createFileRoute("/api/suggest")({
         // real communication need instead of just answering the words.
         let briefing = "";
         try {
-          const { loadEmotionLibrary, matchEmotions, emotionBriefing } =
-            await import("@/lib/kibo/emotion.server");
-          const rows = await loadEmotionLibrary();
-          const myLast = [...body.turns].reverse().find((t) => t.speaker === "user")?.text ?? "";
-          const matches = matchEmotions(`${latest}\n${myLast}`, rows, 3);
-          briefing = emotionBriefing(matches);
+          const { loadEmotionLibrary, matchEmotions, emotionBriefing } = await emotionMod;
+          // A cold library read must never hold up the first token: if it is not
+          // ready fast, skip the briefing and let the cache warm for next time.
+          const rows = await Promise.race([
+            loadEmotionLibrary(),
+            new Promise<null>((r) => setTimeout(() => r(null), 200)),
+          ]);
+          if (rows) {
+            const myLast = [...body.turns].reverse().find((t) => t.speaker === "user")?.text ?? "";
+            const matches = matchEmotions(`${latest}\n${myLast}`, rows, 3);
+            briefing = emotionBriefing(matches);
+          }
         } catch {
           /* emotion library is an enhancement; never block a suggestion */
         }
+
 
         // Kibo Memory: stable facts about the user that must survive sessions.
         const profile = (body.profile ?? "").trim().slice(0, 600);
