@@ -395,6 +395,7 @@ export function SuggestionStage({
                   expanded={openIndex === i}
                   onToggle={() => setOpenIndex((prev) => (prev === i ? null : i))}
                   labels={labels}
+                  scrolling={scrolling}
                 />
               );
             }
