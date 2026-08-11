@@ -147,13 +147,15 @@ export const Route = createFileRoute("/api/suggest")({
             memoryBlock,
             briefing,
             coachPrompt,
+            `First silently decide what kind of line the newest OTHER line is: a CLOSED yes/no question, an OPEN request to explain or list things, or a plain statement / small talk. Then shape the reply for that kind — never give a vague generic yes or no.`,
+            `The three suggestions shown to the user must cover genuinely different, usable options, so stay strictly inside your assigned angle even if another stance feels more likely.`,
             `Propose exactly ONE short, natural reply the user could say next, in ${target}.`,
-            `The three suggestions shown to the user must cover genuinely different stances (yes / no / partial-or-question), so stay strictly inside your assigned angle even if another stance feels more likely.`,
             `Angle for this reply: ${angle}`,
 
             LEVEL_HINT[body.level ?? "beginner"] ?? "",
             shape,
-            `Keep targetText under 30 characters and meaning under 20 characters.`,
+            `Keep targetText under 30 characters (up to 60 only when your angle asks for a 2-3 point list, separated by "、" or ", ") and meaning under 20 characters.`,
+
           ]
             .filter(Boolean)
             .join(" ");
