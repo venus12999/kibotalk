@@ -180,9 +180,18 @@ export function SessionWorkbench() {
     setRounds((prev) => (prev[0] && prev[0].candidates.length === 0 ? prev.slice(1) : prev));
   }, []);
 
+  const [otherFinished, setOtherFinished] = React.useState(false);
+
   const handleInterim = React.useCallback(
     (text: string, speaker: "user" | "other") => {
-      if (speaker === "user" && text.trim().length > 1) cancelSuggestions();
+      if (speaker === "user" && text.trim().length > 1) {
+        setOtherFinished(false);
+        cancelSuggestions();
+      }
+      if (speaker === "other" && text.trim().length > 0) {
+        // The other person started speaking again — the previous gap is over.
+        setOtherFinished(false);
+      }
       setInterim((prev) => ({ ...prev, [speaker]: text }));
     },
     [cancelSuggestions],
