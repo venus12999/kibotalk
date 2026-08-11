@@ -180,6 +180,35 @@ export function HoldTalkButton({
     };
   }, [begin, release]);
 
+  /**
+   * Desktop shortcut: hold a letter key anywhere on the page to talk. Uses its
+   * own synthetic pointer id so it can't collide with mouse or Space presses.
+   */
+  const HOTKEY_ID = -2;
+  React.useEffect(() => {
+    if (!hotkey) return;
+    const key = hotkey.toLowerCase();
+    const down = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== key) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || isTypingTarget(e.target)) return;
+      e.preventDefault();
+      if (e.repeat || pointerRef.current !== null) return;
+      begin(HOTKEY_ID, "pointer");
+    };
+    const up = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== key) return;
+      release(HOTKEY_ID, "pointer");
+    };
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+    };
+  }, [hotkey, begin, release]);
+
+
+
   return (
     <button
       ref={buttonRef}
