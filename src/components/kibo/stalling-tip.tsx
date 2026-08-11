@@ -72,7 +72,8 @@ export function StallingTip({
     return () => clearInterval(interval);
   }, [show, phrases.length]);
 
-  const label = LABELS[uiLang] ?? LABELS["en"] ?? { title: "Stalling phrase", hint: "Say this to buy time" };
+  const label = LABELS[uiLang] ??
+    LABELS["en"] ?? { title: "Stalling phrase", hint: "Say this to buy time" };
 
   return (
     <div
