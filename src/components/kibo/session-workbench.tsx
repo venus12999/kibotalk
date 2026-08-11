@@ -705,6 +705,7 @@ export function SessionWorkbench() {
             scrollRef={ideasScrollRef}
             className={cn("min-h-0 flex-1", wide && "h-auto min-h-[40dvh] max-h-[72dvh]")}
             fontScale={prefs.suggestionFontScale}
+            scrolling={transcriber.holding !== null}
             rounds={rounds}
             streaming={streaming}
             status={aiStatus}
