@@ -98,6 +98,7 @@ export function useTranscriber({
   activeSpeaker,
   onInterim,
   onFinal,
+  onSegmentEnd,
   onError,
 }: Options) {
   const [recording, setRecording] = React.useState(false);
