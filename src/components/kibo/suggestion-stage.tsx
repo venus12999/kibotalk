@@ -45,7 +45,10 @@ const RubyText = React.memo(function RubyText({
     <>
       {segments.map((seg, i) =>
         seg.r ? (
-          <ruby key={i} className={seg.role === "particle" ? "opacity-80" : undefined}>
+          <ruby
+            key={i}
+            className={cn("inline-block align-bottom", seg.role === "particle" && "opacity-80")}
+          >
             {seg.t}
             <rt className="text-[0.6em] font-medium opacity-70">{seg.r}</rt>
           </ruby>
@@ -110,9 +113,12 @@ const NoteCard = React.memo(function NoteCard({
       </span>
 
       <div className="min-w-0 flex-1">
-        <p className="text-sm leading-snug font-semibold">
+        <p className="text-sm leading-snug font-semibold [overflow-wrap:anywhere] break-words whitespace-normal">
           {/* Re-keying on length replays the fade as each token lands. */}
-          <span key={caret ? total : "done"} className={caret ? "idea-type" : undefined}>
+          <span
+            key={caret ? total : "done"}
+            className={cn("inline [overflow-wrap:anywhere]", caret && "idea-type")}
+          >
             <RubyText candidate={candidate} limit={total} />
           </span>
           {caret ? (
