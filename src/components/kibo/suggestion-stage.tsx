@@ -107,12 +107,13 @@ const NoteCard = React.memo(function NoteCard({
             {/* Re-keying on length replays the fade as each token lands. */}
             <span
               ref={textRef}
-              key={caret ? total : "done"}
+              key={marquee ? "marquee" : caret ? total : "done"}
               className={cn(
-                "inline-block whitespace-nowrap",
-                caret && "idea-type",
+                "inline-block max-w-none whitespace-nowrap",
+                caret && !marquee && "idea-type",
                 marquee && "idea-marquee",
               )}
+
               style={
                 marquee
                   ? ({
