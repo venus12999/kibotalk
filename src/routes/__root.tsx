@@ -80,14 +80,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       // Opt out of Android Chrome's "Auto dark theme" force-darkening.
       { name: "color-scheme", content: "light" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "KiboTalk — Real-time conversation coach" },
+      {
+        name: "description",
+        content: "Live transcription and AI reply suggestions for natural multilingual conversations.",
+      },
+      { name: "author", content: "KiboTalk" },
+      { property: "og:title", content: "KiboTalk — Real-time conversation coach" },
+      {
+        property: "og:description",
+        content: "Live transcription and AI reply suggestions for natural multilingual conversations.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
