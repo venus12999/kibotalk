@@ -103,7 +103,7 @@
           "properties": {
             "query": {
               "type": "string",
-              "description": "Word or phrase to look for in the emotion, scenario, or text pattern."
+              "description": "Word or phrase to look for in the emotion, scenario, text pattern, or keywords."
             },
             "limit": {
               "description": "How many entries to return (default 10, max 50).",
