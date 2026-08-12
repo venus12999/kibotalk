@@ -86,7 +86,8 @@
   --success: oklch(69.6% 0.17 162.48);
   --success-foreground: oklch(98.5% 0 0);
   --transcript-other: oklch(62% 0.16 78);
-  --transcript-self: oklch(100% 0 0);
+  /* Self lines sit on a light photo backdrop — pure white disappears. */
+  --transcript-self: oklch(28% 0.02 70);
 
   --border: oklch(91.5% 0.012 90);
   --input: oklch(91.5% 0.012 90);
@@ -174,9 +175,62 @@
     /* Android shows a grey flash box on every tap without this. */
     -webkit-tap-highlight-color: transparent;
     font-family:
-      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", Arial,
-      sans-serif;
+      "Outfit", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   }
+
+  h1,
+  h2,
+  .font-display {
+    font-family:
+      "Outfit", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    letter-spacing: -0.02em;
+  }
+}
+
+@keyframes sheet-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@utility sheet-enter {
+  animation: sheet-enter 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes brand-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.03);
+    filter: brightness(1.06);
+  }
+}
+
+@utility brand-breathe {
+  animation: brand-breathe 3.6s ease-in-out infinite;
+}
+
+@keyframes empty-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility empty-fade {
+  animation: empty-fade 520ms ease-out both;
 }
 
 /*
@@ -192,6 +246,14 @@
   border-radius: var(--glass-radius);
   box-shadow: var(--glass-shadow);
   backdrop-filter: var(--glass-filter);
+}
+
+/* Alias used by PTT / tour / VAD — keep in sync with glass-quiet. */
+@utility glass-panel {
+  background-color: var(--glass-quiet);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius-sm);
+  backdrop-filter: var(--glass-filter-md);
 }
 
 /* Secondary panel: same rules, one step lighter. */

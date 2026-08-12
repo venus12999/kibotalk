@@ -10,10 +10,15 @@ export const Route = createFileRoute("/api/transcribe")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const appId = process.env["VOLC_ASR_APP_ID"];
-        const accessToken = process.env["VOLC_ASR_ACCESS_TOKEN"];
+        const { requireApiUser } = await import("@/lib/kibo/api-auth");
+        const auth = await requireApiUser(request);
+        if (auth instanceof Response) return auth;
+
+        const appId = process.env["VOLC_ASR_APP_ID"] ?? process.env["VOLC_APP_ID"];
+        const accessToken =
+          process.env["VOLC_ASR_ACCESS_TOKEN"] ?? process.env["VOLC_ACCESS_TOKEN"];
         if (!appId || !accessToken) {
-          return new Response("Transcription is not configured", { status: 500 });
+          return new Response("Transcription is not configured", { status: 503 });
         }
 
         const form = await request.formData().catch(() => null);

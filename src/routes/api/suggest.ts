@@ -41,8 +41,6 @@ const ANGLES = [
   ].join(" "),
 ] as const;
 
-
-
 type Body = {
   turns?: { speaker: "user" | "other"; text: string }[];
   /** The exact line the reply must answer — the message just received. */
@@ -66,8 +64,12 @@ export const Route = createFileRoute("/api/suggest")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const { requireApiUser } = await import("@/lib/kibo/api-auth");
+        const auth = await requireApiUser(request);
+        if (auth instanceof Response) return auth;
+
         const apiKey = process.env["DEEPSEEK_API_KEY"];
-        if (!apiKey) return new Response("AI is not configured", { status: 500 });
+        if (!apiKey) return new Response("AI is not configured", { status: 503 });
 
         const body = (await request.json().catch(() => null)) as Body | null;
         if (!body || !Array.isArray(body.turns)) {
@@ -155,7 +157,6 @@ export const Route = createFileRoute("/api/suggest")({
             LEVEL_HINT[body.level ?? "beginner"] ?? "",
             shape,
             `Keep targetText under 30 characters (up to 60 only when your angle asks for a 2-3 point list, separated by "、" or ", ") and meaning under 20 characters.`,
-
           ]
             .filter(Boolean)
             .join(" ");

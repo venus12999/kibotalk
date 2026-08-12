@@ -12,6 +12,7 @@ import {
   saveCloudPrefs,
   saveCloudSession,
 } from "./cloud";
+import { setHapticsEnabled } from "@/lib/haptics";
 
 const PREFS_KEY = "kibotalk.prefs";
 const HISTORY_KEY = "kibotalk.history";
@@ -69,6 +70,7 @@ export function KiboProvider({ children }: { children: React.ReactNode }) {
     if (!hydrated) return;
     window.localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
     document.documentElement.lang = prefs.uiLang === "zh" ? "zh-CN" : prefs.uiLang;
+    setHapticsEnabled(prefs.hapticsEnabled !== false);
   }, [prefs, hydrated]);
 
   React.useEffect(() => {
@@ -76,10 +78,25 @@ export function KiboProvider({ children }: { children: React.ReactNode }) {
     window.localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
   }, [history, hydrated]);
 
-  // Pull cloud state on sign-in, and push local-only sessions up once.
   React.useEffect(() => {
     cloudReady.current = false;
-    if (!hydrated || !userId) return;
+    // Wait until auth settles — clearing while `getSession` is still pending
+    // would wipe the current user's local cache before the session restores.
+    if (!hydrated || authLoading) return;
+
+    // Signed out: wipe local prefs/history so the next account can't inherit them.
+    if (!userId) {
+      setHistory([]);
+      setPrefsState(defaultPrefs);
+      try {
+        window.localStorage.removeItem(PREFS_KEY);
+        window.localStorage.removeItem(HISTORY_KEY);
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+
     let cancelled = false;
     setSyncing(true);
     (async () => {
@@ -89,20 +106,10 @@ export function KiboProvider({ children }: { children: React.ReactNode }) {
           loadCloudSessions(userId),
         ]);
         if (cancelled) return;
-        if (cloudPrefs) setPrefsState((p) => ({ ...p, ...cloudPrefs }));
-        const cloudIds = new Set(cloudSessions.map((s) => s.id));
-        const localOnly = history.filter((s) => !cloudIds.has(s.id));
-        for (const s of localOnly) {
-          try {
-            s.id = await saveCloudSession(userId, s);
-          } catch {
-            /* ignore */
-          }
-        }
-        if (cancelled) return;
-        setHistory(
-          [...localOnly, ...cloudSessions].sort((a, b) => b.startedAt - a.startedAt).slice(0, 50),
-        );
+        // Cloud wins on sign-in; never upload leftover local rows from another user.
+        if (cloudPrefs) setPrefsState({ ...defaultPrefs, ...cloudPrefs });
+        else setPrefsState(defaultPrefs);
+        setHistory([...cloudSessions].sort((a, b) => b.startedAt - a.startedAt).slice(0, 50));
       } finally {
         if (!cancelled) {
           cloudReady.current = true;
@@ -113,8 +120,7 @@ export function KiboProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, hydrated]);
+  }, [userId, hydrated, authLoading]);
 
   // Push preference changes to the cloud.
   React.useEffect(() => {

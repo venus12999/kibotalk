@@ -17,6 +17,8 @@ type Options = {
   onFinal: (text: string, speaker: Speaker) => void;
   /** Fires the moment a segment is closed by silence/max/button release, before transcription finishes. */
   onSegmentEnd?: (speaker: Speaker) => void;
+  /** Final ASR produced nothing usable (empty / wrong language). */
+  onMissed?: (speaker: Speaker) => void;
   onError: (message: string) => void;
 };
 
@@ -78,6 +80,8 @@ type Pipeline = {
   speaker: Speaker;
   /** True when this pipe cannot know the speaker from its source alone. */
   ambiguous: boolean;
+  /** Push-to-talk: only armed pipes keep samples while a button is held. */
+  armed: boolean;
   stream: MediaStream;
   source: MediaStreamAudioSourceNode;
   node: ScriptProcessorNode;
@@ -99,6 +103,7 @@ export function useTranscriber({
   onInterim,
   onFinal,
   onSegmentEnd,
+  onMissed,
   onError,
 }: Options) {
   const [recording, setRecording] = React.useState(false);
@@ -121,8 +126,8 @@ export function useTranscriber({
   modeRef.current = mode;
   if (mode === "continuous") speakerRef.current = activeSpeaker;
 
-  const cbRef = React.useRef({ onInterim, onFinal, onSegmentEnd, onError, language });
-  cbRef.current = { onInterim, onFinal, onSegmentEnd, onError, language };
+  const cbRef = React.useRef({ onInterim, onFinal, onSegmentEnd, onMissed, onError, language });
+  cbRef.current = { onInterim, onFinal, onSegmentEnd, onMissed, onError, language };
 
   // Diagnostics are sampled on a timer instead of on every audio callback, so
   // the panel stays live without re-rendering the workbench ~10x per second.
@@ -185,9 +190,13 @@ export function useTranscriber({
       sampleRate: number,
       speaker: Speaker,
       partial = false,
+      segmentId?: number,
     ): Promise<void> => {
       const blob = encodeWav(chunks, sampleRate);
-      if (blob.size < 4096) return;
+      if (blob.size < 4096) {
+        if (!partial) cbRef.current.onMissed?.(speaker);
+        return;
+      }
 
       const form = new FormData();
       form.append("file", blob, "recording.wav");
@@ -197,8 +206,17 @@ export function useTranscriber({
         inFlightRef.current += 1;
         setTranscribing(true);
       }
+      const isStale = () => {
+        if (!partial || segmentId === undefined) return false;
+        const pipe = pipesRef.current.find(
+          (p) => speakerOf(p) === speaker || (p.ambiguous && speakerRef.current === speaker),
+        );
+        return !pipe || pipe.segment !== segmentId;
+      };
       try {
-        const res = await fetch("/api/transcribe", { method: "POST", body: form });
+        const { authHeaders } = await import("@/lib/kibo/api-auth");
+        const headers = await authHeaders();
+        const res = await fetch("/api/transcribe", { method: "POST", headers, body: form });
         if (!res.ok || !res.body) {
           const detail = await res.text().catch(() => "");
           throw new Error(detail || `Transcription failed (${res.status})`);
@@ -212,6 +230,7 @@ export function useTranscriber({
         for (;;) {
           const { done, value } = await reader.read();
           if (done) break;
+          if (isStale()) return;
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split("\n");
           buffer = lines.pop() ?? "";
@@ -226,6 +245,7 @@ export function useTranscriber({
                 delta?: string;
                 text?: string;
               };
+              if (isStale()) return;
               if (event.type === "transcript.text.delta" && event.delta) {
                 text += event.delta;
                 if (matchesLanguage(text, cbRef.current.language as ConvLang)) {
@@ -246,6 +266,8 @@ export function useTranscriber({
           }
         }
 
+        if (isStale()) return;
+
         const clean = text.trim();
         // Anything that is not the chosen conversation language is a
         // hallucination — drop it instead of polluting the transcript.
@@ -257,9 +279,11 @@ export function useTranscriber({
         }
         cbRef.current.onInterim("", speaker);
         if (ok) cbRef.current.onFinal(clean, speaker);
+        else cbRef.current.onMissed?.(speaker);
       } catch (error) {
         if (partial) return; // a dropped partial is harmless; the final still runs
         cbRef.current.onInterim("", speaker);
+        cbRef.current.onMissed?.(speaker);
         cbRef.current.onError(error instanceof Error ? error.message : String(error));
       } finally {
         if (!partial) {
@@ -268,7 +292,7 @@ export function useTranscriber({
         }
       }
     },
-    [],
+    [speakerOf],
   );
 
   const teardown = React.useCallback(() => {
@@ -410,6 +434,7 @@ export function useTranscriber({
       const pipe: Pipeline = {
         speaker,
         ambiguous,
+        armed: false,
         stream,
         source,
         node,
@@ -424,6 +449,8 @@ export function useTranscriber({
 
       node.onaudioprocess = (event) => {
         if (pausedRef.current) return;
+        // Push-to-talk: ignore pipes that aren't armed for the held speaker.
+        if (modeRef.current === "push" && !pipe.armed) return;
         const input = new Float32Array(event.inputBuffer.getChannelData(0));
         const chunkMs = (input.length / ctx.sampleRate) * 1000;
         const power = rms(input);
@@ -484,7 +511,7 @@ export function useTranscriber({
           const snapshot = pipe.chunks.slice();
           const segmentId = pipe.segment;
           const who = speakerOf(pipe);
-          void sendSegment(snapshot, ctx.sampleRate, who, true).finally(() => {
+          void sendSegment(snapshot, ctx.sampleRate, who, true, segmentId).finally(() => {
             pipe.partialBusy = false;
             // A finished segment already cleared the bubble — don't resurrect it.
             if (pipe.segment !== segmentId) cbRef.current.onInterim("", who);
@@ -525,6 +552,9 @@ export function useTranscriber({
       pipe.silenceMs = 0;
       pipe.partialAt = 0;
       pipe.segment += 1;
+      // Dual-source: only the pipe that matches the held speaker. Lone mic
+      // (ambiguous) always arms — the button decides attribution.
+      pipe.armed = pipe.ambiguous || pipe.speaker === speaker;
     }
     pausedRef.current = false;
     setHolding(speaker);
@@ -536,8 +566,19 @@ export function useTranscriber({
     pausedRef.current = true;
     setHolding(null);
     setLevel(0);
-    flushAll(MIN_PUSH_SPEECH_MS, "manual");
-  }, [flushAll]);
+    for (const pipe of pipesRef.current) {
+      if (pipe.armed) {
+        flushPipe(pipe, MIN_PUSH_SPEECH_MS, "manual");
+      } else {
+        // Drop any buffered audio on the idle pipe so it can't leak later.
+        pipe.chunks = [];
+        pipe.speechMs = 0;
+        pipe.silenceMs = 0;
+        pipe.partialAt = 0;
+      }
+      pipe.armed = false;
+    }
+  }, [flushPipe]);
 
   const setPaused = React.useCallback(
     (paused: boolean) => {

@@ -130,9 +130,11 @@ const unschedule = (id: number) => {
  * (older iOS Safari, WeChat) end up here instead of showing an empty result.
  */
 async function fetchWhole(input: SuggestStreamInput, signal?: AbortSignal): Promise<Candidate[]> {
+  const { authHeaders } = await import("@/lib/kibo/api-auth");
+  const headers = await authHeaders({ "Content-Type": "application/json" });
   const res = await fetch("/api/suggest", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({ ...input, stream: false }),
     signal: signal ?? null,
   });
@@ -155,9 +157,11 @@ export async function streamSuggestions(
 ): Promise<Candidate[]> {
   let res: Response;
   try {
+    const { authHeaders } = await import("@/lib/kibo/api-auth");
+    const headers = await authHeaders({ "Content-Type": "application/json" });
     res = await fetch("/api/suggest", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(input),
       signal: signal ?? null,
     });

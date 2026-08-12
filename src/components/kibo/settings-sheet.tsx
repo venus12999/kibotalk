@@ -6,6 +6,16 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { PillGroup } from "./pill-group";
 import { useKibo, langLabel, levelLabel } from "@/lib/kibo/store";
 import type {
@@ -14,6 +24,7 @@ import type {
   ConvLang,
   DockStyle,
   Level,
+  PanelLayout,
   UiLang,
 } from "@/lib/kibo/types";
 
@@ -74,6 +85,8 @@ export function SettingsSheet({
 }) {
   const { prefs, setPrefs, t, clearHistory, reset, history, user } = useKibo();
   const systemAudioSupported = useSystemAudioSupport();
+  const [confirmClear, setConfirmClear] = React.useState(false);
+  const [confirmReset, setConfirmReset] = React.useState(false);
   React.useEffect(() => {
     if (!systemAudioSupported && prefs.audioSource !== "microphone") {
       setPrefs({ audioSource: "microphone" });
@@ -302,6 +315,38 @@ export function SettingsSheet({
               ]}
             />
           </div>
+
+          <p className="pt-6 text-xs font-bold tracking-wide text-muted-foreground uppercase">
+            {t("display")}
+          </p>
+          <div className="flex flex-col gap-2 border-b border-border py-4">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">{t("panelLayout")}</p>
+              <p className="mt-0.5 text-xs text-foreground/70">{t("panelLayoutDescription")}</p>
+            </div>
+            <PillGroup<PanelLayout>
+              label=""
+              value={prefs.panelLayout ?? "auto"}
+              onChange={(v) => setPrefs({ panelLayout: v })}
+              options={[
+                {
+                  value: "auto",
+                  label: t("layoutAuto"),
+                  description: t("layoutAutoDescription"),
+                },
+                {
+                  value: "row",
+                  label: t("layoutRow"),
+                  description: t("layoutRowDescription"),
+                },
+                {
+                  value: "column",
+                  label: t("layoutColumn"),
+                  description: t("layoutColumnDescription"),
+                },
+              ]}
+            />
+          </div>
           <div className="flex flex-col gap-2 border-b border-border py-4">
             <div className="min-w-0">
               <p className="text-sm font-semibold">{t("scrollSync")}</p>
@@ -395,6 +440,35 @@ export function SettingsSheet({
           </div>
 
           <p className="pt-6 text-xs font-bold tracking-wide text-muted-foreground uppercase">
+            {t("features")}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("featuresDescription")}</p>
+          <Row title={t("autoSuggest")} description={t("autoSuggestDescription")}>
+            <Switch
+              checked={prefs.autoSuggest !== false}
+              onCheckedChange={(v) => setPrefs({ autoSuggest: v })}
+            />
+          </Row>
+          <Row title={t("showStallingTip")} description={t("showStallingTipDescription")}>
+            <Switch
+              checked={prefs.showStallingTip !== false}
+              onCheckedChange={(v) => setPrefs({ showStallingTip: v })}
+            />
+          </Row>
+          <Row title={t("hapticsEnabled")} description={t("hapticsEnabledDescription")}>
+            <Switch
+              checked={prefs.hapticsEnabled !== false}
+              onCheckedChange={(v) => setPrefs({ hapticsEnabled: v })}
+            />
+          </Row>
+          <Row title={t("showVadDiagnostics")} description={t("showVadDiagnosticsDescription")}>
+            <Switch
+              checked={!!prefs.showVadDiagnostics}
+              onCheckedChange={(v) => setPrefs({ showVadDiagnostics: v })}
+            />
+          </Row>
+
+          <p className="pt-6 text-xs font-bold tracking-wide text-muted-foreground uppercase">
             {t("permissions")}
           </p>
           <Row title={t("microphonePermission")}>
@@ -406,9 +480,22 @@ export function SettingsSheet({
               </Button>
             )}
           </Row>
-          <Row title={t("screenPermission")} description={t("headphonesHint")}>
-            <span className="text-sm font-semibold text-muted-foreground">
-              {t("needsPermission")}
+          <Row
+            title={t("screenPermission")}
+            description={
+              !systemAudioSupported
+                ? t("screenPermissionUnsupported")
+                : prefs.audioSource === "microphone"
+                  ? t("screenPermissionNotNeeded")
+                  : t("headphonesHint")
+            }
+          >
+            <span className="max-w-48 text-right text-sm font-semibold text-muted-foreground">
+              {!systemAudioSupported
+                ? t("screenPermissionUnsupported")
+                : prefs.audioSource === "microphone"
+                  ? t("screenPermissionNotNeeded")
+                  : t("screenPermissionOnStart")}
             </span>
           </Row>
 
@@ -482,12 +569,12 @@ export function SettingsSheet({
           </Row>
           {dataNote ? <p className="-mt-2 pb-2 text-xs text-muted-foreground">{dataNote}</p> : null}
           <Row title={t("clearHistory")} description={t("clearHistoryDescription")} danger>
-            <Button variant="soft" size="sm" onClick={clearHistory}>
+            <Button variant="soft" size="sm" onClick={() => setConfirmClear(true)}>
               {t("clearHistory")}
             </Button>
           </Row>
           <Row title={t("resetPersonalData")} description={t("resetDescription")} danger>
-            <Button variant="destructive" size="sm" onClick={reset}>
+            <Button variant="destructive" size="sm" onClick={() => setConfirmReset(true)}>
               {t("resetPersonalData")}
             </Button>
           </Row>
@@ -500,6 +587,47 @@ export function SettingsSheet({
           </Row>
         </div>
       </SheetContent>
+
+      <AlertDialog open={confirmClear} onOpenChange={setConfirmClear}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("clearHistoryTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("clearHistoryDescription")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                clearHistory();
+                setConfirmClear(false);
+              }}
+            >
+              {t("confirm")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmReset} onOpenChange={setConfirmReset}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("resetTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("resetDescription")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                reset();
+                setConfirmReset(false);
+              }}
+            >
+              {t("confirm")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   );
 }

@@ -19,60 +19,17 @@ import type { Candidate, Round } from "@/lib/kibo/types";
  */
 const NOTE_TONES = ["idea-tone-1", "idea-tone-2", "idea-tone-3"] as const;
 
-/**
- * Long replies stay on one line and drift slowly left-and-right so the reader
- * can follow the sentence instead of losing it off the right edge.
- */
-function useMarquee(text: string, active: boolean) {
-  const viewportRef = React.useRef<HTMLSpanElement | null>(null);
-  const textRef = React.useRef<HTMLSpanElement | null>(null);
-  const [distance, setDistance] = React.useState(0);
-
-  React.useLayoutEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-    const measure = () => {
-      const inner = textRef.current;
-      // The inner span can report its own width, so fall back to the viewport's
-      // own scroll overflow — whichever detects the overflow wins.
-      const innerWidth = inner ? Math.max(inner.scrollWidth, inner.offsetWidth) : 0;
-      const overflow = Math.max(innerWidth, viewport.scrollWidth) - viewport.clientWidth;
-      setDistance(overflow > 8 ? overflow + 8 : 0);
-    };
-    measure();
-    // Fonts/streaming can settle a frame later.
-    const raf = requestAnimationFrame(measure);
-    const ro = new ResizeObserver(measure);
-    ro.observe(viewport);
-    if (textRef.current) ro.observe(textRef.current);
-    return () => {
-      cancelAnimationFrame(raf);
-      ro.disconnect();
-    };
-  }, [text, active]);
-
-  return { viewportRef, textRef, distance };
-}
-
 const NoteCard = React.memo(function NoteCard({
   candidate,
   caret,
   index,
-  scrolling = false,
 }: {
   candidate: Candidate;
   caret: boolean;
   index: number;
-  /** Long lines only drift while the user is holding the talk button. */
+  /** Kept for API compat with callers that still pass scrolling. */
   scrolling?: boolean;
 }) {
-  const total = candidate.text.length;
-  const { viewportRef, textRef, distance } = useMarquee(candidate.text, scrolling);
-  // Roughly 34px per second: slow enough to read along with.
-  const duration = Math.max(6, Math.round(distance / 34));
-  const marquee = scrolling && distance > 0;
-
-
   return (
     <li
       className={cn(
@@ -91,49 +48,27 @@ const NoteCard = React.memo(function NoteCard({
       </span>
 
       <div className="min-w-0 flex-1">
-        <p className="text-sm leading-snug font-semibold">
-          <span
-            ref={viewportRef}
-            className="block w-full overflow-hidden whitespace-nowrap [mask-image:linear-gradient(to_right,transparent_0,black_10px,black_calc(100%-14px),transparent_100%)]"
-          >
-            {/* Re-keying on length replays the fade as each token lands. */}
-            <span
-              ref={textRef}
-              key={marquee ? "marquee" : caret ? total : "done"}
-              className={cn(
-                "inline-block max-w-none whitespace-nowrap",
-                caret && !marquee && "idea-type",
-                marquee && "idea-marquee",
-              )}
-
-              style={
-                marquee
-                  ? ({
-                      "--marquee-distance": `${distance}px`,
-                      "--marquee-duration": `${duration}s`,
-                    } as React.CSSProperties)
-                  : undefined
-              }
-            >
-              {/* Japanese replies carry furigana; English/Chinese never do. */}
-              {candidate.segments && candidate.segments.length > 0
-                ? candidate.segments.map((s, si) =>
-                    s.r ? (
-                      <ruby key={si}>
-                        {s.t}
-                        <rt>{s.r}</rt>
-                      </ruby>
-                    ) : (
-                      <React.Fragment key={si}>{s.t}</React.Fragment>
-                    ),
-                  )
-                : candidate.text}
-            </span>
-            {caret ? (
-              <span className="ml-0.5 inline-block h-3.5 w-0.5 translate-y-0.5 animate-pulse bg-current align-middle" />
-            ) : null}
-          </span>
+        <p className="text-sm leading-snug font-semibold whitespace-pre-wrap break-words">
+          {/* Japanese replies carry furigana; English/Chinese never do. */}
+          {candidate.segments && candidate.segments.length > 0
+            ? candidate.segments.map((s, si) =>
+                s.r ? (
+                  <ruby key={si}>
+                    {s.t}
+                    <rt>{s.r}</rt>
+                  </ruby>
+                ) : (
+                  <React.Fragment key={si}>{s.t}</React.Fragment>
+                ),
+              )
+            : candidate.text}
+          {caret ? (
+            <span className="ml-0.5 inline-block h-3.5 w-0.5 translate-y-0.5 animate-pulse bg-current align-middle" />
+          ) : null}
         </p>
+        {candidate.meaning ? (
+          <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{candidate.meaning}</p>
+        ) : null}
       </div>
     </li>
   );
@@ -384,22 +319,31 @@ export function SuggestionStage({
               );
             }
 
-            // Nothing to show yet: stay invisible until ideas actually arrive.
-            if (!streaming) return null;
+            // Always reserve three slots so the panel height stays stable.
             return (
               <li
                 key={i}
-                className="flex min-h-[2rem] items-center gap-3 text-xs text-muted-foreground"
+                aria-hidden={!streaming}
+                className="flex min-h-[2rem] items-center gap-2 text-xs text-muted-foreground"
               >
-                <span className="flex gap-1" aria-hidden>
-                  <i className="size-1.5 animate-pulse rounded-full bg-current opacity-40" />
-                  <i className="size-1.5 animate-pulse rounded-full bg-current opacity-40 [animation-delay:150ms]" />
-                  <i className="size-1.5 animate-pulse rounded-full bg-current opacity-40 [animation-delay:300ms]" />
-                </span>
+                <span className="shrink-0 text-xs font-black opacity-30">{i + 1}</span>
+                {streaming ? (
+                  <span className="flex gap-1" aria-hidden>
+                    <i className="size-1.5 animate-pulse rounded-full bg-current opacity-40" />
+                    <i className="size-1.5 animate-pulse rounded-full bg-current opacity-40 [animation-delay:150ms]" />
+                    <i className="size-1.5 animate-pulse rounded-full bg-current opacity-40 [animation-delay:300ms]" />
+                  </span>
+                ) : null}
               </li>
             );
           })}
         </ol>
+
+        {!streaming && candidates.every((c) => !c?.text) && rounds.length === 0 ? (
+          <p className="empty-fade max-w-[18rem] text-xs leading-relaxed text-muted-foreground">
+            {emptyHint}
+          </p>
+        ) : null}
 
         <PreviousRounds rounds={previous} label={previousRoundLabel} />
       </div>

@@ -47,6 +47,7 @@ import { VadDiagnostics } from "./vad-diagnostics";
 import { StallingTip } from "./stalling-tip";
 import { loadMemoryContext } from "@/lib/kibo/memory";
 import { useSession } from "@/lib/kibo/use-session";
+import { hapticTap } from "@/lib/haptics";
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -127,6 +128,7 @@ export function SessionWorkbench() {
 
   const scrollRef = React.useRef<HTMLDivElement>(null);
   // Wide screens get the orb flanked by conversation (left) and ideas (right).
+  // prefs.panelLayout can force row / column; "auto" follows the breakpoint.
   const [wide, setWide] = React.useState(false);
   React.useEffect(() => {
     const mql = window.matchMedia("(min-width: 768px)");
@@ -135,6 +137,8 @@ export function SessionWorkbench() {
     mql.addEventListener("change", onChange);
     return () => mql.removeEventListener("change", onChange);
   }, []);
+  const panelLayout = prefs.panelLayout ?? "auto";
+  const sideBySide = panelLayout === "row" || (panelLayout === "auto" && wide);
 
   const words = copy[prefs.uiLang] ?? copy.en;
   const guideLabel =
@@ -341,6 +345,10 @@ export function SessionWorkbench() {
     }
   }, []);
 
+  const handleMissed = React.useCallback((speaker: "user" | "other") => {
+    if (speaker === "other") setOtherFinished(false);
+  }, []);
+
   const handleFinal = React.useCallback(
     (text: string, speaker: "user" | "other") => {
       const turn = makeTurn(speaker, text);
@@ -369,7 +377,6 @@ export function SessionWorkbench() {
       // Keep the stalling phrase up: it stays until the first reply token lands,
       // so it doesn't flash off between transcription and the AI stream.
 
-
       // Show the line in the user's chosen translation language.
       const { conversationLang, translateLang } = prefsRef.current;
       if (translateLang !== conversationLang) {
@@ -384,9 +391,13 @@ export function SessionWorkbench() {
           .catch(() => undefined);
       }
 
-      // Every finished line from the other person triggers ideas automatically,
-      // in both capture modes. The manual button stays as a way to re-ask.
-      runSuggestions(text);
+      // Auto-suggest (prefs): finished “other” lines can trigger ideas; the
+      // manual button always remains as a way to re-ask.
+      if (prefsRef.current.autoSuggest !== false) {
+        runSuggestions(text);
+      } else {
+        setOtherFinished(false);
+      }
     },
     [cancelSuggestions, runSuggestions],
   );
@@ -402,7 +413,6 @@ export function SessionWorkbench() {
   React.useEffect(() => {
     if (firstIdeaText) setOtherFinished(false);
   }, [firstIdeaText]);
-
 
   // Changing the target language or level invalidates suggestions written for
   // the old settings — clear them instead of showing stale advice.
@@ -437,6 +447,7 @@ export function SessionWorkbench() {
     onInterim: handleInterim,
     onFinal: handleFinal,
     onSegmentEnd: handleSegmentEnd,
+    onMissed: handleMissed,
     onError: handleError,
   });
 
@@ -477,11 +488,11 @@ export function SessionWorkbench() {
     el.scrollTop = el.scrollHeight;
   }, [turns, life, interim, livePanel, getViewport]);
 
-  // Optional scroll linking: on wide screens the conversation (left) and the
-  // ideas (right) can follow each other proportionally, or stay independent.
+  // Optional scroll linking: when panels are side by side the conversation and
+  // ideas can follow each other proportionally, or stay independent.
   const ideasScrollRef = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
-    if (!wide || (prefs.scrollSync ?? "independent") !== "linked") return;
+    if (!sideBySide || (prefs.scrollSync ?? "independent") !== "linked") return;
     const left = getViewport();
     const right = ideasScrollRef.current?.querySelector("[data-radix-scroll-area-viewport]");
     if (!left || !(right instanceof HTMLElement)) return;
@@ -506,7 +517,7 @@ export function SessionWorkbench() {
       left.removeEventListener("scroll", onLeft);
       right.removeEventListener("scroll", onRight);
     };
-  }, [wide, prefs.scrollSync, getViewport, livePanel]);
+  }, [sideBySide, prefs.scrollSync, getViewport, livePanel]);
 
   const startSession = async () => {
     reqRef.current += 1;
@@ -610,35 +621,34 @@ export function SessionWorkbench() {
 
   return (
     <div
-      className="mx-auto flex min-h-dvh max-w-6xl flex-col gap-3 p-3 sm:gap-4 sm:p-6 lg:h-dvh"
+      className="mx-auto flex min-h-dvh max-w-6xl flex-col gap-3 px-3 pt-3 sm:gap-4 sm:px-6 sm:pt-6 lg:h-dvh"
       style={{
-        paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
+        /* Keep bottom inset on the dock itself so the Start bar isn't clipped. */
         paddingTop: "max(0.75rem, env(safe-area-inset-top))",
       }}
     >
-      <header
-        className={`glass-bar grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3 ${
-          active ? "hidden" : "grid"
-        }`}
-      >
+      <header className="glass-bar grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-2.5">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-          <span className="gradient-primary glow-sm flex size-9 shrink-0 items-center justify-center rounded-full text-primary-foreground">
+          <span className="gradient-primary glow-sm flex size-8 shrink-0 items-center justify-center rounded-full text-primary-foreground sm:size-9">
             <Mic className="size-4" />
           </span>
           <div className="min-w-0">
-            <h1 className="truncate text-base leading-tight font-bold tracking-tight">
+            <h1 className="truncate text-sm leading-tight font-bold tracking-tight sm:text-base">
               {t("appName")}
             </h1>
-            <p className="truncate text-xs text-muted-foreground">
-              {langLabel(prefs.conversationLang, prefs.uiLang)} ·{" "}
-              {levelLabel(prefs.level, prefs.uiLang)} · {t(sourceKey(prefs.audioSource))}
-            </p>
+            {!active ? (
+              <p className="truncate text-xs text-muted-foreground">
+                {langLabel(prefs.conversationLang, prefs.uiLang)} ·{" "}
+                {levelLabel(prefs.level, prefs.uiLang)} · {t(sourceKey(prefs.audioSource))}
+              </p>
+            ) : (
+              <p className="truncate text-xs text-muted-foreground">{statusLabel}</p>
+            )}
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-          <UiLanguageMenu />
+          {!active ? <UiLanguageMenu /> : null}
           <AccountMenu />
-
           <Button
             variant="soft"
             size="icon"
@@ -685,10 +695,23 @@ export function SessionWorkbench() {
         const transcriptView = (
           <div className="relative flex min-h-0 flex-1 flex-col justify-end">
             <ScrollArea ref={scrollRef} className="min-h-0 flex-1">
-              {recentTurns.length === 0 ? (
-                <p className="py-12 text-center text-sm text-muted-foreground">
-                  {t("noTranscript")}
-                </p>
+              {recentTurns.length === 0 && !interim.user && !interim.other ? (
+                <div className="empty-fade flex flex-col items-center justify-center gap-2 py-10 text-center">
+                  <p className="text-sm font-semibold text-foreground/80">{t("noTranscript")}</p>
+                  <p className="max-w-[16rem] text-xs leading-relaxed text-muted-foreground">
+                    {life === "idle" || life === "stopped"
+                      ? prefs.uiLang === "zh"
+                        ? "点下方「开始」，对方开口后这里会出现实时听写。"
+                        : prefs.uiLang === "ja"
+                          ? "下の「開始」を押すと、相手の発話がここに表示されます。"
+                          : "Tap Start below — live lines appear here when they speak."
+                      : prefs.uiLang === "zh"
+                        ? "正在等待对方说话…"
+                        : prefs.uiLang === "ja"
+                          ? "相手の発話を待っています…"
+                          : "Waiting for the other person to speak…"}
+                  </p>
+                </div>
               ) : (
                 <ul className="flex flex-col justify-end gap-5 pr-3">
                   {visibleTurns.map((turn) => (
@@ -697,7 +720,7 @@ export function SessionWorkbench() {
                       className={cn(
                         turn.id === exitingId ? "line-exit" : "idea-rise",
                         turn.speaker === "user"
-                          ? "text-right text-transcript-self [text-shadow:0_1px_3px_oklch(0%_0_0/0.22)]"
+                          ? "text-right text-transcript-self"
                           : "text-left text-transcript-other",
                       )}
                     >
@@ -728,6 +751,32 @@ export function SessionWorkbench() {
                       ) : null}
                     </li>
                   ))}
+                  {(["other", "user"] as const).map((who) =>
+                    interim[who] ? (
+                      <li
+                        key={`interim-${who}`}
+                        className={cn(
+                          "idea-rise opacity-70",
+                          who === "user"
+                            ? "text-right text-transcript-self"
+                            : "text-left text-transcript-other",
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            "flex items-baseline gap-2 text-[11px] font-semibold",
+                            who === "user" ? "justify-end" : "justify-start",
+                          )}
+                        >
+                          <span>{who === "user" ? t("me") : t("other")}</span>
+                          <span className="font-normal">{words.live}</span>
+                        </div>
+                        <p className="mt-1 whitespace-pre-wrap break-words text-base font-semibold leading-relaxed italic">
+                          {interim[who]}
+                        </p>
+                      </li>
+                    ) : null,
+                  )}
                 </ul>
               )}
             </ScrollArea>
@@ -737,7 +786,7 @@ export function SessionWorkbench() {
         const ideasView = (
           <SuggestionStage
             scrollRef={ideasScrollRef}
-            className={cn("min-h-0 flex-1", wide && "h-auto min-h-[40dvh] max-h-[72dvh]")}
+            className={cn("min-h-0 flex-1", sideBySide && "h-auto")}
             fontScale={prefs.suggestionFontScale}
             scrolling={transcriber.holding !== null}
             rounds={rounds}
@@ -761,15 +810,14 @@ export function SessionWorkbench() {
             emptyHint={t("emptySuggestions")}
             previousRoundLabel={t("previousRound")}
           />
-
         );
 
         const orb = (
           <div className="relative flex flex-col items-center gap-5">
             <StallingTip
-              show={otherFinished && transcriber.holding === null}
-
-
+              show={
+                prefs.showStallingTip !== false && otherFinished && transcriber.holding === null
+              }
               lang={prefs.conversationLang}
               uiLang={prefs.uiLang}
               className="absolute -top-16 z-10 sm:-top-20"
@@ -802,22 +850,21 @@ export function SessionWorkbench() {
         );
 
         return (
-          <main className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-5 py-4">
-            {wide ? (
-              <div className="grid w-full min-h-0 flex-1 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-4 sm:gap-6">
+          <main className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-4 py-2 sm:gap-5 sm:py-3">
+            {sideBySide && wide ? (
+              <div className="grid w-full min-h-0 flex-1 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-stretch gap-4 sm:gap-6">
                 {/* Left: the conversation floating in the blank space. */}
-                <section className="flex h-[56dvh] min-h-0 flex-col overflow-hidden">
+                <section className="flex min-h-0 flex-col overflow-hidden">
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     {t("conversation")}
                   </p>
                   {transcriptView}
                 </section>
 
-                <div className="self-center">{orb}</div>
+                <div className="flex items-center self-center">{orb}</div>
 
-                {/* Right: the three ideas grow/shrink to their content, so they
-                    can be shorter than the dialog or taller when needed. */}
-                <section className="flex h-auto min-h-[40dvh] max-h-[76dvh] flex-col overflow-hidden">
+                {/* Right: suggestions fill remaining height without pushing the dock off-screen. */}
+                <section className="flex min-h-0 flex-col overflow-hidden">
                   <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     <Lightbulb className="size-3.5" />
                     {t("suggestions")}
@@ -825,10 +872,9 @@ export function SessionWorkbench() {
                   {ideasView}
                 </section>
               </div>
-            ) : (
+            ) : sideBySide ? (
               <>
-                {/* Mobile: keep transcript + suggestions above the thumb zone so
-                    holding the dock buttons doesn't cover them. */}
+                {/* Narrow side-by-side: two panels above the orb / thumb zone. */}
                 <div className="grid w-full min-h-0 shrink-0 grid-cols-2 gap-3">
                   <section className="flex h-[32dvh] min-h-0 flex-col overflow-hidden">
                     <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -844,8 +890,26 @@ export function SessionWorkbench() {
                     {ideasView}
                   </section>
                 </div>
-                {/* Idle: orb centered. In session: it slides down a little and
-                    tucks slightly under the dock to free reading space. */}
+                <div className={active ? "-mb-8 mt-auto scale-90" : "m-auto"}>{orb}</div>
+              </>
+            ) : (
+              <>
+                {/* Stacked: conversation above suggestions, both height-capped. */}
+                <div className="flex w-full min-h-0 flex-1 flex-col gap-3">
+                  <section className="flex h-[28dvh] max-h-64 min-h-0 flex-col overflow-hidden sm:h-[32dvh]">
+                    <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground sm:mb-2 sm:text-xs">
+                      {t("conversation")}
+                    </p>
+                    {transcriptView}
+                  </section>
+                  <section className="flex h-[28dvh] max-h-64 min-h-0 flex-col overflow-hidden sm:h-[32dvh]">
+                    <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground sm:mb-2 sm:text-xs">
+                      <Lightbulb className="size-3 sm:size-3.5" />
+                      {t("suggestions")}
+                    </p>
+                    {ideasView}
+                  </section>
+                </div>
                 <div className={active ? "-mb-8 mt-auto scale-90" : "m-auto"}>{orb}</div>
               </>
             )}
@@ -884,7 +948,7 @@ export function SessionWorkbench() {
             type="button"
             aria-expanded={!dockCollapsed}
             onClick={() => {
-              navigator.vibrate?.(6);
+              hapticTap(6);
               setPrefs({ dockCollapsed: !dockCollapsed });
             }}
             className="mx-auto -mt-1 flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-semibold text-muted-foreground sm:hidden"
@@ -941,7 +1005,7 @@ export function SessionWorkbench() {
                     key={who}
                     type="button"
                     onClick={() => {
-                      navigator.vibrate?.(6);
+                      hapticTap(6);
                       setSpeaker(who);
                     }}
                     className={cn(
@@ -1013,6 +1077,15 @@ export function SessionWorkbench() {
       <GuideSheet open={guideOpen} onOpenChange={setGuideOpen} />
       <OnboardingTour onOpenGuide={() => setGuideOpen(true)} />
       <HistorySheet open={historyOpen} onOpenChange={setHistoryOpen} />
+      {prefs.showVadDiagnostics ? (
+        <VadDiagnostics
+          diagnostics={transcriber.diagnostics}
+          mode={prefs.captureMode}
+          uiLang={prefs.uiLang}
+          recording={transcriber.recording}
+          className="fixed bottom-24 left-3 right-3 z-40 sm:bottom-28 sm:left-auto sm:right-6 sm:w-80"
+        />
+      ) : null}
     </div>
   );
 }

@@ -52,7 +52,17 @@ function App() {
     return (
       <>
         <AppBackground />
-        <div className="min-h-dvh" />
+        <div className="flex min-h-dvh items-center justify-center">
+          <div className="sheet-enter flex flex-col items-center gap-3">
+            <span
+              aria-hidden
+              className="brand-breathe gradient-primary glow size-14 rounded-full"
+            />
+            <p className="font-display text-sm font-semibold tracking-tight text-foreground/80">
+              KiboTalk
+            </p>
+          </div>
+        </div>
       </>
     );
   }

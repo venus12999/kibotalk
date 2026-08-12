@@ -113,6 +113,8 @@ export function StallingTip({
   const label = LABELS[uiLang] ??
     LABELS["en"] ?? { title: "Stalling phrase", hint: "Say this to buy time" };
 
+  if (!show && !visible) return null;
+
   return (
     <div
       className={cn(
@@ -120,7 +122,8 @@ export function StallingTip({
         visible && show ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0",
         className,
       )}
-      aria-live="polite"
+      aria-hidden={!show}
+      aria-live={show ? "polite" : "off"}
     >
       <p className="text-[10px] font-semibold uppercase tracking-widest text-primary-foreground/70">
         {label.title}

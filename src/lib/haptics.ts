@@ -1,6 +1,14 @@
 /** Light haptic tap for touch devices; silently no-ops where unsupported. */
+
+let hapticsEnabled = true;
+
+/** Driven by prefs so Button / PTT can stay import-simple. */
+export function setHapticsEnabled(enabled: boolean) {
+  hapticsEnabled = enabled;
+}
+
 export function hapticTap(pattern: number | number[] = 12) {
-  if (typeof navigator === "undefined") return;
+  if (!hapticsEnabled || typeof navigator === "undefined") return;
   const nav = navigator as Navigator & { vibrate?: (p: number | number[]) => boolean };
   try {
     nav.vibrate?.(pattern);

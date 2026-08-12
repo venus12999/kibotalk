@@ -18,8 +18,14 @@ export default defineTool({
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
     const supabase = supabaseForUser(ctx);
-    const { error } = await supabase.from("sessions").delete().eq("id", id);
+    const { data, error } = await supabase.from("sessions").delete().eq("id", id).select("id");
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    if (!data?.length) {
+      return {
+        content: [{ type: "text", text: `No session deleted for id ${id}` }],
+        isError: true,
+      };
+    }
     return { content: [{ type: "text", text: `Deleted session ${id}` }] };
   },
 });

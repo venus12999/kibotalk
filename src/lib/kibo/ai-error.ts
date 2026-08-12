@@ -38,6 +38,7 @@ export function classifyAiError(err: unknown): AiErrorKind {
     if (s === 402) return "credits";
     if (s === 408 || s === 504) return "timeout";
     if (s === 429) return "rateLimit";
+    if (s === 503 && /not configured/i.test(err.message)) return "invalid";
     if (s >= 500) return "server";
     if (s >= 400) return "invalid";
     if (s === 0) return "network";
@@ -48,6 +49,7 @@ export function classifyAiError(err: unknown): AiErrorKind {
   if (text.includes("timeout") || text.includes("timed out")) return "timeout";
   if (text.includes("429") || text.includes("rate limit")) return "rateLimit";
   if (text.includes("402") || text.includes("credit")) return "credits";
+  if (text.includes("not configured")) return "invalid";
   if (err instanceof TypeError || text.includes("failed to fetch") || text.includes("network"))
     return "network";
   if (/\b5\d\d\b/.test(text)) return "server";

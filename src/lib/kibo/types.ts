@@ -53,6 +53,14 @@ export type Prefs = {
   useProfileContext: boolean;
   /** Let the coach read saved long-term memories. */
   useMemoryContext: boolean;
+  /** When true, finished “other” lines auto-trigger three reply ideas. */
+  autoSuggest: boolean;
+  /** Show buy-time phrases while waiting for suggestions. */
+  showStallingTip: boolean;
+  /** Vibration feedback on buttons / hold-to-talk. */
+  hapticsEnabled: boolean;
+  /** Developer panel for voice-activity diagnostics. */
+  showVadDiagnostics: boolean;
   onboarded: boolean;
 };
 
@@ -130,5 +138,9 @@ export const defaultPrefs: Prefs = {
 
   useProfileContext: true,
   useMemoryContext: true,
+  autoSuggest: true,
+  showStallingTip: true,
+  hapticsEnabled: true,
+  showVadDiagnostics: false,
   onboarded: false,
 };

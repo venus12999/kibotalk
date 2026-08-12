@@ -247,25 +247,25 @@ function AuthPage() {
     return (
       <main className="flex min-h-dvh items-center justify-center p-4">
         <AppBackground />
-        <div className="paper-sheet w-full max-w-sm p-6 sm:p-8">
+        <div className="paper-sheet sheet-enter w-full max-w-sm p-6 sm:p-8">
           <div className="flex items-center">
             <img
               src={logoAsset.url}
               alt="KiboTalk"
-              className="h-8 w-auto select-none"
+              className="h-11 w-auto select-none sm:h-12"
               draggable={false}
             />
           </div>
-          <h2 className="mt-4 flex items-center gap-2 text-sm font-semibold">
+          <h2 className="font-display mt-5 flex items-center gap-2 text-lg font-bold tracking-tight">
             <KeyRound className="size-4 text-primary" />
             重设密码
           </h2>
-          <p className="mt-2 text-xs text-muted-foreground">
+          <p className="mt-2 text-sm text-muted-foreground">
             输入注册邮箱，我们会发送一封设置新密码的邮件。
           </p>
 
           <form
-            className="mt-4 space-y-3"
+            className="mt-5 space-y-3"
             onSubmit={(e) => {
               e.preventDefault();
               void sendReset();
@@ -319,20 +319,20 @@ function AuthPage() {
     return (
       <main className="flex min-h-dvh items-center justify-center p-4">
         <AppBackground />
-        <div className="paper-sheet w-full max-w-sm p-6 sm:p-8">
+        <div className="paper-sheet sheet-enter w-full max-w-sm p-6 sm:p-8">
           <div className="flex items-center">
             <img
               src={logoAsset.url}
               alt="KiboTalk"
-              className="h-8 w-auto select-none"
+              className="h-11 w-auto select-none sm:h-12"
               draggable={false}
             />
           </div>
-          <h2 className="mt-4 flex items-center gap-2 text-sm font-semibold">
+          <h2 className="font-display mt-5 flex items-center gap-2 text-lg font-bold tracking-tight">
             <MailCheck className="size-4 text-primary" />
             验证你的邮箱
           </h2>
-          <p className="mt-2 text-xs text-muted-foreground">
+          <p className="mt-2 text-sm text-muted-foreground">
             验证链接已发送至 <span className="font-medium text-foreground">{cleanEmail}</span>
             。点击链接后会自动登录。链接有时效，失效了可以重新发送。
           </p>
@@ -348,7 +348,7 @@ function AuthPage() {
             </p>
           ) : null}
 
-          <Button className="mt-3 w-full" disabled={busy} onClick={() => void checkNow()}>
+          <Button className="mt-4 w-full" disabled={busy} onClick={() => void checkNow()}>
             {busy ? <Loader2 className="size-4 animate-spin" /> : null}
             我已验证，继续
           </Button>
@@ -381,22 +381,27 @@ function AuthPage() {
   return (
     <main className="flex min-h-dvh items-center justify-center p-4">
       <AppBackground />
-      <div className="paper-sheet w-full max-w-sm p-6 sm:p-8">
-        <div className="flex items-center">
+      <div className="paper-sheet sheet-enter w-full max-w-sm p-6 sm:p-8">
+        <div className="flex flex-col items-start gap-3">
           <img
             src={logoAsset.url}
             alt="KiboTalk"
-            className="h-8 w-auto select-none"
+            className="h-12 w-auto select-none sm:h-14"
             draggable={false}
           />
+          <div>
+            <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-[1.75rem]">
+              {mode === "signin" ? "继续你的口语陪练" : "创建你的陪练账号"}
+            </h1>
+            <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+              {mode === "signin"
+                ? "登录后同步会话记录与语音设置，随时接着练。"
+                : "每个邮箱一个账号。注册后请先完成邮箱验证。"}
+            </p>
+          </div>
         </div>
-        <p className="mt-3 text-xs text-muted-foreground">
-          {mode === "signin"
-            ? "使用邮箱登录，同步你的会话记录与设置"
-            : "使用邮箱注册 —— 每个邮箱只能创建一个账号"}
-        </p>
 
-        <form className="mt-5 space-y-3" onSubmit={submit}>
+        <form className="mt-6 space-y-3" onSubmit={submit}>
           <div className="space-y-1.5">
             <Label htmlFor="email">邮箱</Label>
             <Input
@@ -484,7 +489,7 @@ function AuthPage() {
           {notice ? (
             <p className="rounded-xl bg-primary/10 px-3 py-2 text-xs text-foreground">{notice}</p>
           ) : null}
-          <Button type="submit" className="w-full" disabled={busy}>
+          <Button type="submit" className="w-full" size="lg" disabled={busy}>
             {busy ? <Loader2 className="size-4 animate-spin" /> : null}
             {mode === "signin" ? "登录" : "注册"}
           </Button>
