@@ -109,24 +109,31 @@
  * hardcode these values; they consume the utilities defined further below.
  */
 :root {
-  /* Surface fills, from quietest to strongest */
-  --glass-quiet: oklch(100% 0 0 / 0.38);
-  --glass: oklch(100% 0 0 / 0.55);
-  --glass-strong: oklch(100% 0 0 / 0.72);
-  --glass-border: oklch(100% 0 0 / 0.65);
-  --glass-border-vivid: oklch(100% 0 0 / 0.45);
+  /* Surface fills — open so rendered backdrop shows through liquid glass */
+  --glass-quiet: oklch(100% 0 0 / 0.18);
+  --glass: oklch(100% 0 0 / 0.26);
+  --glass-strong: oklch(100% 0 0 / 0.34);
+  --glass-border: oklch(100% 0 0 / 0.42);
+  --glass-border-vivid: oklch(100% 0 0 / 0.5);
 
-  /* Blur / saturation scale */
-  --glass-blur-sm: 8px;
-  --glass-blur-md: 14px;
-  --glass-blur-lg: 22px;
-  --glass-saturate: 160%;
+  /* Blur / saturation scale — stronger for liquid-glass look */
+  --glass-blur-sm: 10px;
+  --glass-blur-md: 18px;
+  --glass-blur-lg: 28px;
+  --glass-saturate: 175%;
   --glass-filter: blur(var(--glass-blur-lg)) saturate(var(--glass-saturate));
-  --glass-filter-md: blur(var(--glass-blur-md)) saturate(150%);
-  --glass-filter-sm: blur(var(--glass-blur-sm)) saturate(140%);
+  --glass-filter-md: blur(var(--glass-blur-md)) saturate(165%);
+  --glass-filter-sm: blur(var(--glass-blur-sm)) saturate(150%);
 
-  /* Elevation */
-  --glass-shadow: 0 1px 0 oklch(100% 0 0 / 0.6) inset, 0 18px 45px -22px oklch(50% 0.12 80 / 0.55);
+  /* Elevation — soft specular rim like liquid glass */
+  --glass-shadow:
+    0 1px 0 oklch(100% 0 0 / 0.72) inset,
+    0 -0.5px 0 oklch(100% 0 0 / 0.2) inset,
+    0 18px 48px -24px oklch(40% 0.06 80 / 0.35);
+  --glass-shadow-chip: 0 1px 0 oklch(100% 0 0 / 0.7) inset, 0 6px 18px -12px oklch(25% 0.02 80 / 0.22);
+  --glass-dark: oklch(22% 0.012 70 / 0.78);
+  --glass-dark-border: oklch(100% 0 0 / 0.16);
+  --glass-dark-shadow: 0 1px 0 oklch(100% 0 0 / 0.14) inset, 0 20px 44px -22px oklch(15% 0.02 70 / 0.55);
   --shadow-glow-sm: 0 8px 20px -14px oklch(60% 0.15 85 / 0.95);
   --shadow-glow: 0 10px 24px -14px oklch(60% 0.15 85 / 0.95);
   --shadow-glow-lg: 0 12px 28px -18px oklch(60% 0.15 85 / 0.95);
@@ -281,11 +288,38 @@
 }
 
 @utility glass-bar {
-  background-color: var(--glass);
-  border: 1px solid var(--glass-border);
+  background-color: oklch(100% 0 0 / 0.1);
+  background-image: linear-gradient(
+    165deg,
+    oklch(100% 0 0 / 0.22) 0%,
+    oklch(100% 0 0 / 0.04) 45%,
+    oklch(100% 0 0 / 0.1) 100%
+  );
+  border: 1px solid oklch(100% 0 0 / 0.28);
   border-radius: var(--glass-radius-lg);
-  box-shadow: var(--glass-shadow);
+  box-shadow:
+    0 1px 0 oklch(100% 0 0 / 0.55) inset,
+    0 12px 40px -22px oklch(30% 0.04 80 / 0.28);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+}
+
+/* Compact Apple-like control: icon buttons, pills, chips. */
+@utility glass-chip {
+  background-color: var(--glass);
+  background-image: var(--gradient-sheen);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-chip);
+  backdrop-filter: var(--glass-filter-md);
+}
+
+/* Dark frosted CTA — Control Center / lock-screen material. */
+@utility glass-dark {
+  background-color: var(--glass-dark);
+  border: 1px solid var(--glass-dark-border);
+  box-shadow: var(--glass-dark-shadow);
   backdrop-filter: var(--glass-filter);
+  color: oklch(98.5% 0 0);
 }
 
 @utility gradient-primary {
@@ -612,12 +646,38 @@
 
 /* Glass sheet with fully round ends — the "capsule" panel. */
 @utility orb-sheet {
-  background-color: var(--glass-strong);
-  background-image: var(--gradient-sheen);
-  border: 1px solid var(--glass-border);
+  background-color: oklch(100% 0 0 / 0.08);
+  background-image: linear-gradient(
+    160deg,
+    oklch(100% 0 0 / 0.2) 0%,
+    oklch(100% 0 0 / 0.03) 50%,
+    oklch(100% 0 0 / 0.1) 100%
+  );
+  border: 1px solid oklch(100% 0 0 / 0.26);
   border-radius: 1.75rem;
-  box-shadow: var(--glass-shadow);
-  backdrop-filter: var(--glass-filter);
+  box-shadow:
+    0 1px 0 oklch(100% 0 0 / 0.5) inset,
+    0 16px 44px -24px oklch(30% 0.04 80 / 0.25);
+  backdrop-filter: blur(34px) saturate(185%);
+  -webkit-backdrop-filter: blur(34px) saturate(185%);
+}
+
+/* Sharper settings / list panels — thin glass, modest radius. */
+@utility panel-sheet {
+  background-color: oklch(100% 0 0 / 0.22);
+  background-image: linear-gradient(
+    165deg,
+    oklch(100% 0 0 / 0.28) 0%,
+    oklch(100% 0 0 / 0.06) 55%,
+    oklch(98% 0.01 95 / 0.14) 100%
+  );
+  border: 1px solid oklch(100% 0 0 / 0.34);
+  border-radius: 0.75rem;
+  box-shadow:
+    0 1px 0 oklch(100% 0 0 / 0.45) inset,
+    0 10px 28px -22px oklch(35% 0.02 80 / 0.28);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
 }
 
 /* Single spherical stage: replaces the two framed panels on the workbench. */
@@ -749,4 +809,389 @@
   font-weight: 600;
   opacity: 0.65;
   line-height: 1;
+}
+
+/* Home hub list icons — one brand tint for all rows. */
+.home-hub-tint {
+  color: var(--primary-foreground);
+  background-color: color-mix(in oklab, var(--primary-soft) 78%, transparent);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-chip);
+  backdrop-filter: var(--glass-filter-sm);
+}
+
+/* Soft B/W atmosphere so home glass has something to refract. */
+.home-hub-atmosphere {
+  background-color: var(--background);
+  background-image:
+    radial-gradient(120% 80% at 12% -10%, oklch(100% 0 0 / 0.95) 0%, transparent 55%),
+    radial-gradient(90% 70% at 100% 20%, oklch(94% 0.01 95 / 0.9) 0%, transparent 50%),
+    radial-gradient(80% 60% at 50% 110%, oklch(92% 0.012 90 / 0.85) 0%, transparent 55%);
+}
+
+/*
+ * Home hub — orb hero + pill CTA + bottom dock (reference-inspired).
+ */
+.home-hub {
+  width: 100%;
+  max-width: 26rem;
+  margin-inline: auto;
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  padding-inline: 1.25rem;
+  gap: 0.75rem;
+}
+
+.home-hub-main {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding-block: 1rem 0.5rem;
+}
+
+.home-orb-wrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(64vw, 11rem);
+  min-height: 10rem;
+}
+.home-pill-cta {
+  display: flex;
+  width: 100%;
+  max-width: 22rem;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 9999px;
+  padding: 0.7rem 1rem 0.7rem 0.7rem;
+  color: oklch(98% 0 0);
+  background: oklch(22% 0.02 70 / 0.92);
+  box-shadow: var(--shadow-panel);
+  transition: transform 160ms ease, filter 160ms ease;
+}
+
+.home-pill-cta:hover {
+  filter: brightness(1.06);
+}
+
+.home-pill-cta:active {
+  transform: scale(0.985);
+}
+
+.home-pill-cta:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.home-pill-cta-icon {
+  display: grid;
+  place-items: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 9999px;
+  color: var(--primary-foreground);
+  background-image: var(--gradient-primary);
+  box-shadow: var(--shadow-glow-sm);
+}
+
+.home-mode-row {
+  display: grid;
+  width: 100%;
+  max-width: 22rem;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.home-mode-card {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  border-radius: 1.1rem;
+  padding: 0.7rem 0.75rem;
+  text-align: left;
+  color: var(--foreground);
+  background: var(--glass-strong);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: var(--glass-filter-md);
+  box-shadow: var(--glass-shadow-chip);
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.home-mode-card-icon {
+  display: grid;
+  place-items: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 0.7rem;
+  background: color-mix(in oklab, var(--primary-soft) 80%, transparent);
+  color: var(--primary-foreground);
+}
+
+.home-mode-card-active {
+  color: var(--primary-foreground);
+  background-image: var(--gradient-primary);
+  border-color: color-mix(in oklab, white 45%, transparent);
+  box-shadow: var(--shadow-glow);
+}
+
+.home-mode-card-active .home-mode-card-icon {
+  background: oklch(100% 0 0 / 0.35);
+  color: var(--primary-foreground);
+}
+
+.home-dock {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: end;
+  gap: 0.15rem;
+  margin-top: auto;
+  margin-bottom: 0.35rem;
+  border-radius: 1.5rem;
+  padding: 0.45rem 0.35rem 0.55rem;
+  background: var(--glass-strong);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-filter);
+}
+
+.home-dock-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.25rem 0.15rem;
+  color: var(--muted-foreground);
+  transition: color 160ms ease;
+}
+
+.home-dock-item:hover {
+  color: var(--foreground);
+}
+
+.home-dock-item:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 0.75rem;
+}
+
+.home-dock-icon {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+}
+
+.home-dock-item-primary {
+  color: var(--foreground);
+  transform: translateY(-0.35rem);
+}
+
+.home-dock-icon-primary {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9999px;
+  color: var(--primary-foreground);
+  background-image: var(--gradient-primary);
+  box-shadow: var(--shadow-glow);
+}
+
+.home-dock-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+
+@media (min-width: 768px) {
+  .home-hub {
+    max-width: 28rem;
+    padding-inline: 1.5rem;
+  }
+
+  .home-orb-wrap {
+    width: 11rem;
+    min-height: 10.5rem;
+  }
+
+  .home-hub-main {
+    gap: 1.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-dock-item-primary {
+    transform: none;
+  }
+}
+
+/* ── Voice sphere — round when idle; floats + morphs while speaking ─── */
+
+.voice-sphere {
+  --voice-level: 0;
+  --voice-scale: calc(1 + (var(--voice-level) * 0.12));
+  --sphere-cream: oklch(99% 0.012 95);
+  --sphere-gold: oklch(95% 0.035 93);
+  --sphere-gold-deep: oklch(91% 0.05 90);
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 7.25rem;
+  height: 7.25rem;
+  transform: scale(var(--voice-scale));
+  transition: transform 160ms ease-out;
+}
+
+.voice-sphere-sm { width: 3.5rem; height: 3.5rem; }
+.voice-sphere-md { width: 5rem; height: 5rem; }
+.voice-sphere-lg { width: 6.75rem; height: 6.75rem; }
+.voice-sphere-xl { width: 8rem; height: 8rem; }
+
+.voice-sphere-glow {
+  position: absolute;
+  inset: -10%;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle at 42% 36%,
+    oklch(99% 0.025 95 / 0.92) 0%,
+    oklch(95% 0.04 92 / 0.28) 50%,
+    transparent 74%
+  );
+  filter: blur(16px);
+  opacity: calc(0.48 + var(--voice-level) * 0.22);
+}
+
+.voice-sphere-ball {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 64%;
+  aspect-ratio: 1;
+  border-radius: 9999px;
+  /* Soft milky pearl — matches reference, not brand amber */
+  background:
+    radial-gradient(circle at 30% 24%, oklch(100% 0 0 / 1) 0%, transparent 38%),
+    radial-gradient(circle at 72% 76%, oklch(92% 0.04 88 / 0.22) 0%, transparent 48%),
+    linear-gradient(
+      155deg,
+      oklch(99.6% 0.006 95) 0%,
+      var(--sphere-cream) 48%,
+      var(--sphere-gold) 84%,
+      var(--sphere-gold-deep) 100%
+    );
+  box-shadow:
+    0 1px 0 oklch(100% 0 0 / 0.92) inset,
+    0 -8px 18px -12px oklch(78% 0.04 90 / 0.3) inset,
+    0 8px 22px -12px oklch(82% 0.04 92 / 0.35);
+  border: 1px solid oklch(100% 0 0 / 0.72);
+  transition:
+    border-radius 420ms ease,
+    transform 420ms ease;
+}
+
+.voice-sphere-wave {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  height: 1.6rem;
+}
+
+.voice-sphere-wave i {
+  display: block;
+  width: 0.2rem;
+  border-radius: 9999px;
+  background: oklch(58% 0.04 85 / 0.4);
+  transform-origin: center;
+  height: calc(0.35rem + var(--voice-level) * 0.85rem);
+  animation: voice-bar 1.2s ease-in-out infinite;
+}
+
+.voice-sphere-wave i:nth-child(1) { animation-delay: 0s; opacity: 0.5; }
+.voice-sphere-wave i:nth-child(2) { animation-delay: 0.1s; opacity: 0.7; }
+.voice-sphere-wave i:nth-child(3) { animation-delay: 0.2s; opacity: 0.9; }
+.voice-sphere-wave i:nth-child(4) { animation-delay: 0.1s; opacity: 0.7; }
+.voice-sphere-wave i:nth-child(5) { animation-delay: 0s; opacity: 0.5; }
+
+/* Idle: stay round, only soft glow breathe */
+.voice-sphere:not(.voice-sphere-speaking) .voice-sphere-glow {
+  animation: voice-sphere-glow-idle 4.8s ease-in-out infinite;
+}
+
+.voice-sphere:not(.voice-sphere-speaking) .voice-sphere-wave i {
+  animation: none;
+  height: 0.55rem;
+}
+
+.voice-sphere:not(.voice-sphere-speaking) .voice-sphere-wave i:nth-child(1),
+.voice-sphere:not(.voice-sphere-speaking) .voice-sphere-wave i:nth-child(5) {
+  height: 0.32rem;
+}
+.voice-sphere:not(.voice-sphere-speaking) .voice-sphere-wave i:nth-child(2),
+.voice-sphere:not(.voice-sphere-speaking) .voice-sphere-wave i:nth-child(4) {
+  height: 0.65rem;
+}
+.voice-sphere:not(.voice-sphere-speaking) .voice-sphere-wave i:nth-child(3) {
+  height: 0.95rem;
+}
+
+/* Speaking: float + morph into soft cloud */
+.voice-sphere-speaking .voice-sphere-glow {
+  animation: voice-sphere-glow-speak 2.8s ease-in-out infinite;
+}
+
+.voice-sphere-speaking .voice-sphere-ball {
+  animation: voice-sphere-float 3.2s ease-in-out infinite, voice-sphere-morph 4.5s ease-in-out infinite;
+}
+
+.voice-sphere-speaking .voice-sphere-wave i {
+  animation-duration: 0.65s;
+}
+
+@keyframes voice-sphere-glow-idle {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.03); opacity: 0.68; }
+}
+
+@keyframes voice-sphere-glow-speak {
+  0%, 100% { transform: scale(1); opacity: 0.55; }
+  50% { transform: scale(1.08); opacity: 0.82; }
+}
+
+@keyframes voice-sphere-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes voice-sphere-morph {
+  0%, 100% {
+    border-radius: 9999px;
+  }
+  25% {
+    border-radius: 58% 42% 55% 45% / 48% 55% 45% 52%;
+  }
+  50% {
+    border-radius: 48% 52% 42% 58% / 55% 45% 55% 45%;
+  }
+  75% {
+    border-radius: 55% 45% 58% 42% / 45% 55% 45% 55%;
+  }
+}
+
+@keyframes voice-bar {
+  0%, 100% { transform: scaleY(0.65); }
+  50% { transform: scaleY(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-sphere-glow,
+  .voice-sphere-ball,
+  .voice-sphere-wave i {
+    animation: none !important;
+  }
 }

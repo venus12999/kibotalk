@@ -284,7 +284,7 @@ export function SuggestionStage({
     >
       {/* Isolate streaming text updates from the rest of the page layout. */}
       <div
-        className="suggest-scaled w-full max-w-full min-w-0 space-y-3 overflow-x-hidden pr-3 [contain:content]"
+        className="suggest-scaled w-full max-w-full min-w-0 space-y-2 overflow-x-hidden pr-2 [contain:content] sm:space-y-3 sm:pr-3"
         style={{ "--suggest-scale": String(fontScale) } as React.CSSProperties}
       >
         {/* The status row keeps its slot even when idle, so the three ideas

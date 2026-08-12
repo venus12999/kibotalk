@@ -18,30 +18,38 @@ import { useKibo } from "@/lib/kibo/store";
 
 const copy = {
   zh: {
-    signIn: "登录 / 云同步",
+    signIn: "登录",
     signOut: "退出登录",
     synced: "已云同步",
     syncing: "同步中…",
     memory: "我的资料与记忆",
+    account: "账号",
   },
   ja: {
-    signIn: "ログイン / 同期",
+    signIn: "ログイン",
     signOut: "ログアウト",
     synced: "クラウド同期済み",
     syncing: "同期中…",
     memory: "プロフィールと記憶",
+    account: "アカウント",
   },
   en: {
-    signIn: "Sign in / sync",
+    signIn: "Sign in",
     signOut: "Sign out",
     synced: "Synced to cloud",
     syncing: "Syncing…",
     memory: "Profile & memory",
+    account: "Account",
   },
 } as const;
 
-export function AccountMenu() {
-  const { user, prefs, syncing } = useKibo();
+type Props = {
+  /** Icon-only trigger for black/white home header. */
+  compact?: boolean;
+};
+
+export function AccountMenu({ compact = false }: Props) {
+  const { user, prefs, syncing, t } = useKibo();
   const navigate = useNavigate();
   const words = copy[prefs.uiLang] ?? copy.en;
   const isAdminFn = useServerFn(checkIsAdmin);
@@ -53,15 +61,24 @@ export function AccountMenu() {
     staleTime: 5 * 60_000,
   });
 
+  const compactTriggerClass =
+    "glass-chip size-10 rounded-[0.85rem] border-0 p-0 text-foreground shadow-none hover:brightness-[1.03] active:scale-[0.97]";
+
   if (!user) {
     return (
       <Button
-        variant="soft"
-        size="icon"
+        variant={compact ? "ghost" : "soft"}
+        size={compact ? "icon" : "sm"}
+        className={
+          compact
+            ? compactTriggerClass
+            : "h-8 gap-1 px-2 text-xs font-semibold"
+        }
         aria-label={words.signIn}
         onClick={() => void navigate({ to: "/auth" })}
       >
-        <LogIn className="size-4" />
+        <LogIn className={compact ? "size-4" : "size-3.5"} />
+        {compact ? null : <span>{words.signIn}</span>}
       </Button>
     );
   }
@@ -69,8 +86,24 @@ export function AccountMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="soft" size="icon" aria-label={user.email ?? "account"}>
-          {syncing ? <Loader2 className="size-4 animate-spin" /> : <UserIcon className="size-4" />}
+        <Button
+          variant="ghost"
+          size={compact ? "icon" : "sm"}
+          className={
+            compact
+              ? compactTriggerClass
+              : "h-8 gap-1 px-1.5 text-xs font-semibold sm:px-2"
+          }
+          aria-label={user.email ?? words.account}
+        >
+          {syncing ? (
+            <Loader2 className={compact ? "size-4 animate-spin" : "size-3.5 animate-spin"} />
+          ) : (
+            <UserIcon className={compact ? "size-4" : "size-3.5"} strokeWidth={compact ? 1.75 : 2} />
+          )}
+          {compact ? null : (
+            <span className="max-w-14 truncate sm:max-w-24">{t("navAccount")}</span>
+          )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">

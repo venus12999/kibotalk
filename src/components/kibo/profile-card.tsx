@@ -27,7 +27,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const inputClass =
-  "h-11 w-full rounded-xl border-0 bg-background/45 px-3.5 text-[15px] text-foreground outline-none transition placeholder:text-muted-foreground/70 focus:bg-background/70 focus-visible:ring-2 focus-visible:ring-ring";
+  "h-11 w-full rounded-full border border-[var(--glass-border)] bg-[var(--glass-quiet)] px-4 text-[15px] text-foreground outline-none transition placeholder:text-muted-foreground/70 focus:bg-[var(--glass)] focus-visible:ring-2 focus-visible:ring-ring backdrop-blur-md";
 
 function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
@@ -36,11 +36,11 @@ function Chip({ label, active, onClick }: { label: string; active: boolean; onCl
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        "cursor-pointer rounded-full px-4 py-2 text-sm font-semibold transition-all",
+        "cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-semibold transition-all",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         active
           ? "gradient-primary text-primary-foreground glow shadow-sm"
-          : "bg-background/45 text-foreground/70 hover:text-foreground",
+          : "border border-[var(--glass-border)] bg-[var(--glass-quiet)] text-foreground/70 backdrop-blur-sm hover:text-foreground",
       )}
     >
       {label}
@@ -85,15 +85,15 @@ export function ProfileCard() {
   };
 
   return (
-    <section className="paper-sheet space-y-4 rounded-2xl p-4">
+    <section className="orb-sheet space-y-4 p-4 sm:p-5">
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
-          <h2 className="text-base font-bold tracking-tight">用户档案</h2>
-          <p className="text-xs text-muted-foreground">
+          <h2 className="font-display text-base font-bold tracking-tight">用户档案</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
             身份、目标、偏好、场景、语气 —— Kibo 会照着这些来给回复思路。
           </p>
         </div>
-        <span className="shrink-0 rounded-full bg-primary/20 px-3 py-1 text-[11px] font-semibold text-foreground/80">
+        <span className="shrink-0 rounded-full border border-[var(--glass-border)] bg-[var(--glass-quiet)] px-3 py-1 text-[11px] font-semibold text-foreground/80 backdrop-blur-sm">
           {syncing ? "同步中" : "可同步"}
         </span>
       </div>

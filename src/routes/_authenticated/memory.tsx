@@ -6,6 +6,7 @@ import { AppBackground } from "@/components/kibo/app-background";
 import { ProfileCard } from "@/components/kibo/profile-card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import { KiboProvider } from "@/lib/kibo/store";
 import { useSession } from "@/lib/kibo/use-session";
 import {
@@ -71,7 +72,7 @@ function MemoryImage({ path, alt }: { path: string; alt: string }) {
   }, [path]);
   if (!url) {
     return (
-      <div className="flex aspect-video w-full items-center justify-center rounded-xl bg-background/50">
+      <div className="flex aspect-video w-full items-center justify-center rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-quiet)] backdrop-blur-md">
         <Loader2 className="size-5 animate-spin text-muted-foreground" />
       </div>
     );
@@ -81,7 +82,7 @@ function MemoryImage({ path, alt }: { path: string; alt: string }) {
       src={url}
       alt={alt}
       loading="lazy"
-      className="max-h-48 w-full rounded-xl border border-white/10 object-contain bg-background/50"
+      className="max-h-48 w-full rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-quiet)] object-contain"
     />
   );
 }
@@ -199,18 +200,19 @@ function MemoryPage() {
 
   return (
     <>
-      <AppBackground />
-      <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col gap-4 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-5">
-        <header className="glass-bar flex items-center gap-3 rounded-2xl px-3 py-2.5">
-          <Button variant="soft" size="icon" asChild aria-label="返回">
+      <AppBackground pale />
+      <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col gap-5 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-5">
+        <header className="glass-bar flex items-center gap-3 rounded-[1.75rem] px-3 py-2.5">
+          <Button variant="soft" size="icon" className="rounded-full" asChild aria-label="返回">
             <Link to="/">
               <ArrowLeft className="size-4" />
             </Link>
           </Button>
+          <span className="home-hub-tint flex size-9 shrink-0 items-center justify-center rounded-xl">
+            <Brain className="size-4" strokeWidth={1.75} />
+          </span>
           <div className="min-w-0">
-            <h1 className="flex items-center gap-2 text-base font-bold tracking-tight">
-              <Brain className="size-4 text-primary" /> Kibo 记忆
-            </h1>
+            <h1 className="font-display text-base font-bold tracking-tight">Kibo 记忆</h1>
             <p className="truncate text-xs text-muted-foreground">
               这些内容会在每次生成回复思路时被参考
             </p>
@@ -219,8 +221,8 @@ function MemoryPage() {
 
         <ProfileCard />
 
-        <section className="paper-sheet space-y-3 rounded-2xl p-4">
-          <h2 className="text-sm font-semibold">添加一条记忆</h2>
+        <section className="orb-sheet space-y-3.5 p-4 sm:p-5">
+          <h2 className="font-display text-sm font-semibold tracking-tight">添加一条记忆</h2>
           <div className="flex flex-wrap gap-1.5">
             {MEMORY_KINDS.map((k) => (
               <Button
@@ -228,6 +230,7 @@ function MemoryPage() {
                 type="button"
                 size="sm"
                 variant={kind === k ? "default" : "soft"}
+                className="rounded-full"
                 onClick={() => setKind(k)}
               >
                 {KIND_LABEL[k]}
@@ -236,9 +239,10 @@ function MemoryPage() {
           </div>
           <Textarea
             value={draft}
-            rows={2}
+            rows={3}
             maxLength={500}
             placeholder="写一件想让 Kibo 记住的事…"
+            className="rounded-2xl border-[var(--glass-border)] bg-[var(--glass-quiet)] backdrop-blur-md"
             onChange={(e) => setDraft(e.target.value)}
           />
           {pendingImagePreview && (
@@ -246,7 +250,7 @@ function MemoryPage() {
               <img
                 src={pendingImagePreview}
                 alt="待上传图片"
-                className="max-h-40 rounded-xl border border-white/10 object-contain"
+                className="max-h-40 rounded-2xl border border-[var(--glass-border)] object-contain"
               />
               <button
                 type="button"
@@ -255,7 +259,7 @@ function MemoryPage() {
                   setPendingImageFile(null);
                   setPendingImagePreview(null);
                 }}
-                className="absolute -right-2 -top-2 rounded-full bg-background/80 p-1 text-foreground shadow-md"
+                className="absolute -right-2 -top-2 rounded-full border border-[var(--glass-border)] bg-[var(--glass-strong)] p-1 text-foreground shadow-md backdrop-blur-md"
                 aria-label="移除图片"
               >
                 <X className="size-4" />
@@ -274,7 +278,7 @@ function MemoryPage() {
               type="button"
               variant="soft"
               size="sm"
-              className="gap-1.5"
+              className="gap-1.5 rounded-full"
               disabled={busy}
               onClick={() => fileInputRef.current?.click()}
             >
@@ -286,7 +290,7 @@ function MemoryPage() {
               {uploadingImage ? "上传中" : pendingImageFile ? "更换图片" : "添加图片"}
             </Button>
             <Button
-              className="ml-auto w-full max-w-[12rem] gap-2"
+              className="ml-auto w-full max-w-[12rem] gap-2 rounded-full"
               disabled={!draft.trim() || busy}
               onClick={() => void create()}
             >
@@ -296,30 +300,36 @@ function MemoryPage() {
           </div>
         </section>
 
-        <section className="paper-sheet space-y-2 rounded-2xl p-4">
-          <h2 className="text-sm font-semibold">已记住 ({items.length})</h2>
+        <section className="orb-sheet space-y-3 p-4 sm:p-5">
+          <h2 className="font-display text-sm font-semibold tracking-tight">
+            已记住 ({items.length})
+          </h2>
           {loading ? (
             <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
               <Loader2 className="size-4 animate-spin" /> 加载中…
             </div>
           ) : items.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">还没有记忆条目。</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">还没有记忆条目。</p>
           ) : (
             <ul className="space-y-2.5">
               {items.map((m) => (
                 <li
                   key={m.id}
-                  className="flex flex-col gap-2 rounded-xl bg-background/40 px-3 py-2.5"
+                  className={cn(
+                    "flex flex-col gap-2 rounded-[1.25rem] border border-[var(--glass-border)] bg-[var(--glass-quiet)] px-3.5 py-3 backdrop-blur-md",
+                    m.pinned && "border-[var(--glass-border-vivid)] shadow-[var(--glass-shadow-chip)]",
+                  )}
                 >
                   <div className="flex items-start gap-2">
-                    <span className="mt-0.5 shrink-0 rounded-full bg-primary/20 px-2 py-0.5 text-[11px] text-foreground/80">
+                    <span className="home-hub-tint mt-0.5 shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
                       {KIND_LABEL[m.kind]}
                     </span>
-                    <p className="min-w-0 flex-1 text-sm break-words">{m.content}</p>
+                    <p className="min-w-0 flex-1 text-sm leading-relaxed break-words">{m.content}</p>
                     <div className="flex shrink-0">
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="rounded-full"
                         aria-label={m.pinned ? "取消置顶" : "置顶"}
                         onClick={() => void togglePin(m)}
                       >
@@ -332,6 +342,7 @@ function MemoryPage() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="rounded-full"
                         aria-label="删除"
                         onClick={() => void remove(m)}
                       >
@@ -345,7 +356,7 @@ function MemoryPage() {
                       <button
                         type="button"
                         onClick={() => void removeImage(m)}
-                        className="absolute -right-2 -top-2 rounded-full bg-background/80 p-1 text-foreground shadow-md"
+                        className="absolute -right-2 -top-2 rounded-full border border-[var(--glass-border)] bg-[var(--glass-strong)] p-1 text-foreground shadow-md backdrop-blur-md"
                         aria-label="移除图片"
                       >
                         <X className="size-4" />

@@ -2,21 +2,15 @@ import * as React from "react";
 import { classifyAiError, describeAiError, type AiErrorKind } from "@/lib/kibo/ai-error";
 
 import {
-  ChevronDown,
-  ChevronUp,
-  HelpCircle,
-  History,
+  ChevronLeft,
   Lightbulb,
   Mic,
   Pause,
   Play,
-  Settings,
-  Square,
   User,
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,7 +22,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { useKibo, langLabel, levelLabel } from "@/lib/kibo/store";
+import { useKibo } from "@/lib/kibo/store";
 import { makeTurn } from "@/lib/kibo/mock";
 import type { Candidate, Lifecycle, Round, Turn } from "@/lib/kibo/types";
 import { useTranscriber } from "@/lib/kibo/use-transcriber";
@@ -36,15 +30,11 @@ import { summarizeSession, translateLine } from "@/lib/kibo/ai.functions";
 import { streamSuggestions } from "@/lib/kibo/suggest-stream";
 
 import { MemoSuggestionStage as SuggestionStage } from "./suggestion-stage";
-import { SettingsSheet } from "./settings-sheet";
-import { HistorySheet } from "./history-sheet";
 import { GuideSheet } from "./guide-sheet";
 import { OnboardingTour } from "./onboarding-tour";
-import { UiLanguageMenu } from "./ui-language-menu";
-import { AccountMenu } from "./account-menu";
 import { HoldTalkButton } from "./hold-talk-button";
 import { VadDiagnostics } from "./vad-diagnostics";
-import { StallingTip } from "./stalling-tip";
+import { VoiceCloud } from "./voice-cloud";
 import { loadMemoryContext } from "@/lib/kibo/memory";
 import { useSession } from "@/lib/kibo/use-session";
 import { hapticTap } from "@/lib/haptics";
@@ -84,13 +74,11 @@ const copy = {
   },
 } as const;
 
-export function SessionWorkbench() {
+export function SessionWorkbench({ onExitHome }: { onExitHome?: () => void }) {
   const { prefs, setPrefs, t, addSession } = useKibo();
-  // Phone dock: floating card or edge bar, with a user-set size and a collapse
-  // toggle so the thumb zone never has to cover the panels above it.
-  const dockStyle = prefs.dockStyle ?? "float";
+  // Phone dock: edge bar by default (less overlap than a floating card).
+  const dockStyle = prefs.dockStyle ?? "bar";
   const dockScale = prefs.dockScale ?? 1;
-  const dockCollapsed = Boolean(prefs.dockCollapsed);
   /** Continuous mode: who the microphone is currently attributed to. */
   const [speaker, setSpeaker] = React.useState<"user" | "other">("other");
   const [life, setLife] = React.useState<Lifecycle>("idle");
@@ -104,19 +92,6 @@ export function SessionWorkbench() {
   const [aiErrorKind, setAiErrorKind] = React.useState<AiErrorKind>("unknown");
 
   const [aiAttempt, setAiAttempt] = React.useState(0);
-  /** Live-voice stage: which pull-up panel is open under the orb. */
-  const [livePanel, setLivePanel] = React.useState<"none" | "transcript" | "ideas">("ideas");
-  // New ideas arriving should surface themselves, like a voice-mode caption card.
-  React.useEffect(() => {
-    if (streaming) setLivePanel((p) => (p === "transcript" ? p : "ideas"));
-  }, [streaming]);
-  React.useEffect(() => {
-    if (rounds.length > 0) setLivePanel((p) => (p === "transcript" ? p : "ideas"));
-  }, [rounds.length]);
-
-  const [settingsOpen, setSettingsOpen] = React.useState(false);
-
-  const [historyOpen, setHistoryOpen] = React.useState(false);
   const [guideOpen, setGuideOpen] = React.useState(false);
   const [confirmStop, setConfirmStop] = React.useState(false);
   const [startedAt, setStartedAt] = React.useState(0);
@@ -141,8 +116,6 @@ export function SessionWorkbench() {
   const sideBySide = panelLayout === "row" || (panelLayout === "auto" && wide);
 
   const words = copy[prefs.uiLang] ?? copy.en;
-  const guideLabel =
-    prefs.uiLang === "zh" ? "使用指南" : prefs.uiLang === "ja" ? "使い方ガイド" : "How to use";
 
   const turnsRef = React.useRef<Turn[]>([]);
   turnsRef.current = turns;
@@ -184,17 +157,10 @@ export function SessionWorkbench() {
     setRounds((prev) => (prev[0] && prev[0].candidates.length === 0 ? prev.slice(1) : prev));
   }, []);
 
-  const [otherFinished, setOtherFinished] = React.useState(false);
-
   const handleInterim = React.useCallback(
     (text: string, speaker: "user" | "other") => {
       if (speaker === "user" && text.trim().length > 1) {
-        setOtherFinished(false);
         cancelSuggestions();
-      }
-      if (speaker === "other" && text.trim().length > 0) {
-        // The other person started speaking again — the previous gap is over.
-        setOtherFinished(false);
       }
       setInterim((prev) => ({ ...prev, [speaker]: text }));
     },
@@ -224,9 +190,6 @@ export function SessionWorkbench() {
     setStreaming(true);
     setAiError("");
     setAiStatus(replay ? "retrying" : "connecting");
-    // Fallback latch: if the segment-end hook didn't fire, keep the stalling
-    // phrase on screen for the whole wait instead of flashing later.
-    setOtherFinished(true);
     setAiAttempt((n) => (replay ? n + 1 : 0));
     // Only the round for the newest line stays on screen: suggestions written
     // for an older message are stale the moment the context moves on.
@@ -337,18 +300,6 @@ export function SessionWorkbench() {
     if (last) runSuggestions(last.text, last.payload);
   }, [runSuggestions]);
 
-  const handleSegmentEnd = React.useCallback((speaker: "user" | "other") => {
-    if (speaker === "other") {
-      // The other person just stopped talking; transcription is still in flight.
-      // Show a stalling phrase until the reply stream starts.
-      setOtherFinished(true);
-    }
-  }, []);
-
-  const handleMissed = React.useCallback((speaker: "user" | "other") => {
-    if (speaker === "other") setOtherFinished(false);
-  }, []);
-
   const handleFinal = React.useCallback(
     (text: string, speaker: "user" | "other") => {
       const turn = makeTurn(speaker, text);
@@ -369,13 +320,9 @@ export function SessionWorkbench() {
 
       // The user answered on their own — drop whatever was still generating.
       if (speaker === "user") {
-        setOtherFinished(false);
         cancelSuggestions();
         return;
       }
-
-      // Keep the stalling phrase up: it stays until the first reply token lands,
-      // so it doesn't flash off between transcription and the AI stream.
 
       // Show the line in the user's chosen translation language.
       const { conversationLang, translateLang } = prefsRef.current;
@@ -391,28 +338,12 @@ export function SessionWorkbench() {
           .catch(() => undefined);
       }
 
-      // Auto-suggest (prefs): finished “other” lines can trigger ideas; the
-      // manual button always remains as a way to re-ask.
       if (prefsRef.current.autoSuggest !== false) {
         runSuggestions(text);
-      } else {
-        setOtherFinished(false);
       }
     },
     [cancelSuggestions, runSuggestions],
   );
-
-  /** Continuous mode: generate ideas for the other person's latest line. */
-  const askForIdeas = React.useCallback(() => {
-    const last = [...turnsRef.current].reverse().find((x) => x.speaker === "other");
-    if (last) runSuggestions(last.text);
-  }, [runSuggestions]);
-
-  // The stalling phrase disappears only once real reply text is on screen.
-  const firstIdeaText = rounds[0]?.candidates?.some((c) => (c.text ?? "").trim().length > 0);
-  React.useEffect(() => {
-    if (firstIdeaText) setOtherFinished(false);
-  }, [firstIdeaText]);
 
   // Changing the target language or level invalidates suggestions written for
   // the old settings — clear them instead of showing stale advice.
@@ -446,8 +377,6 @@ export function SessionWorkbench() {
     activeSpeaker: speaker,
     onInterim: handleInterim,
     onFinal: handleFinal,
-    onSegmentEnd: handleSegmentEnd,
-    onMissed: handleMissed,
     onError: handleError,
   });
 
@@ -463,13 +392,6 @@ export function SessionWorkbench() {
     return el instanceof HTMLElement ? el : null;
   }, []);
 
-  const scrollToLatest = React.useCallback(() => {
-    const el = getViewport();
-    if (!el) return;
-    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-    setFollowing(true);
-  }, [getViewport]);
-
   React.useEffect(() => {
     const el = getViewport();
     if (!el) return;
@@ -480,13 +402,13 @@ export function SessionWorkbench() {
     el.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => el.removeEventListener("scroll", onScroll);
-  }, [getViewport, livePanel]);
+  }, [getViewport]);
 
   React.useEffect(() => {
     const el = getViewport();
     if (!el || !followingRef.current) return;
     el.scrollTop = el.scrollHeight;
-  }, [turns, life, interim, livePanel, getViewport]);
+  }, [turns, life, interim, getViewport]);
 
   // Optional scroll linking: when panels are side by side the conversation and
   // ideas can follow each other proportionally, or stay independent.
@@ -517,7 +439,7 @@ export function SessionWorkbench() {
       left.removeEventListener("scroll", onLeft);
       right.removeEventListener("scroll", onRight);
     };
-  }, [sideBySide, prefs.scrollSync, getViewport, livePanel]);
+  }, [sideBySide, prefs.scrollSync, getViewport]);
 
   const startSession = async () => {
     reqRef.current += 1;
@@ -587,6 +509,7 @@ export function SessionWorkbench() {
     setRounds([]);
     lastRequestRef.current = null;
     setConfirmStop(false);
+    onExitHome?.();
   };
 
   const active = life === "running" || life === "paused" || life === "preparing";
@@ -621,172 +544,128 @@ export function SessionWorkbench() {
 
   return (
     <div
-      className="mx-auto flex min-h-dvh max-w-6xl flex-col gap-3 px-3 pt-3 sm:gap-4 sm:px-6 sm:pt-6 lg:h-dvh"
+      className="mx-auto flex h-dvh max-w-6xl flex-col gap-2 overflow-hidden px-3 pt-2 sm:gap-3 sm:px-6 sm:pt-4"
       style={{
-        /* Keep bottom inset on the dock itself so the Start bar isn't clipped. */
-        paddingTop: "max(0.75rem, env(safe-area-inset-top))",
+        paddingTop: "max(0.5rem, env(safe-area-inset-top))",
       }}
     >
-      <header className="glass-bar grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-2.5">
-        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-          <span className="gradient-primary glow-sm flex size-8 shrink-0 items-center justify-center rounded-full text-primary-foreground sm:size-9">
-            <Mic className="size-4" />
-          </span>
-          <div className="min-w-0">
-            <h1 className="truncate text-sm leading-tight font-bold tracking-tight sm:text-base">
-              {t("appName")}
-            </h1>
-            {!active ? (
-              <p className="truncate text-xs text-muted-foreground">
-                {langLabel(prefs.conversationLang, prefs.uiLang)} ·{" "}
-                {levelLabel(prefs.level, prefs.uiLang)} · {t(sourceKey(prefs.audioSource))}
-              </p>
-            ) : (
-              <p className="truncate text-xs text-muted-foreground">{statusLabel}</p>
-            )}
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-          {!active ? <UiLanguageMenu /> : null}
-          <AccountMenu />
-          <Button
-            variant="soft"
-            size="icon"
-            aria-label={guideLabel}
-            title={guideLabel}
-            onClick={() => setGuideOpen(true)}
-          >
-            <HelpCircle className="size-4" />
-          </Button>
-          <Button
-            variant="soft"
-            size="icon"
-            aria-label={t("history")}
-            onClick={() => setHistoryOpen(true)}
-          >
-            <History className="size-4" />
-          </Button>
-          <Button
-            variant="soft"
-            size="icon"
-            aria-label={t("settings")}
-            onClick={() => setSettingsOpen(true)}
-          >
-            <Settings className="size-4" />
-          </Button>
+      <header className="glass-bar flex shrink-0 items-center justify-center rounded-xl px-2.5 py-1.5 sm:rounded-2xl sm:px-3 sm:py-2">
+        <div
+          className="flex w-full max-w-sm items-center gap-0.5 rounded-full bg-[color-mix(in_oklab,var(--foreground)_6%,transparent)] p-0.5 sm:w-auto"
+          role="group"
+          aria-label={t("captureMode")}
+        >
+          {(
+            [
+              { id: "push" as const, label: t("pushMode") },
+              { id: "continuous" as const, label: t("continuousMode") },
+            ] as const
+          ).map((mode) => {
+            const selected = prefs.captureMode === mode.id;
+            return (
+              <button
+                key={mode.id}
+                type="button"
+                disabled={active}
+                title={mode.id === "push" ? t("pushModeDescription") : t("continuousModeDescription")}
+                onClick={() => setPrefs({ captureMode: mode.id })}
+                className={cn(
+                  "min-w-0 flex-1 rounded-full px-2.5 py-1.5 text-[11px] font-semibold tracking-tight transition sm:flex-none sm:px-3",
+                  selected
+                    ? "gradient-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                  active && !selected && "opacity-40",
+                )}
+              >
+                <span className="block truncate">{mode.label}</span>
+              </button>
+            );
+          })}
         </div>
       </header>
 
-      {/* Live-voice stage: a breathing orb in the middle, the conversation
-          floating to its left and the three ideas floating to its right. */}
-      {(() => {
-        const jumpLabel =
-          prefs.uiLang === "zh" ? "回到最新" : prefs.uiLang === "ja" ? "最新へ" : "Jump to latest";
+      {!active ? (
+        <p className="shrink-0 px-1 text-center text-[11px] font-medium text-muted-foreground sm:text-left">
+          {t("nextStepIdle")}
+        </p>
+      ) : life === "running" && prefs.captureMode === "push" ? (
+        <p className="shrink-0 px-1 text-center text-[11px] font-medium text-muted-foreground sm:text-left">
+          {t("nextStepHold")}
+        </p>
+      ) : null}
 
-        // Only the two most recent turns stay on screen: every new line pushes
-        // the oldest one out, and the text floats without any bubble. The line
-        // that was pushed out lingers briefly to fade out and drift upward.
-        const recentTurns = turns.slice(-2);
-        const exitingTurn =
-          exitingId && !recentTurns.some((x) => x.id === exitingId)
-            ? turns.find((x) => x.id === exitingId)
-            : undefined;
-        const visibleTurns = exitingTurn ? [exitingTurn, ...recentTurns] : recentTurns;
-        const transcriptView = (
-          <div className="relative flex min-h-0 flex-1 flex-col justify-end">
-            <ScrollArea ref={scrollRef} className="min-h-0 flex-1">
-              {recentTurns.length === 0 && !interim.user && !interim.other ? (
-                <div className="empty-fade flex flex-col items-center justify-center gap-2 py-10 text-center">
-                  <p className="text-sm font-semibold text-foreground/80">{t("noTranscript")}</p>
-                  <p className="max-w-[16rem] text-xs leading-relaxed text-muted-foreground">
-                    {life === "idle" || life === "stopped"
-                      ? prefs.uiLang === "zh"
-                        ? "点下方「开始」，对方开口后这里会出现实时听写。"
-                        : prefs.uiLang === "ja"
-                          ? "下の「開始」を押すと、相手の発話がここに表示されます。"
-                          : "Tap Start below — live lines appear here when they speak."
-                      : prefs.uiLang === "zh"
-                        ? "正在等待对方说话…"
-                        : prefs.uiLang === "ja"
-                          ? "相手の発話を待っています…"
-                          : "Waiting for the other person to speak…"}
+      {error ? (
+        <p className="shrink-0 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          {error}
+        </p>
+      ) : null}
+
+      {(() => {
+        const latestTurn = turns[turns.length - 1];
+        const liveOther = interim.other.trim();
+        const liveUser = interim.user.trim();
+        const captionPrimary =
+          liveOther || liveUser || latestTurn?.text.trim() || "";
+        const captionSecondary =
+          !liveOther && !liveUser && latestTurn?.speaker === "other"
+            ? latestTurn.translation?.trim() || ""
+            : "";
+
+        const captionStage = (
+          <div className="flex min-h-[4.25rem] w-full max-w-lg flex-col items-center justify-end gap-1 px-3 text-center sm:min-h-[5rem]">
+            {captionPrimary ? (
+              <>
+                <p className="idea-rise max-w-full text-[1.35rem] leading-snug font-bold tracking-tight text-foreground sm:text-2xl">
+                  {captionPrimary}
+                </p>
+                {captionSecondary ? (
+                  <p className="max-w-[20rem] text-sm leading-relaxed text-muted-foreground">
+                    {captionSecondary}
                   </p>
-                </div>
-              ) : (
-                <ul className="flex flex-col justify-end gap-5 pr-3">
-                  {visibleTurns.map((turn) => (
-                    <li
-                      key={turn.id}
-                      className={cn(
-                        turn.id === exitingId ? "line-exit" : "idea-rise",
-                        turn.speaker === "user"
-                          ? "text-right text-transcript-self"
-                          : "text-left text-transcript-other",
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          "flex items-baseline gap-2 text-[11px] font-semibold opacity-70",
-                          turn.speaker === "user" ? "justify-end" : "justify-start",
-                        )}
-                      >
-                        <span>{turn.speaker === "user" ? t("me") : t("other")}</span>
-                        <time
-                          dateTime={new Date(turn.at).toISOString()}
-                          className="tabular-nums font-normal"
-                        >
-                          {new Date(turn.at).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </time>
-                      </div>
-                      <p className="mt-1 whitespace-pre-wrap break-words text-base font-semibold leading-relaxed">
-                        {turn.text}
-                      </p>
-                      {turn.speaker === "other" && turn.translation ? (
-                        <p className="mt-1 text-xs italic leading-relaxed opacity-70">
-                          {turn.translation}
-                        </p>
-                      ) : null}
-                    </li>
-                  ))}
-                  {(["other", "user"] as const).map((who) =>
-                    interim[who] ? (
-                      <li
-                        key={`interim-${who}`}
-                        className={cn(
-                          "idea-rise opacity-70",
-                          who === "user"
-                            ? "text-right text-transcript-self"
-                            : "text-left text-transcript-other",
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            "flex items-baseline gap-2 text-[11px] font-semibold",
-                            who === "user" ? "justify-end" : "justify-start",
-                          )}
-                        >
-                          <span>{who === "user" ? t("me") : t("other")}</span>
-                          <span className="font-normal">{words.live}</span>
-                        </div>
-                        <p className="mt-1 whitespace-pre-wrap break-words text-base font-semibold leading-relaxed italic">
-                          {interim[who]}
-                        </p>
-                      </li>
-                    ) : null,
-                  )}
-                </ul>
-              )}
-            </ScrollArea>
+                ) : null}
+              </>
+            ) : active ? (
+              <p className="text-sm text-muted-foreground">
+                {prefs.uiLang === "zh"
+                  ? "等待对方说话…"
+                  : prefs.uiLang === "ja"
+                    ? "相手の発話を待っています…"
+                    : "Waiting for them to speak…"}
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">{t("homeOrbHint")}</p>
+            )}
+          </div>
+        );
+
+        const cloudLevel = !active
+          ? 0.1
+          : transcriber.recording
+            ? Math.max(0.18, Math.min(1, transcriber.level))
+            : streaming
+              ? 0.4
+              : life === "paused"
+                ? 0.05
+                : 0.12;
+
+        const stage = (
+          <div className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-3 py-2">
+            {captionStage}
+            <VoiceCloud
+              size={wide && sideBySide ? "md" : "lg"}
+              active={active && (transcriber.recording || streaming)}
+              level={cloudLevel}
+            />
+            {active ? (
+              <p className="text-[11px] font-semibold text-muted-foreground">{statusLabel}</p>
+            ) : null}
           </div>
         );
 
         const ideasView = (
           <SuggestionStage
             scrollRef={ideasScrollRef}
-            className={cn("min-h-0 flex-1", sideBySide && "h-auto")}
+            className="min-h-0 flex-1"
             fontScale={prefs.suggestionFontScale}
             scrolling={transcriber.holding !== null}
             rounds={rounds}
@@ -812,129 +691,52 @@ export function SessionWorkbench() {
           />
         );
 
-        const orb = (
-          <div className="relative flex flex-col items-center gap-5">
-            <StallingTip
-              show={
-                prefs.showStallingTip !== false && otherFinished && transcriber.holding === null
-              }
-              lang={prefs.conversationLang}
-              uiLang={prefs.uiLang}
-              className="absolute -top-16 z-10 sm:-top-20"
-            />
-            <div className="relative flex items-center justify-center">
-              <div aria-hidden className="orb-aurora" />
-              <div
-                aria-hidden
-                className={cn(
-                  "kibo-orb relative size-44 transition-transform duration-100 ease-out sm:size-56",
-                  !transcriber.recording && "orb-float",
-                  streaming && "orb-pulse",
-                )}
-                style={{
-                  transform: transcriber.recording
-                    ? `scale(${1 + 0.06 + Math.min(transcriber.level, 1) * 0.28})`
-                    : undefined,
-                }}
-              />
-              <span className="pointer-events-none absolute text-sm font-semibold text-primary-foreground/90">
-                {statusLabel}
-              </span>
-            </div>
-            {error ? (
-              <p className="rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
-                {error}
-              </p>
-            ) : null}
-          </div>
+        const panelLabel = (label: string, icon?: React.ReactNode) => (
+          <p className="mb-1 flex items-center gap-1 text-[10px] font-bold tracking-wide text-muted-foreground uppercase sm:mb-1.5 sm:text-[11px]">
+            {icon}
+            {label}
+          </p>
         );
 
+        // Desktop: caption + cloud | suggestions
+        if (sideBySide && wide) {
+          return (
+            <main className="relative flex min-h-0 flex-1 gap-4 py-1">
+              <section className="flex min-h-0 min-w-0 flex-[1.15] flex-col">{stage}</section>
+              <section className="orb-sheet flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-3.5">
+                {panelLabel(t("suggestions"), <Lightbulb className="size-3" />)}
+                {ideasView}
+              </section>
+            </main>
+          );
+        }
+
+        // Phone: caption above cloud, suggestions fill below (no separate transcript card).
         return (
-          <main className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-4 py-2 sm:gap-5 sm:py-3">
-            {sideBySide && wide ? (
-              <div className="grid w-full min-h-0 flex-1 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-stretch gap-4 sm:gap-6">
-                {/* Left: the conversation floating in the blank space. */}
-                <section className="flex min-h-0 flex-col overflow-hidden">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    {t("conversation")}
-                  </p>
-                  {transcriptView}
-                </section>
-
-                <div className="flex items-center self-center">{orb}</div>
-
-                {/* Right: suggestions fill remaining height without pushing the dock off-screen. */}
-                <section className="flex min-h-0 flex-col overflow-hidden">
-                  <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    <Lightbulb className="size-3.5" />
-                    {t("suggestions")}
-                  </p>
-                  {ideasView}
-                </section>
-              </div>
-            ) : sideBySide ? (
-              <>
-                {/* Narrow side-by-side: two panels above the orb / thumb zone. */}
-                <div className="grid w-full min-h-0 shrink-0 grid-cols-2 gap-3">
-                  <section className="flex h-[32dvh] min-h-0 flex-col overflow-hidden">
-                    <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      {t("conversation")}
-                    </p>
-                    {transcriptView}
-                  </section>
-                  <section className="flex h-[32dvh] min-h-0 flex-col overflow-hidden">
-                    <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      <Lightbulb className="size-3" />
-                      {t("suggestions")}
-                    </p>
-                    {ideasView}
-                  </section>
-                </div>
-                <div className={active ? "-mb-8 mt-auto scale-90" : "m-auto"}>{orb}</div>
-              </>
-            ) : (
-              <>
-                {/* Stacked: conversation above suggestions, both height-capped. */}
-                <div className="flex w-full min-h-0 flex-1 flex-col gap-3">
-                  <section className="flex h-[28dvh] max-h-64 min-h-0 flex-col overflow-hidden sm:h-[32dvh]">
-                    <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground sm:mb-2 sm:text-xs">
-                      {t("conversation")}
-                    </p>
-                    {transcriptView}
-                  </section>
-                  <section className="flex h-[28dvh] max-h-64 min-h-0 flex-col overflow-hidden sm:h-[32dvh]">
-                    <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground sm:mb-2 sm:text-xs">
-                      <Lightbulb className="size-3 sm:size-3.5" />
-                      {t("suggestions")}
-                    </p>
-                    {ideasView}
-                  </section>
-                </div>
-                <div className={active ? "-mb-8 mt-auto scale-90" : "m-auto"}>{orb}</div>
-              </>
-            )}
+          <main className="relative flex min-h-0 flex-1 flex-col gap-2 py-1">
+            {stage}
+            <section className="orb-sheet relative flex min-h-0 flex-[1.05] flex-col overflow-hidden px-3 py-2.5 sm:p-3.5">
+              {panelLabel(t("suggestions"), <Lightbulb className="size-3" />)}
+              {ideasView}
+            </section>
           </main>
         );
       })()}
 
-      {/* Spacer so the floating phone dock never covers the last panel. */}
+      {/* Spacer for the fixed phone dock. */}
       <div
         aria-hidden
         className="shrink-0 sm:hidden"
-        style={{ height: Math.max(dockHeight - 48, 8) }}
+        style={{ height: Math.max(dockHeight + 4, 72) }}
       />
 
-      {/* Phone: floating thumb-reach dock. Tablet/desktop: inline sticky bar. */}
       <div
         ref={dockRef}
         className={cn(
-          "glass-bar z-30 flex flex-col gap-2 px-3 py-2",
-          "fixed shadow-lg",
-          dockStyle === "bar"
-            ? "inset-x-0 bottom-0 rounded-b-none rounded-t-2xl"
-            : "inset-x-3 bottom-4",
-          dockCollapsed && "dock-compact",
-          "sm:sticky sm:inset-x-auto sm:bottom-0 sm:gap-2 sm:rounded-2xl sm:px-4 sm:py-2.5 sm:shadow-none",
+          "glass-bar z-30 flex flex-col gap-1.5 px-3 py-2",
+          "fixed inset-x-0 bottom-0 rounded-b-none rounded-t-2xl border-x-0 border-b-0 shadow-[0_-8px_24px_-12px_oklch(0%_0_0_/_0.18)]",
+          dockStyle === "float" && "inset-x-3 bottom-3 rounded-2xl border",
+          "sm:sticky sm:inset-x-auto sm:bottom-0 sm:mb-2 sm:rounded-2xl sm:border sm:px-4 sm:py-2.5 sm:shadow-none",
         )}
         style={
           {
@@ -944,116 +746,104 @@ export function SessionWorkbench() {
         }
       >
         {active && life !== "preparing" ? (
-          <button
-            type="button"
-            aria-expanded={!dockCollapsed}
-            onClick={() => {
-              hapticTap(6);
-              setPrefs({ dockCollapsed: !dockCollapsed });
-            }}
-            className="mx-auto -mt-1 flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-semibold text-muted-foreground sm:hidden"
-          >
-            {dockCollapsed ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
-            {dockCollapsed ? t("dockExpand") : t("dockCollapse")}
-          </button>
-        ) : null}
-
-        {active && life !== "preparing" ? (
           prefs.captureMode === "push" ? (
-            <>
-              <div className="flex gap-3 sm:gap-2">
-                {(["other", "user"] as const).map((who) => (
-                  <HoldTalkButton
-                    key={who}
-                    active={transcriber.holding === who}
-                    blocked={transcriber.holding !== null && transcriber.holding !== who}
-                    disabled={life === "paused"}
-                    label={who === "other" ? t("holdOther") : t("holdMe")}
-                    activeLabel={who === "other" ? t("holdingOther") : t("holdingMe")}
-                    icon={
-                      who === "other" ? <Users className="size-4" /> : <User className="size-4" />
-                    }
-                    level={transcriber.level}
-                    hotkey={who === "other" ? "a" : "d"}
-
-                    onBegin={() => transcriber.beginTurn(who)}
-                    onEnd={() => transcriber.endTurn()}
-                  />
-                ))}
-              </div>
-              <div className="dock-secondary flex items-center gap-2">
-                <p className="min-w-0 flex-1 text-[11px] text-muted-foreground">
-                  {transcriber.holding ? t("releaseToSend") : t("holdHint")}
-                </p>
-                <Button
-                  variant="soft"
-                  size="sm"
-                  className="shrink-0"
-                  onClick={askForIdeas}
-                  disabled={streaming || !turns.some((x) => x.speaker === "other")}
-                >
-                  <Lightbulb className="size-4" />
-                  {t("askIdeas")}
-                </Button>
-              </div>
-            </>
-          ) : (
             <div className="flex gap-2">
-              <div className="flex flex-1 gap-1 rounded-full bg-muted/60 p-1">
-                {(["other", "user"] as const).map((who) => (
-                  <button
-                    key={who}
-                    type="button"
-                    onClick={() => {
-                      hapticTap(6);
-                      setSpeaker(who);
-                    }}
-                    className={cn(
-                      "flex-1 rounded-full px-3 py-2 text-xs font-semibold transition",
-                      speaker === who
-                        ? "gradient-primary text-primary-foreground"
-                        : "text-muted-foreground",
-                    )}
-                  >
-                    {who === "other" ? t("other") : t("me")}
-                  </button>
-                ))}
-              </div>
-              <Button className="flex-1" onClick={askForIdeas} disabled={streaming}>
-                <Lightbulb className="size-4" />
-                {t("askIdeas")}
-              </Button>
+              {(["other", "user"] as const).map((who) => (
+                <HoldTalkButton
+                  key={who}
+                  active={transcriber.holding === who}
+                  blocked={transcriber.holding !== null && transcriber.holding !== who}
+                  disabled={life === "paused"}
+                  label={who === "other" ? t("holdOther") : t("holdMe")}
+                  activeLabel={who === "other" ? t("holdingOther") : t("holdingMe")}
+                  icon={
+                    who === "other" ? <Users className="size-4" /> : <User className="size-4" />
+                  }
+                  level={transcriber.level}
+                  hotkey={who === "other" ? "a" : "d"}
+                  onBegin={() => transcriber.beginTurn(who)}
+                  onEnd={() => transcriber.endTurn()}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex gap-1 rounded-full bg-muted/60 p-1">
+              {(["other", "user"] as const).map((who) => (
+                <button
+                  key={who}
+                  type="button"
+                  onClick={() => {
+                    hapticTap(6);
+                    setSpeaker(who);
+                  }}
+                  className={cn(
+                    "flex-1 rounded-full px-3 py-2 text-xs font-semibold transition",
+                    speaker === who
+                      ? "gradient-primary text-primary-foreground"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  {who === "other" ? t("other") : t("me")}
+                </button>
+              ))}
             </div>
           )
         ) : null}
 
         <div
           className={cn(
-            "flex gap-2 border-t border-border/60 pt-2.5 transition-opacity sm:border-0 sm:pt-0",
-            // While a turn is held, the secondary row is inert so a stray thumb
-            // can't pause or stop the session mid-sentence.
+            "flex gap-2 transition-opacity",
+            active && life !== "preparing" && "border-t border-border/50 pt-1.5",
             transcriber.holding && "pointer-events-none opacity-40",
           )}
         >
           {!active ? (
-            <Button className="flex-1" onClick={() => void startSession()}>
-              <Play className="size-4" />
-              {t("start")}
-            </Button>
+            <div className="flex w-full flex-col gap-2">
+              <div className="flex items-center justify-center py-0.5" aria-hidden>
+                <VoiceCloud size="sm" level={0.15} />
+              </div>
+              <p className="text-center text-[11px] font-medium text-muted-foreground">
+                {t("nextStepIdle")}
+              </p>
+              <div className="flex gap-2">
+                {onExitHome ? (
+                  <Button
+                    variant="soft"
+                    className="h-12 shrink-0 rounded-full px-4 text-sm"
+                    onClick={() => onExitHome()}
+                  >
+                    <ChevronLeft className="size-4" />
+                    {t("backHome")}
+                  </Button>
+                ) : null}
+                <Button
+                  className="h-12 flex-1 rounded-full text-[15px] font-semibold"
+                  onClick={() => void startSession()}
+                >
+                  <Play className="size-4 fill-current" />
+                  {t("start")}
+                </Button>
+              </div>
+            </div>
           ) : (
             <>
               <Button
                 variant="soft"
-                className="flex-1"
+                className="h-12 w-12 shrink-0 rounded-full p-0 sm:h-11 sm:w-auto sm:px-5"
                 disabled={life === "preparing"}
                 onClick={togglePause}
+                aria-label={life === "paused" ? t("resume") : t("pause")}
               >
                 {life === "paused" ? <Play className="size-4" /> : <Pause className="size-4" />}
-                {life === "paused" ? t("resume") : t("pause")}
+                <span className="hidden sm:inline">
+                  {life === "paused" ? t("resume") : t("pause")}
+                </span>
               </Button>
-              <Button variant="destructive" className="flex-1" onClick={() => setConfirmStop(true)}>
-                <Square className="size-4" />
-                {t("stop")}
+              <Button
+                className="h-12 flex-1 rounded-full text-[15px] font-semibold sm:h-11"
+                onClick={() => setConfirmStop(true)}
+              >
+                {t("endConversation")}
               </Button>
             </>
           )}
@@ -1073,10 +863,8 @@ export function SessionWorkbench() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <SettingsSheet open={settingsOpen} onOpenChange={setSettingsOpen} locked={active} />
       <GuideSheet open={guideOpen} onOpenChange={setGuideOpen} />
       <OnboardingTour onOpenGuide={() => setGuideOpen(true)} />
-      <HistorySheet open={historyOpen} onOpenChange={setHistoryOpen} />
       {prefs.showVadDiagnostics ? (
         <VadDiagnostics
           diagnostics={transcriber.diagnostics}
@@ -1089,6 +877,7 @@ export function SessionWorkbench() {
     </div>
   );
 }
+
 
 function sourceKey(source: "microphone" | "system" | "both") {
   return source === "microphone" ? "microphone" : source === "system" ? "systemAudio" : "bothAudio";

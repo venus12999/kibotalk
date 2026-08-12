@@ -2,6 +2,7 @@ import * as React from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { KiboProvider, useKibo } from "@/lib/kibo/store";
 import { Onboarding } from "@/components/kibo/onboarding";
+import { HomeHub } from "@/components/kibo/home-hub";
 import { SessionWorkbench } from "@/components/kibo/session-workbench";
 import { AppBackground } from "@/components/kibo/app-background";
 import { useSession } from "@/lib/kibo/use-session";
@@ -30,7 +31,7 @@ export const Route = createFileRoute("/")({
   component: Page,
 });
 
-type Screen = "onboarding" | "session";
+type Screen = "onboarding" | "home" | "session";
 
 function App() {
   const { prefs, hydrated } = useKibo();
@@ -45,7 +46,7 @@ function App() {
 
   React.useEffect(() => {
     if (!hydrated || screen) return;
-    setScreen(prefs.onboarded ? "session" : "onboarding");
+    setScreen(prefs.onboarded ? "home" : "onboarding");
   }, [hydrated, prefs.onboarded, screen]);
 
   if (authLoading || !user || !hydrated || !screen) {
@@ -67,19 +68,29 @@ function App() {
     );
   }
 
-  if (screen === "session")
+  if (screen === "session") {
     return (
       <>
-        <AppBackground />
-        <SessionWorkbench />
+        <AppBackground pale />
+        <SessionWorkbench onExitHome={() => setScreen("home")} />
       </>
     );
+  }
+
+  if (screen === "home") {
+    return (
+      <>
+        <AppBackground pale />
+        <HomeHub onStartTalk={() => setScreen("session")} />
+      </>
+    );
+  }
 
   return (
     <>
-      <AppBackground />
+      <AppBackground pale />
       <main className="flex min-h-dvh items-center justify-center p-4">
-        <Onboarding onContinue={() => setScreen("session")} />
+        <Onboarding onContinue={() => setScreen("home")} />
       </main>
     </>
   );
