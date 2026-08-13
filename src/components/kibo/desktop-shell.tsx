@@ -118,11 +118,11 @@ export function DesktopShell({ active, onNavigate, children }: Props) {
   );
 }
 
-/** Hook: treat 960px+ as desktop shell breakpoint. */
+/** Hook: treat 820px+ as desktop shell breakpoint. */
 export function useDesktopShell() {
   const [desktop, setDesktop] = React.useState(false);
   React.useEffect(() => {
-    const mql = window.matchMedia("(min-width: 960px)");
+    const mql = window.matchMedia("(min-width: 820px)");
     const onChange = () => setDesktop(mql.matches);
     onChange();
     mql.addEventListener("change", onChange);
