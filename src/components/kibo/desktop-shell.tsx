@@ -7,7 +7,9 @@ import {
   Settings,
 } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
+import logoAsset from "@/assets/kibotalk-logo.png.asset.json";
 import { useKibo } from "@/lib/kibo/store";
+
 import { AccountMenu } from "./account-menu";
 import { cn } from "@/lib/utils";
 
