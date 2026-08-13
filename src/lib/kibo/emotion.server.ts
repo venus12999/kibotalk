@@ -16,6 +16,12 @@ export type EmotionEntry = {
 let cache: { at: number; rows: EmotionEntry[] } | null = null;
 const TTL_MS = 5 * 60 * 1000;
 
+/** Sync peek — never waits on Supabase. Used by the suggest hot path. */
+export function peekEmotionLibrary(): EmotionEntry[] | null {
+  if (cache && Date.now() - cache.at < TTL_MS) return cache.rows;
+  return null;
+}
+
 /** Loads the emotion library with the publishable key (public read policy). */
 export async function loadEmotionLibrary(): Promise<EmotionEntry[]> {
   if (cache && Date.now() - cache.at < TTL_MS) return cache.rows;

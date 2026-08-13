@@ -53,34 +53,36 @@ export const analyzeEmotion = createServerFn({ method: "POST" })
       .join("\n");
 
     try {
+      const { deepseekBody } = await import("./ai-core.server");
       const res = await fetch("https://api.deepseek.com/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          model: models.suggest,
-          thinking: { type: "disabled" },
-          temperature: 0.2,
-          max_tokens: 400,
-          response_format: { type: "json_object" },
-          messages: [
-            {
-              role: "system",
-              content: [
-                "You are Kibo's emotion-intelligence engine for real-world conversations.",
-                "Decide what the speaker feels, why, which communication difficulty is happening, and what help Kibo should give.",
-                "Never stop at classification: recommended_action must be a concrete communication solution.",
-                'Return only JSON: {"emotion":"","emotion_category":"positive|negative|neutral","intensity":1-10,"communication_state":"confident|hesitant|blocked|overthinking|misunderstood|need_translation|need_rephrase|need_social_help|need_explanation|lack_of_confidence|motivated|low_motivation|social_pressure|learning","scenario":"","user_need":"","recommended_action":""}',
-                dictionary ? `Dictionary candidates:\n${dictionary}` : "",
-              ].join(" "),
-            },
-            {
-              role: "user",
-              content: data.context
-                ? `Conversation context:\n${data.context}\n\nAnalyze this input: ${data.text}`
-                : data.text,
-            },
-          ],
-        }),
+        body: JSON.stringify(
+          deepseekBody({
+            model: models.suggest,
+            temperature: 0.2,
+            max_tokens: 400,
+            response_format: { type: "json_object" },
+            messages: [
+              {
+                role: "system",
+                content: [
+                  "You are Kibo's emotion-intelligence engine for real-world conversations.",
+                  "Decide what the speaker feels, why, which communication difficulty is happening, and what help Kibo should give.",
+                  "Never stop at classification: recommended_action must be a concrete communication solution.",
+                  'Return only JSON: {"emotion":"","emotion_category":"positive|negative|neutral","intensity":1-10,"communication_state":"confident|hesitant|blocked|overthinking|misunderstood|need_translation|need_rephrase|need_social_help|need_explanation|lack_of_confidence|motivated|low_motivation|social_pressure|learning","scenario":"","user_need":"","recommended_action":""}',
+                  dictionary ? `Dictionary candidates:\n${dictionary}` : "",
+                ].join(" "),
+              },
+              {
+                role: "user",
+                content: data.context
+                  ? `Conversation context:\n${data.context}\n\nAnalyze this input: ${data.text}`
+                  : data.text,
+              },
+            ],
+          }),
+        ),
       });
       if (!res.ok) return fallback;
       const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };

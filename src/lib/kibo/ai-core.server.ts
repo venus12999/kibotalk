@@ -8,6 +8,14 @@
 
 const GATEWAY = "https://api.deepseek.com/chat/completions";
 
+/** DeepSeek V4 defaults thinking ON — always force this off for coach latency. */
+export const DEEPSEEK_THINKING_OFF = { type: "disabled" } as const;
+
+/** Merge request fields and pin thinking disabled last (cannot be overridden). */
+export function deepseekBody(body: Record<string, unknown>) {
+  return { ...body, thinking: DEEPSEEK_THINKING_OFF };
+}
+
 export const LANG_NAME: Record<string, string> = {
   ja: "Japanese",
   en: "English",
@@ -32,9 +40,7 @@ export async function gateway(body: Record<string, unknown>) {
       "Content-Type": "application/json",
       Authorization: `Bearer ${key}`,
     },
-    // DeepSeek v4 reasons before answering by default; that both slows the
-    // reply and eats the max_tokens budget, so keep it off unless overridden.
-    body: JSON.stringify({ thinking: { type: "disabled" }, ...body }),
+    body: JSON.stringify(deepseekBody(body)),
   });
   if (res.status === 429) throw new Error("rate_limited");
   if (res.status === 402) throw new Error("credits_exhausted");

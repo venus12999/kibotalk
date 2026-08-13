@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { deepseekBody } from "@/lib/kibo/ai-core.server";
+import { angleFor, classifyLine } from "@/lib/kibo/classify-line";
 
 const LANG_NAME: Record<string, string> = {
   ja: "Japanese",
@@ -11,35 +13,6 @@ const LEVEL_HINT: Record<string, string> = {
   intermediate: "Use natural everyday sentences of moderate length.",
   advanced: "Use fluent, nuanced, idiomatic sentences.",
 };
-
-/**
- * The three slots are generated in parallel, each with its own angle, so one
- * slow reply can never hold up the other two.
- *
- * Each angle adapts to the KIND of the newest line — a closed yes/no question,
- * an open "tell me / list" request, or a plain statement — so the user never
- * gets three vague variations of the same "yes".
- */
-const ANGLES = [
-  [
-    "SLOT 1.",
-    "If the newest line is a CLOSED yes/no question: answer YES clearly, then one concrete supporting detail (where, how long, what exactly).",
-    "If it is an OPEN / enumeration request (tell me about…, what can you do, give examples, why): give the strongest single item with a concrete specific — never a generic 'I can do many things'.",
-    "If it is a statement or small talk: respond directly and concretely to its content.",
-  ].join(" "),
-  [
-    "SLOT 2 — must contrast with slot 1.",
-    "If the newest line is a CLOSED yes/no question: answer NO / not yet honestly, then one short recovery (adjacent experience, willing to learn fast). Never produce a yes-type answer here.",
-    "If it is an OPEN / enumeration request: answer in a structured list of 2-3 short points instead of one item.",
-    "If it is a statement or small talk: reply from a different angle — your own reaction, feeling or a related fact.",
-  ].join(" "),
-  [
-    "SLOT 3 — must differ from both slot 1 and slot 2.",
-    "If the newest line is a CLOSED yes/no question: give a PARTIAL / conditional answer (a little, in a similar role, depends on the system) or ask one natural clarifying question back.",
-    "If it is an OPEN / enumeration request: ask a scoping question back (which part matters most to you?) or answer with one concrete story/example.",
-    "If it is a statement or small talk: keep the conversation moving with a natural follow-up question.",
-  ].join(" "),
-] as const;
 
 type Body = {
   turns?: { speaker: "user" | "other"; text: string }[];
@@ -78,7 +51,7 @@ export const Route = createFileRoute("/api/suggest")({
 
         const { getAiModels } = await import("@/lib/kibo/model-config.server");
         const { getCoachPrompt } = await import("@/lib/kibo/coach-prompt.server");
-        const emotionMod = import("@/lib/kibo/emotion.server");
+        // Warm models + coach prompt in parallel; never wait on emotion for TTFT.
         const [aiModels, coachPrompt] = await Promise.all([getAiModels(), getCoachPrompt()]);
 
         const convLang = body.conversationLang ?? "en";
@@ -88,7 +61,7 @@ export const Route = createFileRoute("/api/suggest")({
         // get readings, which also keeps their answers shorter and faster.
         const wantsRuby = convLang === "ja";
         const transcript = body.turns
-          .slice(-12)
+          .slice(-8)
           .map((t) => `${t.speaker === "user" ? "ME" : "OTHER"}: ${t.text}`)
           .join("\n");
         const latest =
@@ -99,98 +72,90 @@ export const Route = createFileRoute("/api/suggest")({
             ?.text.trim() ||
           "";
 
-        // Emotion-intelligence read of the moment: dictionary match on the
-        // newest line plus the user's own last line, so replies serve the
-        // real communication need instead of just answering the words.
+        // Local step (not LLM): decide closed / open / statement so Flash only
+        // writes the reply text — no silent planning, no thinking mode.
+        const kind = classifyLine(latest);
+
+        // Emotion: only use a warm in-memory cache. Never wait on Supabase here.
         let briefing = "";
         try {
-          const { loadEmotionLibrary, matchEmotions, emotionBriefing } = await emotionMod;
-          // A cold library read must never hold up the first token: if it is not
-          // ready fast, skip the briefing and let the cache warm for next time.
-          const rows = await Promise.race([
-            loadEmotionLibrary(),
-            new Promise<null>((r) => setTimeout(() => r(null), 200)),
-          ]);
+          const { peekEmotionLibrary, loadEmotionLibrary, matchEmotions, emotionBriefing } =
+            await import("@/lib/kibo/emotion.server");
+          const rows = peekEmotionLibrary();
           if (rows) {
             const myLast = [...body.turns].reverse().find((t) => t.speaker === "user")?.text ?? "";
-            const matches = matchEmotions(`${latest}\n${myLast}`, rows, 3);
-            briefing = emotionBriefing(matches);
+            briefing = emotionBriefing(matchEmotions(`${latest}\n${myLast}`, rows, 2));
+          } else {
+            void loadEmotionLibrary(); // warm for the next turn
           }
         } catch {
           /* emotion library is an enhancement; never block a suggestion */
         }
 
-        // Kibo Memory: stable facts about the user that must survive sessions.
-        const profile = (body.profile ?? "").trim().slice(0, 600);
+        const profile = (body.profile ?? "").trim().slice(0, 400);
         const memory = (Array.isArray(body.memory) ? body.memory : [])
           .map((m) => String(m).trim())
           .filter(Boolean)
-          .slice(0, 12);
+          .slice(0, 8);
         const memoryBlock = [
-          profile ? `About the user: ${profile}` : "",
-          memory.length > 0
-            ? `Remembered facts about the user (use them when relevant, never contradict them, never read them out loud): ${memory.join(" | ")}`
-            : "",
+          profile ? `About user: ${profile}` : "",
+          memory.length > 0 ? `Facts: ${memory.join(" | ")}` : "",
         ]
           .filter(Boolean)
           .join(" ");
 
         const shape = wantsRuby
-          ? `Answer with ONE JSON object and nothing else — no markdown fence, no prose: {"targetText":"<the reply in ${target}>","meaning":"<one short line in ${ui}>","segments":[{"t":"<surface chunk>","r":"<hiragana reading, only for chunks containing kanji; omit otherwise>"}]}. The segments joined by "t" must equal targetText exactly.`
-          : `Answer with ONE JSON object and nothing else — no markdown fence, no prose: {"targetText":"<the reply in ${target}>","meaning":"<one short line in ${ui}>"}. No other keys — no readings, no pinyin, no furigana.`;
+          ? `JSON only: {"targetText":"<reply in ${target}>","meaning":"<one short line in ${ui}>","segments":[{"t":"<chunk>","r":"<hiragana only if chunk has kanji>"}]}. segments.t joined = targetText.`
+          : `JSON only: {"targetText":"<reply in ${target}>","meaning":"<one short line in ${ui}>"}.`;
 
-        const system = (angle: string) =>
+        const system = (slot: 0 | 1 | 2) =>
           [
-            `You are a real-time conversation coach. The user is speaking ${target} with another person.`,
-            `The transcript is ordered oldest to newest; the LAST "OTHER" line is the message that was just received.`,
-            latest
-              ? `Reply directly to this newest line from the other person: "${latest}". Earlier turns are background context only — never answer an older line.`
-              : ``,
+            `Real-time coach. User speaks ${target}. Reply to the newest OTHER line only.`,
+            latest ? `Newest line (${kind}): "${latest}"` : "",
             memoryBlock,
             briefing,
+            // Keep admin rubric, but it is guidance — not a chain-of-thought ask.
             coachPrompt,
-            `First silently decide what kind of line the newest OTHER line is: a CLOSED yes/no question, an OPEN request to explain or list things, or a plain statement / small talk. Then shape the reply for that kind — never give a vague generic yes or no.`,
-            `The three suggestions shown to the user must cover genuinely different, usable options, so stay strictly inside your assigned angle even if another stance feels more likely.`,
-            `Propose exactly ONE short, natural reply the user could say next, in ${target}.`,
-            `Angle for this reply: ${angle}`,
-
+            `One short natural reply in ${target}. Angle: ${angleFor(kind, slot)}`,
+            `This slot must differ from the other two suggestions.`,
             LEVEL_HINT[body.level ?? "beginner"] ?? "",
             shape,
-            `Keep targetText under 30 characters (up to 60 only when your angle asks for a 2-3 point list, separated by "、" or ", ") and meaning under 20 characters.`,
+            `targetText ≤30 chars (≤60 only for a 2-3 point list). meaning ≤20 chars. No markdown.`,
           ]
             .filter(Boolean)
             .join(" ");
 
         const userContent = transcript
-          ? `${transcript}\n\n[Reply to the newest OTHER line: ${latest || "(none)"}]`
-          : "(the conversation just started)";
+          ? `${transcript}\n\n[Reply to newest OTHER: ${latest || "(none)"}]`
+          : "(conversation just started)";
 
         const wantsStream = body.stream !== false;
 
-        const call = (angle: string) =>
+        const call = (slot: 0 | 1 | 2) =>
           fetch("https://api.deepseek.com/chat/completions", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${apiKey}`,
             },
-            body: JSON.stringify({
-              model: aiModels.suggest,
-              stream: wantsStream,
-              // DeepSeek v4 flash reasons before answering by default, which
-              // delays the first visible token — the coach must be instant.
-              thinking: { type: "disabled" },
-              temperature: 0.7,
-              max_tokens: wantsRuby ? 260 : 140,
-              messages: [
-                { role: "system", content: system(angle) },
-                { role: "user", content: userContent },
-              ],
-            }),
+            body: JSON.stringify(
+              deepseekBody({
+                model: aiModels.suggest,
+                stream: wantsStream,
+                temperature: 0.7,
+                max_tokens: wantsRuby ? 220 : 120,
+                messages: [
+                  { role: "system", content: system(slot) },
+                  { role: "user", content: userContent },
+                ],
+              }),
+            ),
           });
 
         // Three independent generations start at the same moment.
-        const settled = await Promise.allSettled(ANGLES.map((a) => call(a)));
+        const settled = await Promise.allSettled(
+          ([0, 1, 2] as const).map((slot) => call(slot)),
+        );
         const responses = settled.map((s) => (s.status === "fulfilled" ? s.value : null));
         const ok = responses.filter((r): r is Response => !!r && r.ok);
 
@@ -204,8 +169,6 @@ export const Route = createFileRoute("/api/suggest")({
           });
         }
 
-        // Non-streaming clients get all finished replies in one plain body.
-        // The client parser splits on `"targetText"`, so concatenation is enough.
         if (!wantsStream) {
           const parts = await Promise.all(
             responses.map(async (r) => {
@@ -224,14 +187,10 @@ export const Route = createFileRoute("/api/suggest")({
           });
         }
 
-        // Merge the three upstream streams into one SSE, tagging every delta
-        // with its slot so the client can fill the notes independently.
         const encoder = new TextEncoder();
 
         const stream = new ReadableStream({
           start(controller) {
-            // Flush headers + an opening frame immediately so proxies release
-            // the response before the model has produced anything.
             controller.enqueue(encoder.encode(": open\n\n"));
 
             const pump = async (res: Response | null, index: number) => {
@@ -253,8 +212,11 @@ export const Route = createFileRoute("/api/suggest")({
                     if (!payload || payload === "[DONE]") continue;
                     try {
                       const json = JSON.parse(payload) as {
-                        choices?: { delta?: { content?: string } }[];
+                        choices?: {
+                          delta?: { content?: string; reasoning_content?: string };
+                        }[];
                       };
+                      // Only forward answer tokens — never stream CoT.
                       const delta = json.choices?.[0]?.delta?.content;
                       if (delta) {
                         controller.enqueue(

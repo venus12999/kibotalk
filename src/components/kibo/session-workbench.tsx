@@ -2,8 +2,12 @@ import * as React from "react";
 import { classifyAiError, describeAiError, type AiErrorKind } from "@/lib/kibo/ai-error";
 
 import {
+  ChevronDown,
   ChevronLeft,
+  ChevronUp,
+  HelpCircle,
   Lightbulb,
+  Menu,
   Mic,
   Pause,
   Play,
@@ -22,7 +26,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { useKibo } from "@/lib/kibo/store";
+import { langLabel, levelLabel, useKibo } from "@/lib/kibo/store";
 import { makeTurn } from "@/lib/kibo/mock";
 import type { Candidate, Lifecycle, Round, Turn } from "@/lib/kibo/types";
 import { useTranscriber } from "@/lib/kibo/use-transcriber";
@@ -35,6 +39,9 @@ import { OnboardingTour } from "./onboarding-tour";
 import { HoldTalkButton } from "./hold-talk-button";
 import { VadDiagnostics } from "./vad-diagnostics";
 import { VoiceCloud } from "./voice-cloud";
+import { AccountMenu } from "./account-menu";
+import { SettingsSheet } from "./settings-sheet";
+import { HistorySheet } from "./history-sheet";
 import { loadMemoryContext } from "@/lib/kibo/memory";
 import { useSession } from "@/lib/kibo/use-session";
 import { hapticTap } from "@/lib/haptics";
@@ -74,8 +81,15 @@ const copy = {
   },
 } as const;
 
+function formatElapsed(ms: number) {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
 export function SessionWorkbench({ onExitHome }: { onExitHome?: () => void }) {
-  const { prefs, setPrefs, t, addSession } = useKibo();
+  const { prefs, setPrefs, t, addSession, history } = useKibo();
   // Phone dock: edge bar by default (less overlap than a floating card).
   const dockStyle = prefs.dockStyle ?? "bar";
   const dockScale = prefs.dockScale ?? 1;
@@ -93,8 +107,13 @@ export function SessionWorkbench({ onExitHome }: { onExitHome?: () => void }) {
 
   const [aiAttempt, setAiAttempt] = React.useState(0);
   const [guideOpen, setGuideOpen] = React.useState(false);
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [historyOpen, setHistoryOpen] = React.useState(false);
+  const [historyFocusId, setHistoryFocusId] = React.useState<string | null>(null);
+  const [transcriptOpen, setTranscriptOpen] = React.useState(false);
   const [confirmStop, setConfirmStop] = React.useState(false);
   const [startedAt, setStartedAt] = React.useState(0);
+  const [now, setNow] = React.useState(() => Date.now());
   const [interim, setInterim] = React.useState<{ user: string; other: string }>({
     user: "",
     other: "",
@@ -514,6 +533,34 @@ export function SessionWorkbench({ onExitHome }: { onExitHome?: () => void }) {
 
   const active = life === "running" || life === "paused" || life === "preparing";
 
+  React.useEffect(() => {
+    if (!active || !startedAt) return;
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [active, startedAt]);
+
+  const askIdeas = React.useCallback(() => {
+    const lastOther = [...turnsRef.current].reverse().find((x) => x.speaker === "other");
+    const text = lastOther?.text.trim();
+    if (!text || streaming) return;
+    hapticTap(8);
+    runSuggestions(text);
+  }, [runSuggestions, streaming]);
+
+  const lastSession = history[0] ?? null;
+  const locale = prefs.uiLang === "zh" ? "zh-CN" : prefs.uiLang === "ja" ? "ja-JP" : "en";
+  const configLine = [
+    langLabel(prefs.conversationLang, prefs.uiLang),
+    levelLabel(prefs.level, prefs.uiLang),
+    t("translateInto").replace("{lang}", langLabel(prefs.translateLang, prefs.uiLang)),
+  ].join(" · ");
+  const sample =
+    prefs.conversationLang === "ja"
+      ? { text: t("sampleJa"), meaning: t("sampleJaMeaning") }
+      : prefs.conversationLang === "zh"
+        ? { text: t("sampleZh"), meaning: t("sampleZhMeaning") }
+        : { text: t("sampleEn"), meaning: t("sampleEnMeaning") };
+
   // The floating phone dock is position:fixed, so the scroll container needs a
   // spacer that always matches its real height (it grows with the hold row).
   const dockRef = React.useRef<HTMLDivElement | null>(null);
@@ -542,6 +589,38 @@ export function SessionWorkbench({ onExitHome }: { onExitHome?: () => void }) {
             ? t("stopped")
             : t("currentSession");
 
+  const ideasView = (
+    <SuggestionStage
+      scrollRef={ideasScrollRef}
+      className="min-h-0 flex-1"
+      fontScale={prefs.suggestionFontScale}
+      scrolling={transcriber.holding !== null}
+      rounds={rounds}
+      streaming={streaming}
+      status={aiStatus}
+      errorMessage={aiError}
+      errorTitle={describeAiError(aiErrorKind, prefs.uiLang).title}
+      errorAdvice={describeAiError(aiErrorKind, prefs.uiLang).advice}
+      attempt={aiAttempt}
+      onRetry={retrySuggestions}
+      canRetry={lastRequestRef.current !== null}
+      statusLabels={{
+        connecting: t("aiConnecting"),
+        retrying: t("aiRetrying"),
+        attempt: t("aiAttempt"),
+        streaming: t("aiStreaming"),
+        done: t("aiDone"),
+        failed: t("aiFailed"),
+        retry: t("retry"),
+      }}
+      emptyHint={t("emptySuggestions")}
+      previousRoundLabel={t("previousRound")}
+    />
+  );
+
+  const elapsedLabel =
+    active && startedAt ? formatElapsed(now - startedAt) : "00:00";
+
   return (
     <div
       className="mx-auto flex h-dvh max-w-6xl flex-col gap-2 overflow-hidden px-3 pt-2 sm:gap-3 sm:px-6 sm:pt-4"
@@ -549,98 +628,180 @@ export function SessionWorkbench({ onExitHome }: { onExitHome?: () => void }) {
         paddingTop: "max(0.5rem, env(safe-area-inset-top))",
       }}
     >
-      <header className="glass-bar flex shrink-0 items-center justify-center rounded-xl px-2.5 py-1.5 sm:rounded-2xl sm:px-3 sm:py-2">
-        <div
-          className="flex w-full max-w-sm items-center gap-0.5 rounded-full bg-[color-mix(in_oklab,var(--foreground)_6%,transparent)] p-0.5 sm:w-auto"
-          role="group"
-          aria-label={t("captureMode")}
+      <header className="glass-bar flex shrink-0 items-center gap-2 rounded-xl px-2.5 py-1.5 sm:rounded-2xl sm:px-3 sm:py-2">
+        <Button
+          variant="soft"
+          size="icon"
+          className="size-9 shrink-0 rounded-md"
+          aria-label={t("settings")}
+          onClick={() => setSettingsOpen(true)}
         >
-          {(
-            [
-              { id: "push" as const, label: t("pushMode") },
-              { id: "continuous" as const, label: t("continuousMode") },
-            ] as const
-          ).map((mode) => {
-            const selected = prefs.captureMode === mode.id;
-            return (
-              <button
-                key={mode.id}
-                type="button"
-                disabled={active}
-                title={mode.id === "push" ? t("pushModeDescription") : t("continuousModeDescription")}
-                onClick={() => setPrefs({ captureMode: mode.id })}
-                className={cn(
-                  "min-w-0 flex-1 rounded-full px-2.5 py-1.5 text-[11px] font-semibold tracking-tight transition sm:flex-none sm:px-3",
-                  selected
-                    ? "gradient-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                  active && !selected && "opacity-40",
-                )}
-              >
-                <span className="block truncate">{mode.label}</span>
-              </button>
-            );
-          })}
+          <Menu className="size-4" />
+        </Button>
+        <div className="min-w-0 flex-1">
+          <p className="font-display truncate text-sm font-bold tracking-tight">{t("appName")}</p>
+          {active ? (
+            <p className="mt-0.5 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+              <span className="size-1.5 rounded-full bg-primary" aria-hidden />
+              {t("sessionLive")} · {elapsedLabel}
+              <span className="text-muted-foreground/70">· {statusLabel}</span>
+            </p>
+          ) : null}
         </div>
+        {onExitHome && !active ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 shrink-0 rounded-md px-2 text-xs"
+            onClick={() => onExitHome()}
+          >
+            <ChevronLeft className="size-3.5" />
+            {t("backHome")}
+          </Button>
+        ) : null}
+        <AccountMenu compact />
       </header>
 
-      {!active ? (
-        <p className="shrink-0 px-1 text-center text-[11px] font-medium text-muted-foreground sm:text-left">
-          {t("nextStepIdle")}
-        </p>
-      ) : life === "running" && prefs.captureMode === "push" ? (
-        <p className="shrink-0 px-1 text-center text-[11px] font-medium text-muted-foreground sm:text-left">
-          {t("nextStepHold")}
-        </p>
-      ) : null}
-
       {error ? (
-        <p className="shrink-0 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
+        <p className="shrink-0 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
           {error}
         </p>
       ) : null}
 
-      {(() => {
-        const latestTurn = turns[turns.length - 1];
-        const liveOther = interim.other.trim();
-        const liveUser = interim.user.trim();
-        const captionPrimary =
-          liveOther || liveUser || latestTurn?.text.trim() || "";
-        const captionSecondary =
-          !liveOther && !liveUser && latestTurn?.speaker === "other"
-            ? latestTurn.translation?.trim() || ""
-            : "";
+      {!active ? (
+        <main className="session-idle relative flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto py-1 pb-2">
+          <section className="space-y-2 px-1 text-center">
+            <p className="font-display text-[1.35rem] leading-snug font-bold tracking-tight sm:text-2xl">
+              {configLine}
+            </p>
+            <div className="mx-auto max-w-sm">
+              <p className="text-lg font-semibold tracking-tight">{sample.text}</p>
+              <p className="mt-0.5 text-sm text-muted-foreground">{sample.meaning}</p>
+            </div>
+          </section>
 
-        const captionStage = (
-          <div className="flex min-h-[4.25rem] w-full max-w-lg flex-col items-center justify-end gap-1 px-3 text-center sm:min-h-[5rem]">
-            {captionPrimary ? (
-              <>
-                <p className="idea-rise max-w-full text-[1.35rem] leading-snug font-bold tracking-tight text-foreground sm:text-2xl">
-                  {captionPrimary}
+          <section className="space-y-2">
+            <p className="px-0.5 text-[11px] font-medium tracking-[0.06em] text-muted-foreground uppercase">
+              {t("modeCardsLabel")}
+            </p>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {(
+                [
+                  {
+                    id: "push" as const,
+                    title: t("pushMode"),
+                    desc: t("pushModeDescription"),
+                    icon: Mic,
+                    onClick: () => setPrefs({ captureMode: "push" }),
+                    selected: prefs.captureMode === "push",
+                  },
+                  {
+                    id: "continuous" as const,
+                    title: t("continuousMode"),
+                    desc: t("continuousModeDescription"),
+                    icon: Users,
+                    onClick: () => setPrefs({ captureMode: "continuous" }),
+                    selected: prefs.captureMode === "continuous",
+                  },
+                  {
+                    id: "guide" as const,
+                    title: t("modeGuide"),
+                    desc: t("modeGuideDescription"),
+                    icon: HelpCircle,
+                    onClick: () => setGuideOpen(true),
+                    selected: false,
+                  },
+                ] as const
+              ).map((card) => {
+                const Icon = card.icon;
+                return (
+                  <button
+                    key={card.id}
+                    type="button"
+                    onClick={card.onClick}
+                    className={cn(
+                      "session-mode-card panel-sheet flex flex-col gap-1.5 p-3 text-left transition",
+                      card.selected && "session-mode-card-active",
+                    )}
+                  >
+                    <span className="home-hub-tint flex size-8 items-center justify-center rounded-md">
+                      <Icon className="size-3.5" strokeWidth={1.75} />
+                    </span>
+                    <span className="text-[13px] font-semibold tracking-tight">{card.title}</span>
+                    <span className="text-[11px] leading-snug text-muted-foreground">
+                      {card.desc}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="space-y-2">
+            <p className="px-0.5 text-[11px] font-medium tracking-[0.06em] text-muted-foreground uppercase">
+              {t("lastSession")}
+            </p>
+            {lastSession ? (
+              <button
+                type="button"
+                className="panel-sheet flex w-full flex-col gap-1.5 p-3.5 text-left transition hover:border-[var(--glass-border-vivid)]"
+                onClick={() => {
+                  setHistoryFocusId(lastSession.id);
+                  setHistoryOpen(true);
+                }}
+              >
+                <p className="text-[14px] font-semibold tracking-tight">
+                  {t("sessionLangTitle").replace(
+                    "{lang}",
+                    langLabel(lastSession.conversationLang, prefs.uiLang),
+                  )}{" "}
+                  ·{" "}
+                  {new Intl.DateTimeFormat(locale, {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }).format(new Date(lastSession.startedAt))}
                 </p>
-                {captionSecondary ? (
-                  <p className="max-w-[20rem] text-sm leading-relaxed text-muted-foreground">
-                    {captionSecondary}
-                  </p>
-                ) : null}
-              </>
-            ) : active ? (
-              <p className="text-sm text-muted-foreground">
-                {prefs.uiLang === "zh"
-                  ? "等待对方说话…"
-                  : prefs.uiLang === "ja"
-                    ? "相手の発話を待っています…"
-                    : "Waiting for them to speak…"}
-              </p>
+                <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+                  {lastSession.summary?.trim() || t("noHistory")}
+                </p>
+                <p className="text-[11px] font-medium text-muted-foreground">
+                  {t("sessionMeta")
+                    .replace("{n}", String(lastSession.turns.length))
+                    .replace(
+                      "{m}",
+                      String(
+                        Math.max(
+                          1,
+                          Math.round(
+                            (lastSession.endedAt - lastSession.startedAt) / 60_000,
+                          ),
+                        ),
+                      ),
+                    )}
+                </p>
+              </button>
             ) : (
-              <p className="text-sm text-muted-foreground">{t("homeOrbHint")}</p>
+              <div className="panel-sheet px-3.5 py-4 text-center text-sm text-muted-foreground">
+                {t("lastSessionEmpty")}
+              </div>
             )}
-          </div>
-        );
+          </section>
+        </main>
+      ) : (
+        (() => {
+          const latestTurn = turns[turns.length - 1];
+          const liveOther = interim.other.trim();
+          const liveUser = interim.user.trim();
+          const captionPrimary =
+            liveOther || liveUser || latestTurn?.text.trim() || "";
+          const captionSecondary =
+            !liveOther && !liveUser && latestTurn?.speaker === "other"
+              ? latestTurn.translation?.trim() || ""
+              : "";
 
-        const cloudLevel = !active
-          ? 0.1
-          : transcriber.recording
+          const cloudLevel = transcriber.recording
             ? Math.max(0.18, Math.min(1, transcriber.level))
             : streaming
               ? 0.4
@@ -648,82 +809,125 @@ export function SessionWorkbench({ onExitHome }: { onExitHome?: () => void }) {
                 ? 0.05
                 : 0.12;
 
-        const stage = (
-          <div className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-3 py-2">
-            {captionStage}
-            <VoiceCloud
-              size={wide && sideBySide ? "md" : "lg"}
-              active={active && (transcriber.recording || streaming)}
-              level={cloudLevel}
-            />
-            {active ? (
-              <p className="text-[11px] font-semibold text-muted-foreground">{statusLabel}</p>
-            ) : null}
-          </div>
-        );
+          const transcriptBlock = (
+            <section className="panel-sheet shrink-0 overflow-hidden">
+              <button
+                type="button"
+                className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left"
+                aria-expanded={transcriptOpen}
+                onClick={() => setTranscriptOpen((v) => !v)}
+              >
+                <span className="text-[12px] font-semibold tracking-tight">
+                  {t("conversationHistory")}
+                </span>
+                <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                  {transcriptOpen ? t("collapseTranscript") : t("expandTranscript")}
+                  {transcriptOpen ? (
+                    <ChevronUp className="size-3.5" />
+                  ) : (
+                    <ChevronDown className="size-3.5" />
+                  )}
+                </span>
+              </button>
+              {transcriptOpen ? (
+                <div
+                  ref={scrollRef}
+                  className="max-h-40 overflow-y-auto border-t border-[oklch(35%_0.02_80_/_0.08)] px-3 py-2"
+                >
+                  <ul className="space-y-2">
+                    {turns.length === 0 ? (
+                      <li className="py-2 text-center text-xs text-muted-foreground">
+                        {t("noTranscript")}
+                      </li>
+                    ) : (
+                      turns.map((turn) => (
+                        <li
+                          key={turn.id}
+                          className={cn(
+                            "text-xs leading-relaxed",
+                            turn.speaker === "user" ? "text-right" : "text-left",
+                          )}
+                        >
+                          <span className="font-semibold text-muted-foreground">
+                            {turn.speaker === "user" ? t("me") : t("other")}
+                          </span>
+                          <p className="mt-0.5 whitespace-pre-wrap break-words text-foreground">
+                            {turn.text}
+                          </p>
+                          {turn.translation ? (
+                            <p className="mt-0.5 text-[11px] italic text-muted-foreground">
+                              {turn.translation}
+                            </p>
+                          ) : null}
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                </div>
+              ) : null}
+            </section>
+          );
 
-        const ideasView = (
-          <SuggestionStage
-            scrollRef={ideasScrollRef}
-            className="min-h-0 flex-1"
-            fontScale={prefs.suggestionFontScale}
-            scrolling={transcriber.holding !== null}
-            rounds={rounds}
-            streaming={streaming}
-            status={aiStatus}
-            errorMessage={aiError}
-            errorTitle={describeAiError(aiErrorKind, prefs.uiLang).title}
-            errorAdvice={describeAiError(aiErrorKind, prefs.uiLang).advice}
-            attempt={aiAttempt}
-            onRetry={retrySuggestions}
-            canRetry={lastRequestRef.current !== null}
-            statusLabels={{
-              connecting: t("aiConnecting"),
-              retrying: t("aiRetrying"),
-              attempt: t("aiAttempt"),
-              streaming: t("aiStreaming"),
-              done: t("aiDone"),
-              failed: t("aiFailed"),
-              retry: t("aiRetry"),
-            }}
-            emptyHint={t("emptySuggestions")}
-            previousRoundLabel={t("previousRound")}
-          />
-        );
+          const stage = (
+            <div className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-2 py-1">
+              <div className="flex min-h-[3.5rem] w-full max-w-lg flex-col items-center justify-end gap-1 px-3 text-center">
+                {captionPrimary ? (
+                  <>
+                    <p className="idea-rise max-w-full text-[1.25rem] leading-snug font-bold tracking-tight text-foreground sm:text-2xl">
+                      {captionPrimary}
+                    </p>
+                    {captionSecondary ? (
+                      <p className="max-w-[20rem] text-sm leading-relaxed text-muted-foreground">
+                        {captionSecondary}
+                      </p>
+                    ) : null}
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">{t("waitingForOther")}</p>
+                )}
+              </div>
+              <VoiceCloud
+                size={wide && sideBySide ? "md" : "lg"}
+                active={transcriber.recording || streaming}
+                level={cloudLevel}
+              />
+            </div>
+          );
 
-        const panelLabel = (label: string, icon?: React.ReactNode) => (
-          <p className="mb-1 flex items-center gap-1 text-[10px] font-bold tracking-wide text-muted-foreground uppercase sm:mb-1.5 sm:text-[11px]">
-            {icon}
-            {label}
-          </p>
-        );
+          if (sideBySide && wide) {
+            return (
+              <main className="relative flex min-h-0 flex-1 gap-4 py-1">
+                <section className="flex min-h-0 min-w-0 flex-[1.15] flex-col gap-2">
+                  {transcriptBlock}
+                  {stage}
+                </section>
+                <section className="panel-sheet flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-3.5">
+                  <p className="mb-1.5 flex items-center gap-1 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+                    <Lightbulb className="size-3" />
+                    {t("suggestions")}
+                  </p>
+                  {ideasView}
+                </section>
+              </main>
+            );
+          }
 
-        // Desktop: caption + cloud | suggestions
-        if (sideBySide && wide) {
           return (
-            <main className="relative flex min-h-0 flex-1 gap-4 py-1">
-              <section className="flex min-h-0 min-w-0 flex-[1.15] flex-col">{stage}</section>
-              <section className="orb-sheet flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-3.5">
-                {panelLabel(t("suggestions"), <Lightbulb className="size-3" />)}
+            <main className="relative flex min-h-0 flex-1 flex-col gap-2 py-1">
+              {transcriptBlock}
+              {stage}
+              <section className="panel-sheet relative flex min-h-0 flex-[1.05] flex-col overflow-hidden px-3 py-2.5 sm:p-3.5">
+                <p className="mb-1 flex items-center gap-1 text-[10px] font-semibold tracking-wide text-muted-foreground uppercase sm:text-[11px]">
+                  <Lightbulb className="size-3" />
+                  {t("suggestions")}
+                </p>
                 {ideasView}
               </section>
             </main>
           );
-        }
+        })()
+      )}
 
-        // Phone: caption above cloud, suggestions fill below (no separate transcript card).
-        return (
-          <main className="relative flex min-h-0 flex-1 flex-col gap-2 py-1">
-            {stage}
-            <section className="orb-sheet relative flex min-h-0 flex-[1.05] flex-col overflow-hidden px-3 py-2.5 sm:p-3.5">
-              {panelLabel(t("suggestions"), <Lightbulb className="size-3" />)}
-              {ideasView}
-            </section>
-          </main>
-        );
-      })()}
-
-      {/* Spacer for the fixed phone dock. */}
       <div
         aria-hidden
         className="shrink-0 sm:hidden"
@@ -734,9 +938,9 @@ export function SessionWorkbench({ onExitHome }: { onExitHome?: () => void }) {
         ref={dockRef}
         className={cn(
           "glass-bar z-30 flex flex-col gap-1.5 px-3 py-2",
-          "fixed inset-x-0 bottom-0 rounded-b-none rounded-t-2xl border-x-0 border-b-0 shadow-[0_-8px_24px_-12px_oklch(0%_0_0_/_0.18)]",
-          dockStyle === "float" && "inset-x-3 bottom-3 rounded-2xl border",
-          "sm:sticky sm:inset-x-auto sm:bottom-0 sm:mb-2 sm:rounded-2xl sm:border sm:px-4 sm:py-2.5 sm:shadow-none",
+          "fixed inset-x-0 bottom-0 rounded-b-none rounded-t-xl border-x-0 border-b-0 shadow-[0_-8px_24px_-12px_oklch(0%_0_0_/_0.18)]",
+          dockStyle === "float" && "inset-x-3 bottom-3 rounded-xl border",
+          "sm:sticky sm:inset-x-auto sm:bottom-0 sm:mb-2 sm:rounded-xl sm:border sm:px-4 sm:py-2.5 sm:shadow-none",
         )}
         style={
           {
@@ -767,7 +971,7 @@ export function SessionWorkbench({ onExitHome }: { onExitHome?: () => void }) {
               ))}
             </div>
           ) : (
-            <div className="flex gap-1 rounded-full bg-muted/60 p-1">
+            <div className="flex gap-1 rounded-md bg-muted/60 p-1">
               {(["other", "user"] as const).map((who) => (
                 <button
                   key={who}
@@ -777,9 +981,9 @@ export function SessionWorkbench({ onExitHome }: { onExitHome?: () => void }) {
                     setSpeaker(who);
                   }}
                   className={cn(
-                    "flex-1 rounded-full px-3 py-2 text-xs font-semibold transition",
+                    "flex-1 rounded-md px-3 py-2 text-xs font-semibold transition",
                     speaker === who
-                      ? "gradient-primary text-primary-foreground"
+                      ? "bg-primary/85 text-primary-foreground"
                       : "text-muted-foreground",
                   )}
                 >
@@ -798,38 +1002,36 @@ export function SessionWorkbench({ onExitHome }: { onExitHome?: () => void }) {
           )}
         >
           {!active ? (
-            <div className="flex w-full flex-col gap-2">
-              <div className="flex items-center justify-center py-0.5" aria-hidden>
-                <VoiceCloud size="sm" level={0.15} />
-              </div>
-              <p className="text-center text-[11px] font-medium text-muted-foreground">
-                {t("nextStepIdle")}
-              </p>
-              <div className="flex gap-2">
-                {onExitHome ? (
-                  <Button
-                    variant="soft"
-                    className="h-12 shrink-0 rounded-full px-4 text-sm"
-                    onClick={() => onExitHome()}
-                  >
-                    <ChevronLeft className="size-4" />
-                    {t("backHome")}
-                  </Button>
-                ) : null}
-                <Button
-                  className="h-12 flex-1 rounded-full text-[15px] font-semibold"
-                  onClick={() => void startSession()}
-                >
-                  <Play className="size-4 fill-current" />
-                  {t("start")}
-                </Button>
-              </div>
-            </div>
+            <>
+              <Button
+                variant="soft"
+                className="h-12 w-12 shrink-0 rounded-md p-0"
+                disabled
+                aria-label={t("pause")}
+              >
+                <Pause className="size-4 opacity-40" />
+              </Button>
+              <Button
+                className="h-12 flex-1 rounded-md text-[15px] font-semibold"
+                onClick={() => void startSession()}
+              >
+                <Play className="size-4 fill-current" />
+                {t("start")}
+              </Button>
+              <Button
+                variant="soft"
+                className="h-12 shrink-0 rounded-md px-3 text-xs"
+                disabled
+                aria-label={t("askIdeas")}
+              >
+                <Lightbulb className="size-4 opacity-40" />
+              </Button>
+            </>
           ) : (
             <>
               <Button
                 variant="soft"
-                className="h-12 w-12 shrink-0 rounded-full p-0 sm:h-11 sm:w-auto sm:px-5"
+                className="h-12 w-12 shrink-0 rounded-md p-0 sm:h-11 sm:w-auto sm:px-5"
                 disabled={life === "preparing"}
                 onClick={togglePause}
                 aria-label={life === "paused" ? t("resume") : t("pause")}
@@ -840,10 +1042,26 @@ export function SessionWorkbench({ onExitHome }: { onExitHome?: () => void }) {
                 </span>
               </Button>
               <Button
-                className="h-12 flex-1 rounded-full text-[15px] font-semibold sm:h-11"
+                className="h-12 flex-1 rounded-md text-[15px] font-semibold sm:h-11"
                 onClick={() => setConfirmStop(true)}
               >
-                {t("endConversation")}
+                {t("stopAndSave")}
+              </Button>
+              <Button
+                variant="soft"
+                className="h-12 shrink-0 rounded-md px-3 text-xs sm:h-11"
+                disabled={
+                  life === "preparing" ||
+                  life === "paused" ||
+                  streaming ||
+                  !turns.some((x) => x.speaker === "other")
+                }
+                onClick={askIdeas}
+                aria-label={t("askIdeas")}
+                title={t("askIdeas")}
+              >
+                <Lightbulb className="size-4" />
+                <span className="ml-1 hidden sm:inline">{t("askIdeas")}</span>
               </Button>
             </>
           )}
@@ -863,6 +1081,15 @@ export function SessionWorkbench({ onExitHome }: { onExitHome?: () => void }) {
         </AlertDialogContent>
       </AlertDialog>
 
+      <SettingsSheet open={settingsOpen} onOpenChange={setSettingsOpen} locked={active} />
+      <HistorySheet
+        open={historyOpen}
+        onOpenChange={(v) => {
+          setHistoryOpen(v);
+          if (!v) setHistoryFocusId(null);
+        }}
+        focusId={historyFocusId}
+      />
       <GuideSheet open={guideOpen} onOpenChange={setGuideOpen} />
       <OnboardingTour onOpenGuide={() => setGuideOpen(true)} />
       {prefs.showVadDiagnostics ? (

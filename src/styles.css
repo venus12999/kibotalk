@@ -850,8 +850,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1.5rem;
-  padding-block: 1rem 0.5rem;
+  gap: 1.15rem;
+  padding-block: 0.75rem 0.5rem;
 }
 
 .home-orb-wrap {
@@ -1027,6 +1027,28 @@
   .home-dock-item-primary {
     transform: none;
   }
+}
+
+/* Session idle — mode cards (brief screen 2) */
+.session-mode-card {
+  cursor: pointer;
+}
+.session-mode-card:hover {
+  border-color: var(--glass-border-vivid);
+}
+.session-mode-card-active {
+  border-color: color-mix(in oklab, var(--primary) 55%, var(--glass-border));
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--primary) 35%, transparent),
+    0 1px 0 oklch(100% 0 0 / 0.4) inset;
+  background-image: linear-gradient(
+    165deg,
+    color-mix(in oklab, var(--primary-soft) 55%, transparent) 0%,
+    oklch(100% 0 0 / 0.08) 60%
+  );
+}
+.session-idle {
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ── Voice sphere — round when idle; floats + morphs while speaking ─── */

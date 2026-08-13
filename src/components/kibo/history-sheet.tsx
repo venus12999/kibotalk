@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ChevronDown, ChevronUp, MessageCircle, Trash2 } from "lucide-react";
+import { ChevronRight, MessageCircle, Search, Trash2 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -14,20 +14,34 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { useKibo, langLabel, levelLabel } from "@/lib/kibo/store";
+import { useKibo, langLabel } from "@/lib/kibo/store";
+import type { ConvLang } from "@/lib/kibo/types";
+
+function sessionMinutes(startedAt: number, endedAt: number) {
+  const ms = Math.max(0, endedAt - startedAt);
+  return Math.max(1, Math.round(ms / 60_000));
+}
 
 export function HistorySheet({
   open,
   onOpenChange,
+  focusId,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  /** When set, expand this session once the sheet opens. */
+  focusId?: string | null;
 }) {
   const { history, t, prefs, deleteSession } = useKibo();
   const ui = prefs.uiLang;
   const locale = ui === "zh" ? "zh-CN" : ui === "ja" ? "ja-JP" : "en";
   const [pendingId, setPendingId] = React.useState<string | null>(null);
   const [expandedId, setExpandedId] = React.useState<string | null>(null);
+  const [langFilter, setLangFilter] = React.useState<"all" | ConvLang>("all");
+
+  React.useEffect(() => {
+    if (open && focusId) setExpandedId(focusId);
+  }, [open, focusId]);
 
   const confirmDelete = () => {
     if (!pendingId) return;
@@ -37,18 +51,60 @@ export function HistorySheet({
     setPendingId(null);
   };
 
+  const filters: { id: "all" | ConvLang; label: string }[] = [
+    { id: "all", label: t("filterAll") },
+    { id: "zh", label: t("languageChinese") },
+    { id: "en", label: t("languageEnglish") },
+    { id: "ja", label: t("languageJapanese") },
+  ];
+
+  const rows =
+    langFilter === "all" ? history : history.filter((s) => s.conversationLang === langFilter);
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full p-0 sm:max-w-lg">
         <SheetHeader className="border-b border-[oklch(35%_0.02_80_/_0.06)] px-5 pt-5 pr-14 pb-3">
-          <SheetTitle className="font-display text-lg font-semibold tracking-tight">{t("history")}</SheetTitle>
+          <div className="flex items-center justify-between gap-2 pr-2">
+            <SheetTitle className="font-display text-lg font-semibold tracking-tight">
+              {t("history")}
+            </SheetTitle>
+            <span
+              className="flex size-8 items-center justify-center rounded-md border border-[oklch(100%_0_0_/_0.28)] bg-[oklch(100%_0_0_/_0.18)] text-muted-foreground"
+              aria-label={t("historySearch")}
+              title={t("historySearch")}
+            >
+              <Search className="size-3.5" />
+            </span>
+          </div>
         </SheetHeader>
         <ScrollArea className="h-[calc(100dvh-6rem)] px-4 pb-[max(2rem,env(safe-area-inset-bottom))]">
-          {history.length === 0 ? (
+          <div className="flex flex-wrap gap-1.5 py-3">
+            {filters.map((f) => {
+              const selected = langFilter === f.id;
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setLangFilter(f.id)}
+                  className={cn(
+                    "rounded-md px-2.5 py-1 text-[12px] font-medium transition",
+                    selected
+                      ? "bg-primary/85 text-primary-foreground"
+                      : "border border-[oklch(100%_0_0_/_0.28)] bg-[oklch(100%_0_0_/_0.14)] text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {rows.length === 0 ? (
             <p className="py-10 text-center text-sm text-muted-foreground">{t("noHistory")}</p>
           ) : (
-            <ul className="space-y-2.5 py-3">
-              {history.map((s) => {
+            <ul className="space-y-2.5 pb-3">
+              {rows.map((s) => {
                 const openDetail = expandedId === s.id;
                 const when = new Intl.DateTimeFormat(locale, {
                   month: "short",
@@ -56,6 +112,8 @@ export function HistorySheet({
                   hour: "2-digit",
                   minute: "2-digit",
                 }).format(new Date(s.startedAt));
+                const lang = langLabel(s.conversationLang, ui);
+                const title = t("sessionLangTitle").replace("{lang}", lang);
                 const snippet =
                   s.summary?.trim() ||
                   s.turns.find((turn) => turn.text.trim())?.text.trim() ||
@@ -64,6 +122,10 @@ export function HistorySheet({
                     : ui === "ja"
                       ? "（まとめなし）"
                       : "(No summary)");
+                const mins = sessionMinutes(s.startedAt, s.endedAt);
+                const meta = t("sessionMeta")
+                  .replace("{n}", String(s.turns.length))
+                  .replace("{m}", String(mins));
                 return (
                   <li key={s.id} className="panel-sheet overflow-hidden p-3">
                     <div className="flex items-start gap-3">
@@ -72,82 +134,95 @@ export function HistorySheet({
                       </span>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
+                          <button
+                            type="button"
+                            className="min-w-0 flex-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            aria-expanded={openDetail}
+                            onClick={() => setExpandedId(openDetail ? null : s.id)}
+                          >
                             <p className="truncate text-[15px] font-semibold tracking-tight">
+                              {title} · {when}
+                            </p>
+                            <p className="mt-1 line-clamp-1 text-sm leading-relaxed text-muted-foreground">
+                              {snippet}
+                            </p>
+                            <p className="mt-1.5 text-[11px] font-medium text-muted-foreground">
+                              {meta}
+                            </p>
+                          </button>
+                          <div className="flex shrink-0 items-center gap-0.5">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              aria-label={t("deleteSession")}
+                              title={t("deleteSession")}
+                              className="size-8 text-muted-foreground hover:text-destructive"
+                              onClick={() => setPendingId(s.id)}
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                            <button
+                              type="button"
+                              className="flex size-8 items-center justify-center text-muted-foreground"
+                              aria-label={openDetail ? t("collapseTranscript") : t("expandTranscript")}
+                              onClick={() => setExpandedId(openDetail ? null : s.id)}
+                            >
+                              <ChevronRight
+                                className={cn(
+                                  "size-4 transition-transform",
+                                  openDetail && "rotate-90",
+                                )}
+                              />
+                            </button>
+                          </div>
+                        </div>
+
+                        {openDetail ? (
+                          <div className="mt-3 space-y-2 border-t border-[oklch(35%_0.02_80_/_0.08)] pt-3">
+                            <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
                               {t("sessionSummary")}
                             </p>
-                            <p className="mt-0.5 text-[11px] font-medium text-muted-foreground">
-                              {when} · {langLabel(s.conversationLang, ui)} ·{" "}
-                              {levelLabel(s.level, ui)}
+                            <p className="text-sm leading-relaxed text-foreground">
+                              {s.summary?.trim() || snippet}
                             </p>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            aria-label={t("deleteSession")}
-                            title={t("deleteSession")}
-                            className="-mr-1 -mt-1 size-8 shrink-0 text-muted-foreground hover:text-destructive"
-                            onClick={() => setPendingId(s.id)}
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
-                        </div>
-                        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
-                          {snippet}
-                        </p>
-                        <button
-                          type="button"
-                          className="mt-2.5 flex w-full items-center justify-between gap-2 rounded-xl bg-[color-mix(in_oklab,var(--foreground)_4%,transparent)] px-2.5 py-1.5 text-left text-xs font-semibold text-muted-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                          aria-expanded={openDetail}
-                          onClick={() => setExpandedId(openDetail ? null : s.id)}
-                        >
-                          <span>
-                            {t("conversationHistory")} · {s.turns.length}
-                          </span>
-                          {openDetail ? (
-                            <ChevronUp className="size-3.5 shrink-0" />
-                          ) : (
-                            <ChevronDown className="size-3.5 shrink-0" />
-                          )}
-                        </button>
-                        {openDetail ? (
-                          s.turns.length === 0 ? (
-                            <p className="mt-2 text-xs text-muted-foreground">
-                              {ui === "zh"
-                                ? "这条会话没有转写内容。"
-                                : ui === "ja"
-                                  ? "この会話には文字起こしがありません。"
-                                  : "No transcript lines in this session."}
+                            <p className="pt-1 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+                              {t("sessionDetails")}
                             </p>
-                          ) : (
-                            <ul className="mt-2 max-h-64 space-y-2 overflow-y-auto rounded-2xl bg-[color-mix(in_oklab,var(--foreground)_4%,transparent)] p-2.5">
-                              {s.turns.map((turn) => (
-                                <li
-                                  key={turn.id}
-                                  className={cn(
-                                    "text-xs leading-relaxed",
-                                    turn.speaker === "user" ? "text-right" : "text-left",
-                                  )}
-                                >
-                                  <span className="inline-flex items-center gap-1 font-semibold text-muted-foreground">
-                                    {turn.speaker !== "user" ? (
-                                      <span className="size-1.5 rounded-full bg-primary" />
-                                    ) : null}
-                                    {turn.speaker === "user" ? t("me") : t("other")}
-                                  </span>
-                                  <p className="mt-0.5 whitespace-pre-wrap break-words text-foreground">
-                                    {turn.text}
-                                  </p>
-                                  {turn.translation ? (
-                                    <p className="mt-0.5 text-[11px] italic text-muted-foreground">
-                                      {turn.translation}
+                            {s.turns.length === 0 ? (
+                              <p className="text-xs text-muted-foreground">
+                                {ui === "zh"
+                                  ? "这条会话没有转写内容。"
+                                  : ui === "ja"
+                                    ? "この会話には文字起こしがありません。"
+                                    : "No transcript lines in this session."}
+                              </p>
+                            ) : (
+                              <ul className="max-h-64 space-y-2 overflow-y-auto rounded-md bg-[color-mix(in_oklab,var(--foreground)_4%,transparent)] p-2.5">
+                                {s.turns.map((turn) => (
+                                  <li
+                                    key={turn.id}
+                                    className={cn(
+                                      "text-xs leading-relaxed",
+                                      turn.speaker === "user" ? "text-right" : "text-left",
+                                    )}
+                                  >
+                                    <span className="font-semibold text-muted-foreground">
+                                      {turn.speaker === "user" ? t("me") : t("other")}
+                                    </span>
+                                    <p className="mt-0.5 whitespace-pre-wrap break-words text-foreground">
+                                      {turn.text}
                                     </p>
-                                  ) : null}
-                                </li>
-                              ))}
-                            </ul>
-                          )
+                                    {turn.translation ? (
+                                      <p className="mt-0.5 text-[11px] italic text-muted-foreground">
+                                        {turn.translation}
+                                      </p>
+                                    ) : null}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
                         ) : null}
                       </div>
                     </div>

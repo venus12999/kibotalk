@@ -5,7 +5,6 @@ import {
   ChevronRight,
   HelpCircle,
   History,
-  Home,
   Settings,
 } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
@@ -23,8 +22,7 @@ type Props = {
 };
 
 /**
- * Post-login home inspired by the warm orb + dock reference —
- * not a 1:1 clone; only features we actually ship.
+ * Welcome / home (brief screen 1): brand claim, one CTA, explore with memory kept.
  */
 export function HomeHub({ onStartTalk }: Props) {
   const { prefs, t } = useKibo();
@@ -33,37 +31,34 @@ export function HomeHub({ onStartTalk }: Props) {
   const [historyOpen, setHistoryOpen] = React.useState(false);
   const [guideOpen, setGuideOpen] = React.useState(false);
 
-  const dock = [
+  const explore = [
     {
       key: "memory",
       icon: Brain,
       label: t("navMemory"),
+      hint: t("homeMemoryHint"),
       onClick: () => void navigate({ to: "/memory" }),
     },
     {
       key: "history",
       icon: History,
       label: t("navHistory"),
+      hint: t("homeHistoryHint"),
       onClick: () => setHistoryOpen(true),
-    },
-    {
-      key: "home",
-      icon: Home,
-      label: t("homeDockHome"),
-      onClick: onStartTalk,
-      primary: true,
-    },
-    {
-      key: "settings",
-      icon: Settings,
-      label: t("settings"),
-      onClick: () => setSettingsOpen(true),
     },
     {
       key: "guide",
       icon: HelpCircle,
       label: t("navGuide"),
+      hint: t("homeGuideHint"),
       onClick: () => setGuideOpen(true),
+    },
+    {
+      key: "settings",
+      icon: Settings,
+      label: t("settings"),
+      hint: t("homeSettingsHint"),
+      onClick: () => setSettingsOpen(true),
     },
   ] as const;
 
@@ -81,8 +76,7 @@ export function HomeHub({ onStartTalk }: Props) {
             {t("appName")}
           </p>
           <p className="mt-1.5 text-[11px] font-medium text-muted-foreground">
-            {langLabel(prefs.conversationLang, prefs.uiLang)} ·{" "}
-            {levelLabel(prefs.level, prefs.uiLang)}
+            {t("homeTagline")}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -96,17 +90,20 @@ export function HomeHub({ onStartTalk }: Props) {
           <VoiceCloud size="lg" level={0.08} />
         </div>
 
-        <div className="text-center">
-          <h1 className="font-display text-[1.65rem] leading-tight font-bold tracking-tight text-foreground sm:text-[1.85rem]">
+        <div className="space-y-2 text-center">
+          <h1 className="font-display text-[1.55rem] leading-tight font-bold tracking-tight text-foreground sm:text-[1.75rem]">
             {t("homeGreeting")}
           </h1>
+          <p className="mx-auto max-w-[18rem] text-[13px] leading-relaxed text-muted-foreground">
+            {t("homeSubtitle")}
+          </p>
+          <p className="text-[11px] font-medium text-muted-foreground/80">
+            {langLabel(prefs.conversationLang, prefs.uiLang)} ·{" "}
+            {levelLabel(prefs.level, prefs.uiLang)}
+          </p>
         </div>
 
-        <button
-          type="button"
-          onClick={onStartTalk}
-          className="home-pill-cta group"
-        >
+        <button type="button" onClick={onStartTalk} className="home-pill-cta group">
           <span className="home-pill-cta-icon">
             <AudioLines className="size-4" strokeWidth={2} />
           </span>
@@ -115,28 +112,41 @@ export function HomeHub({ onStartTalk }: Props) {
           </span>
           <ChevronRight className="size-4 opacity-50 transition group-hover:translate-x-0.5 group-hover:opacity-80" />
         </button>
-      </main>
 
-      <nav className="home-dock" aria-label={t("appName")}>
-        {dock.map((item) => {
-          const Icon = item.icon;
-          const isPrimary = "primary" in item && item.primary;
-          return (
-            <button
-              type="button"
-              key={item.key}
-              onClick={item.onClick}
-              className={cn("home-dock-item", isPrimary && "home-dock-item-primary")}
-              aria-label={item.label}
-            >
-              <span className={cn("home-dock-icon", isPrimary && "home-dock-icon-primary")}>
-                <Icon className={isPrimary ? "size-5" : "size-[1.15rem]"} strokeWidth={1.75} />
-              </span>
-              <span className="home-dock-label">{item.label}</span>
-            </button>
-          );
-        })}
-      </nav>
+        <section className="w-full max-w-sm space-y-2">
+          <p className="px-0.5 text-[11px] font-medium tracking-[0.06em] text-muted-foreground uppercase">
+            {t("homeExplore")}
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {explore.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={item.onClick}
+                  className={cn(
+                    "panel-sheet flex items-center gap-2.5 px-3 py-2.5 text-left transition",
+                    "hover:border-[var(--glass-border-vivid)] active:scale-[0.99]",
+                  )}
+                >
+                  <span className="home-hub-tint flex size-8 shrink-0 items-center justify-center rounded-md">
+                    <Icon className="size-3.5" strokeWidth={1.75} />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-[13px] font-semibold tracking-tight">
+                      {item.label}
+                    </span>
+                    <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
+                      {item.hint}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      </main>
 
       <SettingsSheet open={settingsOpen} onOpenChange={setSettingsOpen} locked={false} />
       <HistorySheet open={historyOpen} onOpenChange={setHistoryOpen} />
