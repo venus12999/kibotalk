@@ -869,14 +869,14 @@
   gap: 0.75rem;
   border-radius: 9999px;
   padding: 0.7rem 1rem 0.7rem 0.7rem;
-  color: oklch(98% 0 0);
-  background: oklch(22% 0.02 70 / 0.92);
-  box-shadow: var(--shadow-panel);
+  color: var(--primary-foreground);
+  background-image: var(--gradient-primary);
+  box-shadow: var(--shadow-glow);
   transition: transform 160ms ease, filter 160ms ease;
 }
 
 .home-pill-cta:hover {
-  filter: brightness(1.06);
+  filter: brightness(1.04);
 }
 
 .home-pill-cta:active {
@@ -895,8 +895,8 @@
   height: 2.35rem;
   border-radius: 9999px;
   color: var(--primary-foreground);
-  background-image: var(--gradient-primary);
-  box-shadow: var(--shadow-glow-sm);
+  background: color-mix(in oklab, var(--background) 88%, transparent);
+  box-shadow: var(--glass-shadow-chip);
 }
 
 .home-mode-row {

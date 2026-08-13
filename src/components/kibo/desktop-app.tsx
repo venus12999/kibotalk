@@ -3,11 +3,12 @@ import { AudioLines } from "lucide-react";
 import { useKibo } from "@/lib/kibo/store";
 import { AppBackground } from "./app-background";
 import { DesktopShell, type DesktopNav, useDesktopShell } from "./desktop-shell";
-import { DesktopHistoryPanel } from "./desktop-history-panel";
 import { HomeHub } from "./home-hub";
 import { SessionWorkbench } from "./session-workbench";
 import { SettingsSheet } from "./settings-sheet";
 import { GuideSheet } from "./guide-sheet";
+import { HistorySheet } from "./history-sheet";
+import { MemorySheet } from "./memory-sheet";
 import { Onboarding } from "./onboarding";
 
 type Screen = "onboarding" | "home" | "session";
@@ -17,36 +18,33 @@ type Props = {
   setScreen: (s: Screen) => void;
 };
 
+type Overlay = Exclude<DesktopNav, "conversation"> | null;
+
 /**
- * Desktop entry: left rail + body. Mobile keeps HomeHub / SessionWorkbench as-is.
+ * Desktop entry: left rail + conversation body.
+ * History / memory / guide / settings all open as the same centered dialogs.
  */
 export function DesktopApp({ screen, setScreen }: Props) {
   const desktop = useDesktopShell();
   const { t } = useKibo();
-  const [nav, setNav] = React.useState<DesktopNav>("conversation");
-  const [settingsOpen, setSettingsOpen] = React.useState(false);
-  const [guideOpen, setGuideOpen] = React.useState(false);
+  const [overlay, setOverlay] = React.useState<Overlay>(null);
 
-  // Keep session mounted when browsing history so a live talk isn't torn down.
   const sessionMounted = screen === "session";
 
   const onNavigate = React.useCallback((next: DesktopNav) => {
-    if (next === "settings") {
-      setSettingsOpen(true);
+    if (next === "conversation") {
+      setOverlay(null);
       return;
     }
-    if (next === "guide") {
-      setGuideOpen(true);
-      return;
-    }
-    if (next === "memory") return; // handled in shell via router
-    setNav(next);
+    setOverlay(next);
   }, []);
 
   const startTalk = React.useCallback(() => {
-    setNav("conversation");
+    setOverlay(null);
     setScreen("session");
   }, [setScreen]);
+
+  const activeNav: DesktopNav = overlay ?? "conversation";
 
   if (!desktop) {
     if (screen === "session") {
@@ -89,41 +87,49 @@ export function DesktopApp({ screen, setScreen }: Props) {
   return (
     <>
       <AppBackground pale />
-      <DesktopShell active={nav === "memory" ? "conversation" : nav} onNavigate={onNavigate}>
-        {/* Keep the live session mounted while browsing history. */}
-        <div className={nav === "history" ? "hidden h-full" : "h-full"}>
+      <DesktopShell active={activeNav} onNavigate={onNavigate}>
+        <div className="h-full">
           {sessionMounted ? (
             <SessionWorkbench
               variant="desktop"
-              suspended={nav === "history"}
-              onExitHome={() => {
-                setScreen("home");
-                setNav("conversation");
-              }}
-              onOpenHistory={() => setNav("history")}
+              onExitHome={() => setScreen("home")}
+              onOpenHistory={() => setOverlay("history")}
             />
           ) : (
             <DesktopConversationHome
               onStartTalk={startTalk}
-              onOpenHistory={() => setNav("history")}
+              onOpenHistory={() => setOverlay("history")}
             />
           )}
         </div>
-        {nav === "history" ? (
-          <div className="h-full min-h-0">
-            <DesktopHistoryPanel onStartTalk={startTalk} />
-          </div>
-        ) : null}
       </DesktopShell>
 
-      <SettingsSheet open={settingsOpen} onOpenChange={setSettingsOpen} locked={sessionMounted} />
-      <GuideSheet open={guideOpen} onOpenChange={setGuideOpen} />
+      <HistorySheet
+        open={overlay === "history"}
+        onOpenChange={(v) => setOverlay(v ? "history" : null)}
+        presentation="dialog"
+      />
+      <MemorySheet
+        open={overlay === "memory"}
+        onOpenChange={(v) => setOverlay(v ? "memory" : null)}
+        presentation="dialog"
+      />
+      <GuideSheet
+        open={overlay === "guide"}
+        onOpenChange={(v) => setOverlay(v ? "guide" : null)}
+        presentation="dialog"
+      />
+      <SettingsSheet
+        open={overlay === "settings"}
+        onOpenChange={(v) => setOverlay(v ? "settings" : null)}
+        locked={sessionMounted}
+        presentation="dialog"
+      />
       <span className="sr-only">{t("appName")}</span>
     </>
   );
 }
 
-/** Desktop idle conversation: greeting + CTA into session (modes live in session idle). */
 function DesktopConversationHome({
   onStartTalk,
   onOpenHistory,

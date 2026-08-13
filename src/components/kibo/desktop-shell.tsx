@@ -6,7 +6,6 @@ import {
   MessageCircle,
   Settings,
 } from "lucide-react";
-import { useNavigate } from "@tanstack/react-router";
 import { useKibo } from "@/lib/kibo/store";
 import { AccountMenu } from "./account-menu";
 import { cn } from "@/lib/utils";
@@ -20,49 +19,22 @@ type Props = {
 };
 
 /**
- * Desktop left-rail chrome from the PC mock —
- * only real product destinations (no Discover / Agents / Membership).
+ * Desktop left-rail chrome —
+ * secondary items open overlays via onNavigate (no mixed page/sheet routes).
  */
 export function DesktopShell({ active, onNavigate, children }: Props) {
   const { t } = useKibo();
-  const navigate = useNavigate();
 
   const items: {
     id: DesktopNav;
     label: string;
     icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
-    action: () => void;
   }[] = [
-    {
-      id: "conversation",
-      label: t("navConversation"),
-      icon: MessageCircle,
-      action: () => onNavigate("conversation"),
-    },
-    {
-      id: "history",
-      label: t("navHistory"),
-      icon: History,
-      action: () => onNavigate("history"),
-    },
-    {
-      id: "memory",
-      label: t("navMemory"),
-      icon: Brain,
-      action: () => void navigate({ to: "/memory" }),
-    },
-    {
-      id: "guide",
-      label: t("navGuide"),
-      icon: HelpCircle,
-      action: () => onNavigate("guide"),
-    },
-    {
-      id: "settings",
-      label: t("settings"),
-      icon: Settings,
-      action: () => onNavigate("settings"),
-    },
+    { id: "conversation", label: t("navConversation"), icon: MessageCircle },
+    { id: "history", label: t("navHistory"), icon: History },
+    { id: "memory", label: t("navMemory"), icon: Brain },
+    { id: "guide", label: t("navGuide"), icon: HelpCircle },
+    { id: "settings", label: t("settings"), icon: Settings },
   ];
 
   return (
@@ -80,7 +52,7 @@ export function DesktopShell({ active, onNavigate, children }: Props) {
               <button
                 key={item.id}
                 type="button"
-                onClick={item.action}
+                onClick={() => onNavigate(item.id)}
                 className={cn("desktop-rail-item", selected && "desktop-rail-item-active")}
               >
                 <Icon className="size-4 shrink-0" strokeWidth={1.75} />

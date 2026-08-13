@@ -1,6 +1,6 @@
 import * as React from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { OverlayFrame, type OverlayPresentation } from "./overlay-frame";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -95,10 +95,12 @@ export function SettingsSheet({
   open,
   onOpenChange,
   locked,
+  presentation = "sheet",
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   locked: boolean;
+  presentation?: OverlayPresentation;
 }) {
   const { prefs, setPrefs, t, clearHistory, reset, history, user } = useKibo();
   const systemAudioSupported = useSystemAudioSupport();
@@ -193,12 +195,17 @@ export function SettingsSheet({
   }, []);
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full overflow-y-auto p-0 sm:max-w-lg">
-        <SheetHeader className="border-b border-[oklch(35%_0.02_80_/_0.06)] px-5 pt-5 pr-14 pb-3">
-          <SheetTitle className="font-display text-lg font-semibold tracking-tight">{t("settings")}</SheetTitle>
-        </SheetHeader>
-
+    <>
+      <OverlayFrame
+        open={open}
+        onOpenChange={onOpenChange}
+        presentation={presentation}
+        title={t("settings")}
+        {...(presentation === "sheet" ? { contentClassName: "overflow-y-auto" } : {})}
+        {...(presentation === "dialog"
+          ? { bodyClassName: "max-h-[min(70dvh,40rem)] overflow-y-auto" }
+          : {})}
+      >
         <div className="mt-4 space-y-4 px-4 pb-[max(2rem,env(safe-area-inset-bottom))]">
           <Section title={t("general")}>
             <Row title={t("uiLanguage")} description={t("uiLanguageDescription")}>
@@ -603,7 +610,7 @@ export function SettingsSheet({
             </Row>
           </Section>
         </div>
-      </SheetContent>
+      </OverlayFrame>
 
       <AlertDialog open={confirmClear} onOpenChange={setConfirmClear}>
         <AlertDialogContent>
@@ -645,6 +652,6 @@ export function SettingsSheet({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Sheet>
+    </>
   );
 }

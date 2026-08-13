@@ -1,6 +1,5 @@
 import * as React from "react";
 import { ChevronRight, MessageCircle, Search, Trash2 } from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useKibo, langLabel } from "@/lib/kibo/store";
 import type { ConvLang } from "@/lib/kibo/types";
+import { OverlayFrame, type OverlayPresentation } from "./overlay-frame";
 
 function sessionMinutes(startedAt: number, endedAt: number) {
   const ms = Math.max(0, endedAt - startedAt);
@@ -26,11 +26,13 @@ export function HistorySheet({
   open,
   onOpenChange,
   focusId,
+  presentation = "sheet",
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   /** When set, expand this session once the sheet opens. */
   focusId?: string | null;
+  presentation?: OverlayPresentation;
 }) {
   const { history, t, prefs, deleteSession } = useKibo();
   const ui = prefs.uiLang;
@@ -62,23 +64,30 @@ export function HistorySheet({
     langFilter === "all" ? history : history.filter((s) => s.conversationLang === langFilter);
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full p-0 sm:max-w-lg">
-        <SheetHeader className="border-b border-[oklch(35%_0.02_80_/_0.06)] px-5 pt-5 pr-14 pb-3">
-          <div className="flex items-center justify-between gap-2 pr-2">
-            <SheetTitle className="font-display text-lg font-semibold tracking-tight">
-              {t("history")}
-            </SheetTitle>
-            <span
-              className="flex size-8 items-center justify-center rounded-md border border-[oklch(100%_0_0_/_0.28)] bg-[oklch(100%_0_0_/_0.18)] text-muted-foreground"
-              aria-label={t("historySearch")}
-              title={t("historySearch")}
-            >
-              <Search className="size-3.5" />
-            </span>
-          </div>
-        </SheetHeader>
-        <ScrollArea className="h-[calc(100dvh-6rem)] px-4 pb-[max(2rem,env(safe-area-inset-bottom))]">
+    <>
+      <OverlayFrame
+        open={open}
+        onOpenChange={onOpenChange}
+        presentation={presentation}
+        title={t("history")}
+        headerExtra={
+          <span
+            className="flex size-8 items-center justify-center rounded-md border border-[oklch(100%_0_0_/_0.28)] bg-[oklch(100%_0_0_/_0.18)] text-muted-foreground"
+            aria-label={t("historySearch")}
+            title={t("historySearch")}
+          >
+            <Search className="size-3.5" />
+          </span>
+        }
+      >
+        <ScrollArea
+          className={cn(
+            "px-4",
+            presentation === "dialog"
+              ? "h-[min(70dvh,40rem)] pb-6"
+              : "h-[calc(100dvh-6rem)] pb-[max(2rem,env(safe-area-inset-bottom))]",
+          )}
+        >
           <div className="flex flex-wrap gap-1.5 py-3">
             {filters.map((f) => {
               const selected = langFilter === f.id;
@@ -232,7 +241,7 @@ export function HistorySheet({
             </ul>
           )}
         </ScrollArea>
-      </SheetContent>
+      </OverlayFrame>
 
       <AlertDialog open={pendingId !== null} onOpenChange={(v) => !v && setPendingId(null)}>
         <AlertDialogContent>
@@ -246,6 +255,6 @@ export function HistorySheet({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Sheet>
+    </>
   );
 }

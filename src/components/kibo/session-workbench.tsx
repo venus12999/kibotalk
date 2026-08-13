@@ -5,7 +5,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronUp,
-  HelpCircle,
   Lightbulb,
   Menu,
   Mic,
@@ -830,7 +829,7 @@ export function SessionWorkbench({
             <p className="px-0.5 text-[11px] font-medium tracking-[0.06em] text-muted-foreground uppercase">
               {t("modeCardsLabel")}
             </p>
-            <div className="grid gap-2 sm:grid-cols-3">
+            <div className="grid gap-2 sm:grid-cols-2">
               {(
                 [
                   {
@@ -848,14 +847,6 @@ export function SessionWorkbench({
                     icon: Users,
                     onClick: () => setPrefs({ captureMode: "continuous" }),
                     selected: prefs.captureMode === "continuous",
-                  },
-                  {
-                    id: "guide" as const,
-                    title: t("modeGuide"),
-                    desc: t("modeGuideDescription"),
-                    icon: HelpCircle,
-                    onClick: () => setGuideOpen(true),
-                    selected: false,
                   },
                 ] as const
               ).map((card) => {
