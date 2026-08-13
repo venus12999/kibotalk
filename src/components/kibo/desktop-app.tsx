@@ -9,6 +9,7 @@ import { SessionWorkbench } from "./session-workbench";
 import { SettingsSheet } from "./settings-sheet";
 import { GuideSheet } from "./guide-sheet";
 import { Onboarding } from "./onboarding";
+import { VoiceCloud } from "./voice-cloud";
 
 type Screen = "onboarding" | "home" | "session";
 
