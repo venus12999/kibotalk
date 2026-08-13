@@ -1056,10 +1056,11 @@
   display: flex;
   height: 100dvh;
   width: 100%;
-  gap: 0.75rem;
-  padding: 0.75rem;
+  gap: 1rem;
+  padding: 1rem;
   overflow: hidden;
 }
+
 
 .desktop-rail {
   display: flex;
