@@ -1,10 +1,8 @@
 import * as React from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { KiboProvider, useKibo } from "@/lib/kibo/store";
-import { Onboarding } from "@/components/kibo/onboarding";
-import { HomeHub } from "@/components/kibo/home-hub";
-import { SessionWorkbench } from "@/components/kibo/session-workbench";
 import { AppBackground } from "@/components/kibo/app-background";
+import { DesktopApp } from "@/components/kibo/desktop-app";
 import { useSession } from "@/lib/kibo/use-session";
 
 export const Route = createFileRoute("/")({
@@ -22,7 +20,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "Live transcription and AI reply suggestions for Japanese, English, and Chinese conversations.",
+          "Live transcription and AI reply suggestions for Japanese, English, or Chinese conversations.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -39,7 +37,6 @@ function App() {
   const navigate = useNavigate();
   const [screen, setScreen] = React.useState<Screen | null>(null);
 
-  // Everyone signs in (and confirms their email) before using the app.
   React.useEffect(() => {
     if (!authLoading && !user) void navigate({ to: "/auth", replace: true });
   }, [authLoading, user, navigate]);
@@ -68,32 +65,7 @@ function App() {
     );
   }
 
-  if (screen === "session") {
-    return (
-      <>
-        <AppBackground pale />
-        <SessionWorkbench onExitHome={() => setScreen("home")} />
-      </>
-    );
-  }
-
-  if (screen === "home") {
-    return (
-      <>
-        <AppBackground pale />
-        <HomeHub onStartTalk={() => setScreen("session")} />
-      </>
-    );
-  }
-
-  return (
-    <>
-      <AppBackground pale />
-      <main className="flex min-h-dvh items-center justify-center p-4">
-        <Onboarding onContinue={() => setScreen("home")} />
-      </main>
-    </>
-  );
+  return <DesktopApp screen={screen} setScreen={setScreen} />;
 }
 
 function Page() {

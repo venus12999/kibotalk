@@ -88,7 +88,21 @@ function formatElapsed(ms: number) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-export function SessionWorkbench({ onExitHome }: { onExitHome?: () => void }) {
+export function SessionWorkbench({
+  onExitHome,
+  onOpenHistory,
+  variant = "mobile",
+  suspended = false,
+}: {
+  onExitHome?: () => void;
+  /** Desktop: open the shell history panel instead of the mobile sheet. */
+  onOpenHistory?: () => void;
+  variant?: "mobile" | "desktop";
+  /** Desktop: hide under history — pause capture so mic doesn’t keep running. */
+  suspended?: boolean;
+}) {
+  const isDesktop = variant === "desktop";
+  const resumeLifeRef = React.useRef<"running" | null>(null);
   const { prefs, setPrefs, t, addSession, history } = useKibo();
   // Phone dock: edge bar by default (less overlap than a floating card).
   const dockStyle = prefs.dockStyle ?? "bar";
@@ -132,7 +146,9 @@ export function SessionWorkbench({ onExitHome }: { onExitHome?: () => void }) {
     return () => mql.removeEventListener("change", onChange);
   }, []);
   const panelLayout = prefs.panelLayout ?? "auto";
-  const sideBySide = panelLayout === "row" || (panelLayout === "auto" && wide);
+  // Desktop shell owns the right rail; never nest a second side-by-side layout.
+  const sideBySide =
+    !isDesktop && (panelLayout === "row" || (panelLayout === "auto" && wide));
 
   const words = copy[prefs.uiLang] ?? copy.en;
 
@@ -480,6 +496,25 @@ export function SessionWorkbench({ onExitHome }: { onExitHome?: () => void }) {
     setLife(next);
   };
 
+  React.useEffect(() => {
+    if (!isDesktop) return;
+    if (suspended) {
+      if (life === "running") {
+        resumeLifeRef.current = "running";
+        transcriber.setPaused(true);
+        setLife("paused");
+      }
+      return;
+    }
+    if (resumeLifeRef.current === "running" && life === "paused") {
+      resumeLifeRef.current = null;
+      transcriber.setPaused(false);
+      setLife("running");
+    }
+    // Intentionally omit `transcriber`: only react to shell suspend / life.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- setPaused is stable enough for suspend
+  }, [suspended, isDesktop, life]);
+
   const finishSession = () => {
     transcriber.stop();
     reqRef.current += 1;
@@ -621,25 +656,136 @@ export function SessionWorkbench({ onExitHome }: { onExitHome?: () => void }) {
   const elapsedLabel =
     active && startedAt ? formatElapsed(now - startedAt) : "00:00";
 
+  const openLastSession = () => {
+    if (onOpenHistory) {
+      onOpenHistory();
+      return;
+    }
+    if (!lastSession) return;
+    setHistoryFocusId(lastSession.id);
+    setHistoryOpen(true);
+  };
+
+  const desktopRail = isDesktop ? (
+    <aside className="desktop-aside panel-sheet flex min-h-0 flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-[1.2] flex-col border-b border-[oklch(35%_0.02_80_/_0.08)] p-3.5">
+        <p className="mb-1.5 flex items-center gap-1 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+          <Lightbulb className="size-3" />
+          {t("suggestions")}
+        </p>
+        {active ? (
+          ideasView
+        ) : (
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            {t("desktopSuggestionsHint")}
+          </p>
+        )}
+      </div>
+      <div className="flex min-h-0 flex-1 flex-col p-3.5">
+        <p className="mb-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+          {t("conversationHistory")}
+        </p>
+        {active ? (
+          <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto pr-1">
+            <ul className="space-y-2">
+              {turns.length === 0 ? (
+                <li className="py-2 text-center text-xs text-muted-foreground">
+                  {t("noTranscript")}
+                </li>
+              ) : (
+                turns.map((turn) => (
+                  <li
+                    key={turn.id}
+                    className={cn(
+                      "text-xs leading-relaxed",
+                      turn.speaker === "user" ? "text-right" : "text-left",
+                    )}
+                  >
+                    <span className="font-semibold text-muted-foreground">
+                      {turn.speaker === "user" ? t("me") : t("other")}
+                    </span>
+                    <p className="mt-0.5 whitespace-pre-wrap break-words text-foreground">
+                      {turn.text}
+                    </p>
+                    {turn.translation ? (
+                      <p className="mt-0.5 text-[11px] italic text-muted-foreground">
+                        {turn.translation}
+                      </p>
+                    ) : null}
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
+        ) : lastSession ? (
+          <button
+            type="button"
+            onClick={openLastSession}
+            className="w-full rounded-md border border-[oklch(100%_0_0_/_0.22)] bg-[oklch(100%_0_0_/_0.12)] px-3 py-3 text-left transition hover:border-[var(--glass-border-vivid)]"
+          >
+            <p className="text-[13px] font-semibold tracking-tight">
+              {t("lastSession")} ·{" "}
+              {new Intl.DateTimeFormat(locale, {
+                month: "short",
+                day: "numeric",
+              }).format(new Date(lastSession.startedAt))}
+            </p>
+            <p className="mt-1 line-clamp-4 text-xs leading-relaxed text-muted-foreground">
+              {lastSession.summary?.trim() || t("desktopTranscriptHint")}
+            </p>
+          </button>
+        ) : (
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            {t("desktopTranscriptHint")}
+          </p>
+        )}
+      </div>
+    </aside>
+  ) : null;
+
+  const shellClass = isDesktop
+    ? "desktop-split h-full"
+    : "mx-auto flex h-dvh max-w-6xl flex-col gap-2 overflow-hidden px-3 pt-2 sm:gap-3 sm:px-6 sm:pt-4";
+
+  const mainClass = isDesktop
+    ? "desktop-main panel-sheet flex min-h-0 flex-col gap-2 overflow-hidden px-3 pt-2"
+    : "contents";
+
   return (
     <div
-      className="mx-auto flex h-dvh max-w-6xl flex-col gap-2 overflow-hidden px-3 pt-2 sm:gap-3 sm:px-6 sm:pt-4"
-      style={{
-        paddingTop: "max(0.5rem, env(safe-area-inset-top))",
-      }}
+      className={shellClass}
+      style={
+        isDesktop
+          ? undefined
+          : {
+              paddingTop: "max(0.5rem, env(safe-area-inset-top))",
+            }
+      }
     >
-      <header className="glass-bar flex shrink-0 items-center gap-2 rounded-xl px-2.5 py-1.5 sm:rounded-2xl sm:px-3 sm:py-2">
-        <Button
-          variant="soft"
-          size="icon"
-          className="size-9 shrink-0 rounded-md"
-          aria-label={t("settings")}
-          onClick={() => setSettingsOpen(true)}
-        >
-          <Menu className="size-4" />
-        </Button>
+      <div className={mainClass}>
+      <header
+        className={cn(
+          "flex shrink-0 items-center gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2",
+          isDesktop
+            ? "border-b border-[oklch(35%_0.02_80_/_0.08)]"
+            : "glass-bar rounded-xl sm:rounded-2xl",
+        )}
+      >
+        {isDesktop ? null : (
+          <Button
+            variant="soft"
+            size="icon"
+            className="size-9 shrink-0 rounded-md"
+            aria-label={t("settings")}
+            onClick={() => setSettingsOpen(true)}
+          >
+            <Menu className="size-4" />
+          </Button>
+        )}
         <div className="min-w-0 flex-1">
-          <p className="font-display truncate text-sm font-bold tracking-tight">{t("appName")}</p>
+          <p className="font-display truncate text-sm font-bold tracking-tight">
+            {isDesktop ? t("newChat") : t("appName")}
+          </p>
           {active ? (
             <p className="mt-0.5 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
               <span className="size-1.5 rounded-full bg-primary" aria-hidden />
@@ -659,7 +805,7 @@ export function SessionWorkbench({ onExitHome }: { onExitHome?: () => void }) {
             {t("backHome")}
           </Button>
         ) : null}
-        <AccountMenu compact />
+        {isDesktop ? null : <AccountMenu compact />}
       </header>
 
       {error ? (
@@ -737,57 +883,57 @@ export function SessionWorkbench({ onExitHome }: { onExitHome?: () => void }) {
             </div>
           </section>
 
-          <section className="space-y-2">
-            <p className="px-0.5 text-[11px] font-medium tracking-[0.06em] text-muted-foreground uppercase">
-              {t("lastSession")}
-            </p>
-            {lastSession ? (
-              <button
-                type="button"
-                className="panel-sheet flex w-full flex-col gap-1.5 p-3.5 text-left transition hover:border-[var(--glass-border-vivid)]"
-                onClick={() => {
-                  setHistoryFocusId(lastSession.id);
-                  setHistoryOpen(true);
-                }}
-              >
-                <p className="text-[14px] font-semibold tracking-tight">
-                  {t("sessionLangTitle").replace(
-                    "{lang}",
-                    langLabel(lastSession.conversationLang, prefs.uiLang),
-                  )}{" "}
-                  ·{" "}
-                  {new Intl.DateTimeFormat(locale, {
-                    month: "short",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  }).format(new Date(lastSession.startedAt))}
-                </p>
-                <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
-                  {lastSession.summary?.trim() || t("noHistory")}
-                </p>
-                <p className="text-[11px] font-medium text-muted-foreground">
-                  {t("sessionMeta")
-                    .replace("{n}", String(lastSession.turns.length))
-                    .replace(
-                      "{m}",
-                      String(
-                        Math.max(
-                          1,
-                          Math.round(
-                            (lastSession.endedAt - lastSession.startedAt) / 60_000,
+          {/* Desktop right rail already surfaces last-session / transcript hints. */}
+          {isDesktop ? null : (
+            <section className="space-y-2">
+              <p className="px-0.5 text-[11px] font-medium tracking-[0.06em] text-muted-foreground uppercase">
+                {t("lastSession")}
+              </p>
+              {lastSession ? (
+                <button
+                  type="button"
+                  className="panel-sheet flex w-full flex-col gap-1.5 p-3.5 text-left transition hover:border-[var(--glass-border-vivid)]"
+                  onClick={openLastSession}
+                >
+                  <p className="text-[14px] font-semibold tracking-tight">
+                    {t("sessionLangTitle").replace(
+                      "{lang}",
+                      langLabel(lastSession.conversationLang, prefs.uiLang),
+                    )}{" "}
+                    ·{" "}
+                    {new Intl.DateTimeFormat(locale, {
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }).format(new Date(lastSession.startedAt))}
+                  </p>
+                  <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+                    {lastSession.summary?.trim() || t("noHistory")}
+                  </p>
+                  <p className="text-[11px] font-medium text-muted-foreground">
+                    {t("sessionMeta")
+                      .replace("{n}", String(lastSession.turns.length))
+                      .replace(
+                        "{m}",
+                        String(
+                          Math.max(
+                            1,
+                            Math.round(
+                              (lastSession.endedAt - lastSession.startedAt) / 60_000,
+                            ),
                           ),
                         ),
-                      ),
-                    )}
-                </p>
-              </button>
-            ) : (
-              <div className="panel-sheet px-3.5 py-4 text-center text-sm text-muted-foreground">
-                {t("lastSessionEmpty")}
-              </div>
-            )}
-          </section>
+                      )}
+                  </p>
+                </button>
+              ) : (
+                <div className="panel-sheet px-3.5 py-4 text-center text-sm text-muted-foreground">
+                  {t("lastSessionEmpty")}
+                </div>
+              )}
+            </section>
+          )}
         </main>
       ) : (
         (() => {
@@ -809,7 +955,7 @@ export function SessionWorkbench({ onExitHome }: { onExitHome?: () => void }) {
                 ? 0.05
                 : 0.12;
 
-          const transcriptBlock = (
+          const transcriptBlock = isDesktop ? null : (
             <section className="panel-sheet shrink-0 overflow-hidden">
               <button
                 type="button"
@@ -894,6 +1040,14 @@ export function SessionWorkbench({ onExitHome }: { onExitHome?: () => void }) {
             </div>
           );
 
+          if (isDesktop) {
+            return (
+              <main className="relative flex min-h-0 flex-1 flex-col gap-2 py-1">
+                {stage}
+              </main>
+            );
+          }
+
           if (sideBySide && wide) {
             return (
               <main className="relative flex min-h-0 flex-1 gap-4 py-1">
@@ -930,7 +1084,7 @@ export function SessionWorkbench({ onExitHome }: { onExitHome?: () => void }) {
 
       <div
         aria-hidden
-        className="shrink-0 sm:hidden"
+        className={cn("shrink-0", isDesktop ? "hidden" : "sm:hidden")}
         style={{ height: Math.max(dockHeight + 4, 72) }}
       />
 
@@ -938,13 +1092,19 @@ export function SessionWorkbench({ onExitHome }: { onExitHome?: () => void }) {
         ref={dockRef}
         className={cn(
           "glass-bar z-30 flex flex-col gap-1.5 px-3 py-2",
-          "fixed inset-x-0 bottom-0 rounded-b-none rounded-t-xl border-x-0 border-b-0 shadow-[0_-8px_24px_-12px_oklch(0%_0_0_/_0.18)]",
-          dockStyle === "float" && "inset-x-3 bottom-3 rounded-xl border",
-          "sm:sticky sm:inset-x-auto sm:bottom-0 sm:mb-2 sm:rounded-xl sm:border sm:px-4 sm:py-2.5 sm:shadow-none",
+          isDesktop
+            ? "sticky bottom-0 mb-2 rounded-xl border px-4 py-2.5 shadow-none"
+            : cn(
+                "fixed inset-x-0 bottom-0 rounded-b-none rounded-t-xl border-x-0 border-b-0 shadow-[0_-8px_24px_-12px_oklch(0%_0_0_/_0.18)]",
+                dockStyle === "float" && "inset-x-3 bottom-3 rounded-xl border",
+                "sm:sticky sm:inset-x-auto sm:bottom-0 sm:mb-2 sm:rounded-xl sm:border sm:px-4 sm:py-2.5 sm:shadow-none",
+              ),
         )}
         style={
           {
-            paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
+            paddingBottom: isDesktop
+              ? "0.5rem"
+              : "max(0.5rem, env(safe-area-inset-bottom))",
             "--dock-scale": String(dockScale),
           } as React.CSSProperties
         }
@@ -1067,6 +1227,9 @@ export function SessionWorkbench({ onExitHome }: { onExitHome?: () => void }) {
           )}
         </div>
       </div>
+      </div>
+
+      {desktopRail}
 
       <AlertDialog open={confirmStop} onOpenChange={setConfirmStop}>
         <AlertDialogContent>
@@ -1081,17 +1244,21 @@ export function SessionWorkbench({ onExitHome }: { onExitHome?: () => void }) {
         </AlertDialogContent>
       </AlertDialog>
 
-      <SettingsSheet open={settingsOpen} onOpenChange={setSettingsOpen} locked={active} />
-      <HistorySheet
-        open={historyOpen}
-        onOpenChange={(v) => {
-          setHistoryOpen(v);
-          if (!v) setHistoryFocusId(null);
-        }}
-        focusId={historyFocusId}
-      />
+      {!isDesktop ? (
+        <SettingsSheet open={settingsOpen} onOpenChange={setSettingsOpen} locked={active} />
+      ) : null}
+      {!isDesktop ? (
+        <HistorySheet
+          open={historyOpen}
+          onOpenChange={(v) => {
+            setHistoryOpen(v);
+            if (!v) setHistoryFocusId(null);
+          }}
+          focusId={historyFocusId}
+        />
+      ) : null}
       <GuideSheet open={guideOpen} onOpenChange={setGuideOpen} />
-      <OnboardingTour onOpenGuide={() => setGuideOpen(true)} />
+      {!isDesktop ? <OnboardingTour onOpenGuide={() => setGuideOpen(true)} /> : null}
       {prefs.showVadDiagnostics ? (
         <VadDiagnostics
           diagnostics={transcriber.diagnostics}
