@@ -1,4 +1,4 @@
-import { Languages, ChevronDown, Sparkles } from "lucide-react";
+import { Languages, ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,11 +16,12 @@ type Props = {
 };
 
 export function UiLanguageMenu({ compact = false }: Props) {
-  const { prefs, setPrefs } = useKibo();
+  const { prefs, setPrefs, t } = useKibo();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        aria-label={labels[prefs.uiLang]}
+        aria-label={`${t("uiLanguage")} · ${labels[prefs.uiLang]}`}
+        title={t("uiLanguage")}
         className={
           compact
             ? "glass-chip inline-flex size-10 cursor-pointer items-center justify-center rounded-[0.85rem] text-foreground transition hover:brightness-[1.03] focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.97]"
@@ -28,7 +29,7 @@ export function UiLanguageMenu({ compact = false }: Props) {
         }
       >
         {compact ? (
-          <Sparkles className="size-4" strokeWidth={1.75} />
+          <Languages className="size-4" strokeWidth={1.75} />
         ) : (
           <>
             <Languages className="size-3.5" />
