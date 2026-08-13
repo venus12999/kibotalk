@@ -159,19 +159,15 @@ function DesktopConversationHome({
         </div>
       </section>
 
-      <aside className="desktop-aside panel-sheet flex min-h-0 flex-col gap-4 overflow-hidden p-4">
-        <div className="space-y-1.5">
-          <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-            {t("suggestions")}
-          </p>
+      <aside className="desktop-aside flex min-h-0 flex-col gap-3">
+        <div className="panel-sheet space-y-1.5 overflow-hidden p-4">
+          <p className="text-[12px] font-bold tracking-tight">{t("suggestions")}</p>
           <p className="text-sm leading-relaxed text-muted-foreground">
             {t("desktopSuggestionsHint")}
           </p>
         </div>
-        <div className="min-h-0 flex-1 space-y-1.5">
-          <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-            {t("conversationHistory")}
-          </p>
+        <div className="panel-sheet min-h-0 flex-1 space-y-1.5 overflow-hidden p-4">
+          <p className="text-[12px] font-bold tracking-tight">{t("conversationHistory")}</p>
           {last ? (
             <button
               type="button"
@@ -194,6 +190,7 @@ function DesktopConversationHome({
           )}
         </div>
       </aside>
+
     </div>
   );
 }
