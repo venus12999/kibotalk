@@ -142,6 +142,7 @@ function DesktopConversationHome({
           <h1 className="font-display text-lg font-bold tracking-tight">{t("newChat")}</h1>
         </header>
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-5 px-6 py-8">
+          <VoiceCloud size="lg" level={0.08} className="orb-float" />
           <p className="font-display max-w-md text-center text-3xl font-bold tracking-tight">
             {t("homeGreeting")}
           </p>
