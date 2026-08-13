@@ -667,12 +667,14 @@ export function SessionWorkbench({
   };
 
   const desktopRail = isDesktop ? (
-    <aside className="desktop-aside panel-sheet flex min-h-0 flex-col overflow-hidden">
-      <div className="flex min-h-0 flex-[1.2] flex-col border-b border-[oklch(35%_0.02_80_/_0.08)] p-3.5">
-        <p className="mb-1.5 flex items-center gap-1 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-          <Lightbulb className="size-3" />
-          {t("suggestions")}
-        </p>
+    <aside className="desktop-aside flex min-h-0 flex-col gap-3">
+      <div className="panel-sheet flex min-h-0 flex-[1.2] flex-col overflow-hidden p-3.5">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <p className="flex items-center gap-1.5 text-[12px] font-bold tracking-tight">
+            <Lightbulb className="size-3.5 text-primary" />
+            {t("suggestions")}
+          </p>
+        </div>
         {active ? (
           ideasView
         ) : (
@@ -681,10 +683,11 @@ export function SessionWorkbench({
           </p>
         )}
       </div>
-      <div className="flex min-h-0 flex-1 flex-col p-3.5">
-        <p className="mb-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+      <div className="panel-sheet flex min-h-0 flex-1 flex-col overflow-hidden p-3.5">
+        <p className="mb-2 text-[12px] font-bold tracking-tight">
           {t("conversationHistory")}
         </p>
+
         {active ? (
           <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto pr-1">
             <ul className="space-y-2">

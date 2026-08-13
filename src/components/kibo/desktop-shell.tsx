@@ -7,7 +7,9 @@ import {
   Settings,
 } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
+import logoAsset from "@/assets/kibotalk-logo.png.asset.json";
 import { useKibo } from "@/lib/kibo/store";
+
 import { AccountMenu } from "./account-menu";
 import { cn } from "@/lib/utils";
 
@@ -69,9 +71,20 @@ export function DesktopShell({ active, onNavigate, children }: Props) {
     <div className="desktop-shell">
       <aside className="desktop-rail panel-sheet" aria-label={t("appName")}>
         <div className="px-3 pt-4 pb-2">
-          <p className="font-display text-base font-bold tracking-tight">{t("appName")}</p>
+          <div className="flex min-w-0 items-center gap-2">
+            <img
+              src={logoAsset.url}
+              alt=""
+              aria-hidden
+              className="size-6 shrink-0 rounded-md object-contain"
+            />
+            <p className="font-display truncate text-base font-bold tracking-tight">
+              {t("appName")}
+            </p>
+          </div>
           <p className="mt-1 text-[11px] leading-snug text-muted-foreground">{t("homeTagline")}</p>
         </div>
+
         <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-2">
           {items.map((item) => {
             const Icon = item.icon;
