@@ -1,0 +1,19 @@
+{
+  "name": "kibotalk-desktop",
+  "productName": "KiboTalk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "KiboTalk desktop shell for closed beta",
+  "author": "KiboTalk",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --publish never",
+    "dist:mac": "electron-builder --mac --publish never",
+    "dist:win": "electron-builder --win --publish never"
+  },
+  "devDependencies": {
+    "electron": "^37.2.6",
+    "electron-builder": "^26.0.12"
+  }
+}

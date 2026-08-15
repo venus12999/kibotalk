@@ -10,6 +10,8 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+desktop/dist
+desktop/node_modules
 .output
 .vinxi
 .tanstack/**

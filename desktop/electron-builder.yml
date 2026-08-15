@@ -1,0 +1,43 @@
+appId: win.superpowerlulu.kibotalk
+productName: KiboTalk
+copyright: Copyright © KiboTalk
+artifactName: ${productName}-${os}-${arch}.${ext}
+directories:
+  output: dist
+  buildResources: build
+files:
+  - main.cjs
+  - preload.cjs
+  - package.json
+asar: true
+compression: maximum
+
+mac:
+  category: public.app-category.education
+  icon: build/icon.png
+  identity: null
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  extendInfo:
+    NSMicrophoneUsageDescription: KiboTalk uses the microphone to transcribe the conversation and suggest replies.
+    NSAudioCaptureUsageDescription: KiboTalk can capture system audio when you choose that input in settings.
+  target:
+    - target: dmg
+      arch:
+        - arm64
+        - x64
+
+dmg:
+  title: KiboTalk
+
+win:
+  icon: build/icon.png
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+nsis:
+  oneClick: true
+  perMachine: false
+  shortcutName: KiboTalk
