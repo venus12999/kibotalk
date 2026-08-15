@@ -15,7 +15,7 @@ import { VoiceCloud } from "@/components/kibo/voice-cloud";
 import { Button } from "@/components/ui/button";
 import {
   DESKTOP_DOWNLOADS,
-  DESKTOP_RELEASES_URL,
+  DESKTOP_FILES,
   detectDesktopPlatform,
   isKiboTalkDesktop,
 } from "@/lib/kibo/desktop";
@@ -27,12 +27,21 @@ export function LandingPage() {
   const { user } = useSession();
   const inDesktop = isKiboTalkDesktop();
   const platform = detectDesktopPlatform();
+  const onComputer = platform !== "other";
   const primaryHref =
     platform === "windows"
       ? DESKTOP_DOWNLOADS.windows
-      : platform === "other"
-        ? ""
-        : DESKTOP_DOWNLOADS.macArm;
+      : platform === "mac-intel"
+        ? DESKTOP_DOWNLOADS.macIntel
+        : platform === "mac-arm"
+          ? DESKTOP_DOWNLOADS.macArm
+          : "";
+  const primaryFile =
+    platform === "windows"
+      ? DESKTOP_FILES.windows
+      : platform === "mac-intel"
+        ? DESKTOP_FILES.macIntel
+        : DESKTOP_FILES.macArm;
   const primaryLabel = platform === "windows" ? t("landingDownloadWin") : t("landingDownloadMac");
 
   const features = [
@@ -106,53 +115,56 @@ export function LandingPage() {
               </>
             ) : (
               <>
-                {primaryHref ? (
-                  <a href={primaryHref} className="home-pill-cta group justify-center">
+                {onComputer && primaryHref ? (
+                  <a
+                    href={primaryHref}
+                    download={primaryFile}
+                    className="home-pill-cta landing-download-cta group"
+                  >
                     <span className="home-pill-cta-icon">
                       <Download className="size-4" />
                     </span>
-                    <span className="flex-1 text-left text-sm font-semibold">{primaryLabel}</span>
+                    <span className="min-w-0 flex-1 text-center text-sm font-semibold">
+                      {primaryLabel}
+                    </span>
+                    <span className="size-[2.35rem] shrink-0" aria-hidden />
                   </a>
-                ) : null}
-                <Button asChild size="lg" variant={primaryHref ? "outline" : "default"}>
+                ) : (
+                  <p className="text-sm text-muted-foreground">{t("landingUseOnPhone")}</p>
+                )}
+                <Button asChild size="lg" variant={onComputer ? "outline" : "default"}>
                   <Link to="/auth">
                     {t("landingOpenBrowser")}
                     <ArrowRight />
                   </Link>
                 </Button>
-                <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                  {platform !== "mac-arm" ? (
-                    <a
-                      className="inline-flex items-center gap-1 underline-offset-4 hover:underline"
-                      href={DESKTOP_DOWNLOADS.macArm}
-                    >
-                      <Apple className="size-3" />
-                      {t("landingDownloadMac")}
-                    </a>
-                  ) : null}
+                <p className="text-[11px] font-medium text-muted-foreground">
+                  {t("landingComputerDownloads")}
+                </p>
+                <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+                  <a
+                    className="inline-flex items-center gap-1 underline-offset-4 hover:underline"
+                    href={DESKTOP_DOWNLOADS.macArm}
+                    download={DESKTOP_FILES.macArm}
+                  >
+                    <Apple className="size-3" />
+                    {t("landingDownloadMac")}
+                  </a>
                   <a
                     className="inline-flex items-center gap-1 underline-offset-4 hover:underline"
                     href={DESKTOP_DOWNLOADS.macIntel}
+                    download={DESKTOP_FILES.macIntel}
                   >
                     <Apple className="size-3" />
                     {t("landingDownloadMacIntel")}
                   </a>
-                  {platform !== "windows" ? (
-                    <a
-                      className="inline-flex items-center gap-1 underline-offset-4 hover:underline"
-                      href={DESKTOP_DOWNLOADS.windows}
-                    >
-                      <Monitor className="size-3" />
-                      {t("landingDownloadWin")}
-                    </a>
-                  ) : null}
                   <a
-                    className="underline-offset-4 hover:underline"
-                    href={DESKTOP_RELEASES_URL}
-                    target="_blank"
-                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 underline-offset-4 hover:underline"
+                    href={DESKTOP_DOWNLOADS.windows}
+                    download={DESKTOP_FILES.windows}
                   >
-                    {t("landingAllReleases")}
+                    <Monitor className="size-3" />
+                    {t("landingDownloadWin")}
                   </a>
                 </div>
               </>

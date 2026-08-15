@@ -899,6 +899,11 @@
   box-shadow: var(--glass-shadow-chip);
 }
 
+.landing-download-cta {
+  width: 100%;
+  max-width: none;
+}
+
 .home-mode-row {
   display: grid;
   width: 100%;
