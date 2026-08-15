@@ -1,4 +1,3 @@
-import * as React from "react";
 import { Link } from "@tanstack/react-router";
 import {
   Apple,
@@ -15,11 +14,10 @@ import { UiLanguageMenu } from "@/components/kibo/ui-language-menu";
 import { VoiceCloud } from "@/components/kibo/voice-cloud";
 import { Button } from "@/components/ui/button";
 import {
+  DESKTOP_DOWNLOADS,
   DESKTOP_RELEASES_URL,
   detectDesktopPlatform,
-  fetchLatestDesktopRelease,
   isKiboTalkDesktop,
-  type DesktopReleaseLinks,
 } from "@/lib/kibo/desktop";
 import { useKibo } from "@/lib/kibo/store";
 import { useSession } from "@/lib/kibo/use-session";
@@ -29,20 +27,12 @@ export function LandingPage() {
   const { user } = useSession();
   const inDesktop = isKiboTalkDesktop();
   const platform = detectDesktopPlatform();
-  const [release, setRelease] = React.useState<DesktopReleaseLinks | null>(null);
-
-  React.useEffect(() => {
-    if (inDesktop) return;
-    void fetchLatestDesktopRelease().then(setRelease);
-  }, [inDesktop]);
-
-  const hasAnyBuild = Boolean(release?.macArm || release?.macIntel || release?.windows);
   const primaryHref =
     platform === "windows"
-      ? release?.windows
+      ? DESKTOP_DOWNLOADS.windows
       : platform === "other"
         ? ""
-        : release?.macArm || release?.macIntel;
+        : DESKTOP_DOWNLOADS.macArm;
   const primaryLabel = platform === "windows" ? t("landingDownloadWin") : t("landingDownloadMac");
 
   const features = [
@@ -116,9 +106,6 @@ export function LandingPage() {
               </>
             ) : (
               <>
-                {release && !hasAnyBuild ? (
-                  <p className="text-sm text-muted-foreground">{t("landingComingSoon")}</p>
-                ) : null}
                 {primaryHref ? (
                   <a href={primaryHref} className="home-pill-cta group justify-center">
                     <span className="home-pill-cta-icon">
@@ -133,54 +120,41 @@ export function LandingPage() {
                     <ArrowRight />
                   </Link>
                 </Button>
-                {hasAnyBuild ? (
-                  <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                    {release?.macArm && platform !== "mac-arm" ? (
-                      <a
-                        className="inline-flex items-center gap-1 underline-offset-4 hover:underline"
-                        href={release.macArm}
-                      >
-                        <Apple className="size-3" />
-                        {t("landingDownloadMac")}
-                      </a>
-                    ) : null}
-                    {release?.macIntel ? (
-                      <a
-                        className="inline-flex items-center gap-1 underline-offset-4 hover:underline"
-                        href={release.macIntel}
-                      >
-                        <Apple className="size-3" />
-                        {t("landingDownloadMacIntel")}
-                      </a>
-                    ) : null}
-                    {release?.windows && platform !== "windows" ? (
-                      <a
-                        className="inline-flex items-center gap-1 underline-offset-4 hover:underline"
-                        href={release.windows}
-                      >
-                        <Monitor className="size-3" />
-                        {t("landingDownloadWin")}
-                      </a>
-                    ) : null}
+                <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  {platform !== "mac-arm" ? (
                     <a
-                      className="underline-offset-4 hover:underline"
-                      href={DESKTOP_RELEASES_URL}
-                      target="_blank"
-                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 underline-offset-4 hover:underline"
+                      href={DESKTOP_DOWNLOADS.macArm}
                     >
-                      {t("landingAllReleases")}
+                      <Apple className="size-3" />
+                      {t("landingDownloadMac")}
                     </a>
-                  </div>
-                ) : (
+                  ) : null}
                   <a
-                    className="text-xs text-muted-foreground underline-offset-4 hover:underline"
+                    className="inline-flex items-center gap-1 underline-offset-4 hover:underline"
+                    href={DESKTOP_DOWNLOADS.macIntel}
+                  >
+                    <Apple className="size-3" />
+                    {t("landingDownloadMacIntel")}
+                  </a>
+                  {platform !== "windows" ? (
+                    <a
+                      className="inline-flex items-center gap-1 underline-offset-4 hover:underline"
+                      href={DESKTOP_DOWNLOADS.windows}
+                    >
+                      <Monitor className="size-3" />
+                      {t("landingDownloadWin")}
+                    </a>
+                  ) : null}
+                  <a
+                    className="underline-offset-4 hover:underline"
                     href={DESKTOP_RELEASES_URL}
                     target="_blank"
                     rel="noreferrer"
                   >
                     {t("landingAllReleases")}
                   </a>
-                )}
+                </div>
               </>
             )}
           </div>

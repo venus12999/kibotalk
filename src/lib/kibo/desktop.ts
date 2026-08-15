@@ -1,7 +1,16 @@
 export const DESKTOP_GITHUB_REPO = "venus12999/kibotalk";
-export const DESKTOP_RELEASES_URL = `https://github.com/${DESKTOP_GITHUB_REPO}/releases`;
-export const DESKTOP_LATEST_RELEASE_API = `https://api.github.com/repos/${DESKTOP_GITHUB_REPO}/releases/latest`;
+export const DESKTOP_RELEASES_URL = `https://github.com/${DESKTOP_GITHUB_REPO}/releases/latest`;
 export const DESKTOP_UA_MARK = "KiboTalkDesktop/";
+
+const latestDownload = (filename: string) =>
+  `https://github.com/${DESKTOP_GITHUB_REPO}/releases/latest/download/${filename}`;
+
+/** Direct links to the latest GitHub Release assets. Names must match electron-builder. */
+export const DESKTOP_DOWNLOADS = {
+  macArm: latestDownload("KiboTalk-mac-arm64.dmg"),
+  macIntel: latestDownload("KiboTalk-mac-x64.dmg"),
+  windows: latestDownload("KiboTalk-win-x64.exe"),
+} as const;
 
 export type DesktopPlatform = "mac-arm" | "mac-intel" | "windows" | "other";
 
@@ -20,49 +29,4 @@ export function detectDesktopPlatform(): DesktopPlatform {
   if (/Win/i.test(platform) || /Windows/i.test(ua)) return "windows";
   if (/Mac/i.test(platform) || /Mac OS X/i.test(ua)) return "mac-arm";
   return "other";
-}
-
-export type DesktopReleaseLinks = {
-  ready: boolean;
-  tag: string;
-  macArm: string;
-  macIntel: string;
-  windows: string;
-};
-
-const emptyRelease = (): DesktopReleaseLinks => ({
-  ready: false,
-  tag: "",
-  macArm: "",
-  macIntel: "",
-  windows: "",
-});
-
-type GithubAsset = { name: string; browser_download_url: string };
-
-function pickAsset(assets: GithubAsset[], pattern: RegExp) {
-  return assets.find((asset) => pattern.test(asset.name))?.browser_download_url ?? "";
-}
-
-export async function fetchLatestDesktopRelease(): Promise<DesktopReleaseLinks> {
-  const next = emptyRelease();
-  next.ready = true;
-  try {
-    const response = await fetch(DESKTOP_LATEST_RELEASE_API, {
-      headers: { Accept: "application/vnd.github+json" },
-    });
-    if (!response.ok) return next;
-    const payload = (await response.json()) as {
-      tag_name?: string;
-      assets?: GithubAsset[];
-    };
-    const assets = payload.assets ?? [];
-    next.tag = payload.tag_name ?? "";
-    next.macArm = pickAsset(assets, /mac-arm64\.dmg$/i);
-    next.macIntel = pickAsset(assets, /mac-x64\.dmg$/i);
-    next.windows = pickAsset(assets, /win-x64\.exe$/i);
-    return next;
-  } catch {
-    return next;
-  }
 }
